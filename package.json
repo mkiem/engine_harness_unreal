@@ -1,0 +1,26 @@
+{
+  "name": "engine-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-native game development harness: plans a creative brief into a DAG of domain tickets (Blender, audio, texturing, Unreal, QA), runs them through agent workers with least-privilege tool presets, and gates every hand-off on a typed, deterministically validated asset contract.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": { "harness": "./src/cli.ts" },
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "harness": "node src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:py": "python3 -m unittest discover -s dcc/tests -v",
+    "check": "npm run typecheck && npm test && npm run test:py",
+    "demo": "node src/cli.ts run examples/vintage-radio/plan.json --executor simulated --sim-faults --state .harness/demo"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
