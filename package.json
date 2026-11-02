@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "AI-native game development harness: plans a creative brief into a DAG of domain tickets (Blender, audio, texturing, Unreal, QA), runs them through agent workers with least-privilege tool presets, and gates every hand-off on a typed, deterministically validated asset contract.",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "harness": "./src/cli.ts",

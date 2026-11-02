@@ -100,4 +100,6 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 
 ## License
 
-Not chosen yet. dsh-superagent is MIT and goose is Apache-2.0; this repository copies no code from either.
+[MIT](LICENSE). This repository copies no code from dsh-superagent (MIT) or goose (Apache-2.0).
+
+The Engine Harness desktop app is built from goose with the patches in `distro/patches`: those builds include goose, which stays under the Apache License 2.0, with its LICENSE and notices kept and the changes described in `ENGINE_HARNESS_NOTICE.md`. Assets the starter library downloads keep their own licences, recorded beside each download.
