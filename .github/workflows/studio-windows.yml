@@ -20,7 +20,8 @@ permissions:
 
 concurrency:
   group: studio-windows-${{ github.ref }}
-  cancel-in-progress: true
+  # Queue instead of cancel: a Windows build takes long, and an interrupted one proves nothing.
+  cancel-in-progress: false
 
 env:
   FORK_DIR: goose-studio
