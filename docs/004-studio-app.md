@@ -47,6 +47,7 @@ Rules for patches, so upgrades stay cheap: one concern per patch; add files rath
 | 0004 | Blender extension pinned to mcp-for-blender 2.2.6 with `DISABLE_TELEMETRY` | Desktop tests (CI) |
 | 0005 | Branding, own installer id, updates off, own `GOOSE_PATH_ROOT`, NOTICE | Prompt tests; Windows installer build (CI) |
 | 0006 | System prompt: run the setup check on first use or when a tool does not answer | Prompt tests |
+| 0007 | System prompt: Godot scenes and scripts as text; offer starter assets with their licences | Prompt tests |
 
 ## The CI build
 
