@@ -4,7 +4,7 @@
 
 Writes the `facts` object of an AssetRecord (see src/contracts/index.ts MeshFacts): triangles of LOD0, LOD count,
 bounds and pivot offsets in centimetres, render and collision mesh names, material slots, UV channels, and whether
-transforms are applied. Untested here against a live Blender.
+transforms are applied. Checked end to end on Blender 5.2 (dcc/tests/e2e_blender.py).
 """
 from __future__ import annotations
 

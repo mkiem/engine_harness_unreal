@@ -19,14 +19,18 @@
     "test:py": "python3 -m unittest discover -s dcc/tests -v",
     "check": "npm run typecheck && npm test && npm run test:py",
     "demo": "node src/cli.ts run examples/vintage-radio/plan.json --executor simulated --sim-faults --state .harness/demo",
-    "mcp": "node src/mcp/main.ts"
+    "mcp": "node src/mcp/main.ts",
+    "bundle": "node scripts/bundle.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "fflate": "^0.8.2",
+    "unreal-remote-execution": "^1.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "esbuild": "^0.25.10",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

@@ -1,0 +1,12 @@
+{
+  "name": "dsh-worker-sprite",
+  "domain": "sprite",
+  "description": "Draws pixel-art sprite sheets and tilesets to a palette and grid, from reproducible scripts.",
+  "prompt": "prompts/worker-sprite.md",
+  "tools": ["bash", "file_edit", "file_search"],
+  "pool": "sprite",
+  "mcpServers": {},
+  "env": { "HARNESS_DCC_DIR": "${HARNESS_DCC_DIR}" },
+  "requires": ["HARNESS_DCC_DIR"],
+  "blockedCommands": ["p4 submit", "p4 revert", "git push", "git lfs unlock"]
+}

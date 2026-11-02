@@ -1,0 +1,98 @@
+{
+  "id": "pixel-hero",
+  "brief": "a small hooded hero in a blue cloak for a top-down 16-bit style RPG",
+  "contentRoot": "res://",
+  "tickets": [
+    {
+      "id": "pixel-hero-sprite",
+      "domain": "sprite",
+      "title": "Sprite sheet SPR_PixelHero",
+      "instructions": "Draw a small hooded hero in a blue cloak for a top-down 16-bit style RPG as 16x16 pixel art: idle (2 frames), walk (4 frames), for 4 directions, one row per animation and direction, in at most 16 colours with hard-edged transparency. Save it as res://art/pixel_hero.png.",
+      "produces": [
+        {
+          "id": "SPR_PixelHero",
+          "kind": "sprite_sheet",
+          "description": "a small hooded hero in a blue cloak for a top-down 16-bit style RPG",
+          "requires": {
+            "frameSize": [
+              16,
+              16
+            ],
+            "frames": 24,
+            "maxColors": 16,
+            "hardAlpha": true,
+            "animations": [
+              "idle",
+              "walk"
+            ]
+          }
+        }
+      ],
+      "consumes": [],
+      "after": [],
+      "locks": [
+        "art/pixel_hero.png"
+      ],
+      "review": "auto",
+      "maxRevisions": 2
+    },
+    {
+      "id": "pixel-hero-scene",
+      "domain": "godot",
+      "title": "Scene SCN_PixelHero",
+      "instructions": "Make res://characters/pixel_hero.tscn: a CharacterBody2D with an AnimatedSprite2D whose SpriteFrames uses SPR_PixelHero's frames (animations idle, walk per direction, 8 fps), a CollisionShape2D sized to the feet, and a script that moves in four directions with the arrow keys and plays the matching walk animation. Run godot_check, then godot_run to make sure it loads without errors.",
+      "produces": [
+        {
+          "id": "SCN_PixelHero",
+          "kind": "godot_scene",
+          "description": "PixelHero as a playable scene",
+          "requires": {
+            "path": "res://characters/pixel_hero.tscn",
+            "rootType": "CharacterBody2D",
+            "nodeTypes": [
+              "AnimatedSprite2D",
+              "CollisionShape2D"
+            ],
+            "script": true
+          }
+        }
+      ],
+      "consumes": [
+        "SPR_PixelHero"
+      ],
+      "after": [],
+      "locks": [
+        "characters/pixel_hero.tscn",
+        "characters/pixel_hero.gd"
+      ],
+      "review": "auto",
+      "maxRevisions": 2
+    },
+    {
+      "id": "pixel-hero-qa",
+      "domain": "qa",
+      "title": "Verify SCN_PixelHero",
+      "instructions": "Check every project script with godot_check, run res://characters/pixel_hero.tscn headless for 5 seconds with godot_run, and report each result as a test.",
+      "produces": [
+        {
+          "id": "QA_PixelHero",
+          "kind": "test_result",
+          "description": "Checks for SCN_PixelHero",
+          "requires": {
+            "tests": [
+              "scripts_parse",
+              "scene_runs_without_errors"
+            ]
+          }
+        }
+      ],
+      "consumes": [
+        "SCN_PixelHero"
+      ],
+      "after": [],
+      "locks": [],
+      "review": "auto",
+      "maxRevisions": 1
+    }
+  ]
+}

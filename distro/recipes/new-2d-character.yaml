@@ -1,0 +1,35 @@
+version: 1.0.0
+title: New 2D character (Godot)
+description: A pixel-art character for a top-down RPG in your Godot 4 project, from sprite sheet to a playable scene, then hands it to you to try.
+parameters:
+  - key: character
+    input_type: string
+    requirement: user_prompt
+    description: Who the character is and how they move, such as "a hooded hero in a blue cloak who walks in four directions"
+instructions: |
+  Make the character in the developer's Godot 4 project so they can play it.
+
+  1. godot_status: confirm Godot and the project. If the project lacks pixel-art settings, offer
+     harness_setup_godot_project (nearest filtering, pixel snapping, a 320x180 base resolution).
+  2. Plan with harness_plan_save, shaped like the pixel-hero example: a sprite ticket (sprite_sheet: frame size,
+     frames, palette), a godot ticket (godot_scene: res:// path, CharacterBody2D, AnimatedSprite2D, CollisionShape2D)
+     and a qa ticket. Read harness_conventions for sprite_sheet and godot_scene.
+  3. Draw the sheet from a script, save it under res://art/, and harness_validate the sprite ticket.
+  4. Write the scene and script as text, run godot_check and godot_run (headless), then harness_validate.
+  5. Open the game with godot_run window: true, tell the developer what to try in two lines, and stop. Their feedback
+     starts the next round.
+extensions:
+  - type: builtin
+    name: developer
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    envs:
+      HARNESS_ENGINES: godot
+    timeout: 300
+activities:
+  - "A hooded hero who walks in four directions"
+  - "A slime enemy that wanders and bounces"
+  - "A shopkeeper NPC that says hello"
+prompt: "Make this character: {{ character }}"

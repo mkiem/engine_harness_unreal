@@ -1,7 +1,7 @@
 From 90f62f73f49cf64bc290a69d5b2d129838ef2816 Mon Sep 17 00:00:00 2001
 From: engine_harness_unreal <noreply@anthropic.com>
 Date: Mon, 2 Nov 2026 05:45:46 +0000
-Subject: [PATCH 2/2] Add game-development guidance to the system prompt
+Subject: [PATCH 2/7] Add game-development guidance to the system prompt
 
 The local playtest loop, and the rules the Game Harness enforces: conventions
 before making an asset, locks before editing binaries, validation before

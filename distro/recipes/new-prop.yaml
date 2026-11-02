@@ -15,8 +15,11 @@ instructions: |
      (harness_ticket gives the full spec) and given only its domain's extensions.
   3. Lock files with harness_lock before editing them; validate each ticket with harness_validate and fix every
      violation before moving on; unlock when the ticket is done.
-  4. When the Blueprint is placed, tell the developer exactly how to test it in Play in Editor, in two or three lines,
-     and stop. Their feedback starts the next round.
+  4. Build the Unreal side through the unreal_* tools: import with unreal_run_script and dcc/unreal/import_pipeline.py,
+     make the Blueprint and place it with unreal_python, and check unreal_log for errors.
+  5. When the Blueprint is placed, start Play in Editor (unreal_play_in_editor), tell the developer exactly what to try
+     in two or three lines, and stop. Their feedback starts the next round.
+  If Blender or Unreal does not answer, run harness_setup_check and offer the fix.
 extensions:
   - type: builtin
     name: developer
@@ -30,7 +33,9 @@ extensions:
   - type: stdio
     name: blender
     cmd: uvx
-    args: [blender-mcp]
+    args: [mcp-for-blender@2.2.6]
+    envs:
+      DISABLE_TELEMETRY: "true"
     timeout: 600
 activities:
   - "A wooden crate the player can break"

@@ -28,8 +28,10 @@ describe('harness MCP server', () => {
   it('lists its tools with instructions for the agent', async () => {
     const { client } = await connect(tempDir())
     const { tools } = await client.listTools()
-    expect(tools.map(tool => tool.name).sort()).toEqual(['harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
-      'harness_plan_prop', 'harness_plan_save', 'harness_ticket', 'harness_unlock', 'harness_validate'])
+    expect(tools.map(tool => tool.name).sort()).toEqual(['assets_download', 'assets_import', 'assets_search', 'assets_sources', 'harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
+      'harness_plan_prop', 'harness_plan_save', 'harness_scripts', 'harness_setup_blender', 'harness_setup_check', 'harness_setup_unreal_project',
+      'harness_setup_godot_project', 'harness_ticket', 'harness_unlock', 'harness_validate', 'godot_check', 'godot_run', 'godot_scene', 'godot_status',
+      'unreal_log', 'unreal_play_in_editor', 'unreal_python', 'unreal_run_script', 'unreal_status'].sort())
     expect(client.getInstructions()).toContain('harness_validate')
   })
 
@@ -71,11 +73,51 @@ describe('harness MCP server', () => {
     expect((await second.call('harness_locks')).text).toContain('Art/SM_Radio.blend: model')
   })
 
+  it('lists the pipeline scripts with absolute paths', async () => {
+    const { call } = await connect(tempDir())
+    const scripts = await call('harness_scripts')
+    expect(scripts.text).toMatch(/## blender\/inspect_export\.py\n\/.*dcc\/blender\/inspect_export\.py\nMeasure a mesh export/)
+    expect(scripts.text).toContain('unreal/import_pipeline.py')
+  })
+
+  it('answers Unreal tools with setup advice when no editor is open', async () => {
+    const { UnrealBridge } = await import('../src/unreal/bridge.ts')
+    const server = createHarnessServer({ projectDir: tempDir(), unreal: new UnrealBridge({ discoveryMs: 10, client: () => ({
+      start: async () => {}, stop: () => {}, startSearchingForNodes: () => {}, remoteNodes: [], openCommandConnection: async () => {},
+      hasCommandConnection: () => false, closeCommandConnection: () => {}, connectedNode: null, runCommand: async () => { throw new Error('unreachable') } }) }) })
+    const client = new Client({ name: 'test', version: '1' })
+    const [a, b] = InMemoryTransport.createLinkedPair()
+    await Promise.all([server.connect(a), client.connect(b)])
+    const result = await client.callTool({ name: 'unreal_python', arguments: { code: 'print(1)' } }) as { isError: boolean; content: { text: string }[] }
+    expect(result.isError).toBe(true)
+    expect(result.content[0]!.text).toContain('harness_setup_unreal_project')
+  })
+
   it('measures audio and explains conventions', async () => {
     const project = tempDir()
     writeFileSync(join(project, 'a.wav'), writeWav16(radioStatic(1, 48000), 48000))
     const { call } = await connect(project)
     expect((await call('harness_measure_audio', { path: 'a.wav' })).text).toContain('sampleRate: 48000')
     expect((await call('harness_conventions', { kind: 'static_mesh' })).text).toContain('UCX_<id>_NN')
+  })
+})
+
+describe('engine selection', () => {
+  it('offers only the chosen engines\' tools', async () => {
+    const server = createHarnessServer({ projectDir: tempDir(), engines: ['godot'] })
+    const client = new Client({ name: 'test', version: '1' })
+    const [a, b] = InMemoryTransport.createLinkedPair()
+    await Promise.all([server.connect(a), client.connect(b)])
+    const names = (await client.listTools()).tools.map(tool => tool.name)
+    expect(names.filter(name => name.startsWith('unreal_') || name === 'harness_setup_unreal_project')).toEqual([])
+    expect(names).toContain('godot_scene')
+  })
+
+  it('reports malformed check_asset input precisely', async () => {
+    const { call } = await connect(tempDir())
+    const result = await call('harness_check_asset', { spec: { id: 'SM_Box', kind: 'static_mesh', requires: {} }, record: { id: 'SM_Box' }, dir: '.' })
+    expect(result.error).toBe(true)
+    expect(result.text).toContain('spec.requires.maxTriangles')
+    expect(result.text).toContain('record.kind')
   })
 })

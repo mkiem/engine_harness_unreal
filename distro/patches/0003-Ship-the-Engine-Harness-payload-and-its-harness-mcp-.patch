@@ -1,0 +1,301 @@
+From ef9525c2c65b530767b325063fec14ca4103acc4 Mon Sep 17 00:00:00 2001
+From: engine_harness_unreal <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 06:18:36 +0000
+Subject: [PATCH 3/7] Ship the Engine Harness payload and its harness-mcp
+ launcher
+
+The build copies the harness payload (one bundled JavaScript file, the DCC
+scripts and the recipes) into src/harness, which packaging ships as
+resources/harness. At startup the app writes a harness-mcp launcher beside
+the Windows shims (it reuses the bundled npx.cmd's Node.js: the portable
+copy, a system Node.js 22+, or a download), or into userData/bin elsewhere,
+and puts it on PATH with the recipes on GOOSE_RECIPE_PATH. The RunAsNode
+fuse stays off.
+---
+ ui/desktop/forge.config.ts                   |   3 +-
+ ui/desktop/src/harness/README.md             |   6 +
+ ui/desktop/src/main.ts                       |   8 +-
+ ui/desktop/src/utils/harnessLauncher.test.ts |  67 +++++++++++
+ ui/desktop/src/utils/harnessLauncher.ts      | 116 +++++++++++++++++++
+ ui/desktop/src/utils/winShims.ts             |  11 +-
+ 6 files changed, 204 insertions(+), 7 deletions(-)
+ create mode 100644 ui/desktop/src/harness/README.md
+ create mode 100644 ui/desktop/src/utils/harnessLauncher.test.ts
+ create mode 100644 ui/desktop/src/utils/harnessLauncher.ts
+
+diff --git a/ui/desktop/forge.config.ts b/ui/desktop/forge.config.ts
+index 95fbbe9..c5b6a24 100644
+--- a/ui/desktop/forge.config.ts
++++ b/ui/desktop/forge.config.ts
+@@ -6,7 +6,8 @@ const isLinuxVulkanBuild = process.env.GOOSE_DESKTOP_LINUX_VARIANT === 'vulkan';
+ 
+ let cfg = {
+   asar: true,
+-  extraResource: ['src/bin', 'src/images', 'src/app-update.yml'],
++  // Engine Harness: src/harness holds the harness payload (harness-mcp.mjs, dcc/, recipes/), copied in by the build.
++  extraResource: ['src/bin', 'src/images', 'src/app-update.yml', 'src/harness'],
+   icon: 'src/images/icon',
+   // Windows specific configuration
+   win32: {
+diff --git a/ui/desktop/src/harness/README.md b/ui/desktop/src/harness/README.md
+new file mode 100644
+index 0000000..bd36118
+--- /dev/null
++++ b/ui/desktop/src/harness/README.md
+@@ -0,0 +1,6 @@
++# Engine Harness payload
++
++The build copies the harness payload here (`node scripts/bundle.mjs` in engine_harness_unreal, then `dist/payload/*`):
++`harness-mcp.mjs`, `dcc/`, `recipes/`, `NOTICE.md`. Packaging ships this folder as `resources/harness`, and
++`src/utils/harnessLauncher.ts` runs it as the `harness-mcp` command. Without the payload the app still runs; the Game
++Harness extension then reports that its command is missing.
+diff --git a/ui/desktop/src/main.ts b/ui/desktop/src/main.ts
+index d07d511..7a46792 100644
+--- a/ui/desktop/src/main.ts
++++ b/ui/desktop/src/main.ts
+@@ -36,7 +36,8 @@ import { GooseServeLeaseRegistry, type GooseServeLease } from './gooseServeLease
+ import { normalizeAcpHttpBaseUrl } from './acp/url';
+ import { expandTilde, sanitizeGoosePathRoot } from './utils/pathUtils';
+ import log from './utils/logger';
+-import { ensureWinShims } from './utils/winShims';
++import { ensureWinShims, winShimDir } from './utils/winShims';
++import { defaultHarnessBinDir, ensureHarnessLauncher } from './utils/harnessLauncher';
+ import { addRecentDir, loadRecentDirs } from './utils/recentDirs';
+ import { formatAppName, errorMessage, formatErrorForLogging } from './utils/conversionUtils';
+ import { isRetiredGooseChatApp } from './utils/retiredApps';
+@@ -2428,6 +2429,11 @@ async function appMain() {
+ 
+   // Ensure Windows shims are available before any MCP processes are spawned
+   await ensureWinShims();
++  // Engine Harness: the harness-mcp launcher goes beside the Windows shims (it uses their npx.cmd), else in userData.
++  await ensureHarnessLauncher({
++    resourcesPath: app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'src'),
++    binDir: process.platform === 'win32' ? winShimDir() : defaultHarnessBinDir(app.getPath('userData')),
++  });
+ 
+   registerUpdateIpcHandlers();
+ 
+diff --git a/ui/desktop/src/utils/harnessLauncher.test.ts b/ui/desktop/src/utils/harnessLauncher.test.ts
+new file mode 100644
+index 0000000..77954ae
+--- /dev/null
++++ b/ui/desktop/src/utils/harnessLauncher.test.ts
+@@ -0,0 +1,67 @@
++import fs from 'node:fs';
++import os from 'node:os';
++import path from 'node:path';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++vi.mock('./logger', () => ({ default: { info: vi.fn(), error: vi.fn() } }));
++
++import {
++  ensureHarnessLauncher,
++  posixLauncher,
++  prependToPath,
++  windowsLauncher,
++  withRecipeDir,
++} from './harnessLauncher';
++
++describe('harness launchers', () => {
++  it('runs the payload with the portable Node.js, a system Node.js 22+, or one npx.cmd downloads', () => {
++    const script = windowsLauncher('C:\\Program Files\\Engine Harness\\resources\\harness');
++    expect(script).toContain('SET "HARNESS_DCC_DIR=C:\\Program Files\\Engine Harness\\resources\\harness\\dcc"');
++    expect(script).toContain('if exist "%GOOSE_NODE_DIR%\\node.exe" goto :portable');
++    expect(script).toContain('parseInt(process.versions.node) >= 22');
++    expect(script).toContain('call "%~dp0npx.cmd" --version');
++    expect(script).toContain('"%NODE_EXE%" "C:\\Program Files\\Engine Harness\\resources\\harness\\harness-mcp.mjs" %*');
++    // The exit code is read outside any block, where %errorlevel% is current.
++    expect(script).toMatch(/harness-mcp\.mjs" %\*\r\nexit \/b %errorlevel%/);
++    expect(script.split('\r\n').length).toBeGreaterThan(10);
++  });
++
++  it('uses the bundled node shim on macOS and Linux', () => {
++    expect(posixLauncher('/opt/eh/resources/harness', '/opt/eh/resources/bin/node')).toContain(
++      'exec "/opt/eh/resources/bin/node" "/opt/eh/resources/harness/harness-mcp.mjs" "$@"'
++    );
++  });
++
++  it('puts the launcher first on PATH once, and appends recipes once', () => {
++    expect(prependToPath('/usr/bin:/bin', '/eh/bin', ':')).toBe('/eh/bin:/usr/bin:/bin');
++    expect(prependToPath('C:\\EH\\BIN;C:\\Windows', 'C:\\eh\\bin', ';')).toBe('C:\\EH\\BIN;C:\\Windows');
++    expect(withRecipeDir(undefined, '/eh/recipes', ':')).toBe('/eh/recipes');
++    expect(withRecipeDir('/mine:/eh/recipes', '/eh/recipes', ':')).toBe('/mine:/eh/recipes');
++  });
++});
++
++describe('ensureHarnessLauncher', () => {
++  const saved = { ...process.env };
++  afterEach(() => {
++    process.env = { ...saved };
++  });
++
++  it('writes the launcher and exposes the payload when it is present', async () => {
++    const resources = fs.mkdtempSync(path.join(os.tmpdir(), 'eh-resources-'));
++    fs.mkdirSync(path.join(resources, 'harness'));
++    fs.writeFileSync(path.join(resources, 'harness', 'harness-mcp.mjs'), '');
++    const binDir = path.join(resources, 'bin-out');
++    process.env.PATH = '/usr/bin';
++    expect(await ensureHarnessLauncher({ resourcesPath: resources, binDir, platform: 'linux' })).toBe(true);
++    expect(fs.readFileSync(path.join(binDir, 'harness-mcp'), 'utf8')).toContain('harness-mcp.mjs');
++    expect(process.env.PATH).toBe(`${binDir}:/usr/bin`);
++    expect(process.env.GOOSE_RECIPE_PATH).toBe(path.join(resources, 'harness', 'recipes'));
++    expect(process.env.HARNESS_DCC_DIR).toBe(path.join(resources, 'harness', 'dcc'));
++  });
++
++  it('does nothing without the payload', async () => {
++    const resources = fs.mkdtempSync(path.join(os.tmpdir(), 'eh-empty-'));
++    expect(await ensureHarnessLauncher({ resourcesPath: resources, binDir: path.join(resources, 'bin') })).toBe(false);
++    expect(fs.existsSync(path.join(resources, 'bin'))).toBe(false);
++  });
++});
+diff --git a/ui/desktop/src/utils/harnessLauncher.ts b/ui/desktop/src/utils/harnessLauncher.ts
+new file mode 100644
+index 0000000..e4db5ba
+--- /dev/null
++++ b/ui/desktop/src/utils/harnessLauncher.ts
+@@ -0,0 +1,116 @@
++// Engine Harness: runs the game-dev pipeline server (the harness payload in resources/harness) as the `harness-mcp`
++// command that the bundled Game Harness extension starts. The payload is one JavaScript file plus the DCC scripts and
++// recipes; it needs Node.js 22 or later, which it finds the same way the bundled npx.cmd does, so nothing extra is
++// installed: the portable Node.js goose keeps in %LOCALAPPDATA%\Goose\node, else a system Node.js 22+, else npx.cmd
++// downloads the portable one first.
++import fs from 'node:fs';
++import os from 'node:os';
++import path from 'node:path';
++import log from './logger';
++
++/** The Windows launcher. `payload` is the resources/harness folder; it sits beside the copied npx.cmd. */
++export function windowsLauncher(payload: string): string {
++  const script = path.win32.join(payload, 'harness-mcp.mjs');
++  const dcc = path.win32.join(payload, 'dcc');
++  // Every exit runs outside a parenthesised block, so %errorlevel% is the node process's own exit code; arguments are
++  // passed with delayed expansion off, so a "!" in them survives.
++  return [
++    '@ECHO OFF',
++    'SETLOCAL EnableDelayedExpansion',
++    `SET "HARNESS_DCC_DIR=${dcc}"`,
++    'if not defined GOOSE_NODE_DIR SET "GOOSE_NODE_DIR=%LOCALAPPDATA%\\Goose\\node"',
++    'REM === Portable Node.js that the bundled npx.cmd installed ===',
++    'if exist "%GOOSE_NODE_DIR%\\node.exe" goto :portable',
++    'REM === A system Node.js 22 or later ===',
++    "for /f \"delims=\" %%N in ('where $PATH:node.exe 2^>nul') do (",
++    '    "%%N" -e "process.exit(parseInt(process.versions.node) >= 22 ? 0 : 1)" <nul >nul 2>&1',
++    '    if "!errorlevel!"=="0" (',
++    '        SET "NODE_EXE=%%N"',
++    '        goto :run',
++    '    )',
++    ')',
++    'REM === None: let npx.cmd download the portable Node.js, quietly, then use it ===',
++    'call "%~dp0npx.cmd" --version <nul >nul 2>&1',
++    'if exist "%GOOSE_NODE_DIR%\\node.exe" goto :portable',
++    'echo Engine Harness: Node.js 22 or later was not found and could not be downloaded. Install it from https://nodejs.org 1>&2',
++    'exit /b 1',
++    ':portable',
++    'SET "NODE_EXE=%GOOSE_NODE_DIR%\\node.exe"',
++    ':run',
++    'SETLOCAL DisableDelayedExpansion',
++    `"%NODE_EXE%" "${script}" %*`,
++    'exit /b %errorlevel%',
++    '',
++  ].join('\r\n');
++}
++
++/** The macOS and Linux launcher: the bundled `node` shim in resources/bin sets up Node.js the same way. */
++export function posixLauncher(payload: string, nodeShim: string): string {
++  const script = path.posix.join(payload, 'harness-mcp.mjs');
++  return [
++    '#!/bin/sh',
++    `HARNESS_DCC_DIR="${path.posix.join(payload, 'dcc')}"`,
++    'export HARNESS_DCC_DIR',
++    `if [ -x "${nodeShim}" ]; then exec "${nodeShim}" "${script}" "$@"; fi`,
++    `exec node "${script}" "$@"`,
++    '',
++  ].join('\n');
++}
++
++/** Puts `dir` in front of PATH (or Path on Windows) unless it is already there. */
++export function prependToPath(current: string, dir: string, separator: string): string {
++  const entries = current.split(separator).filter(Boolean);
++  const same = (entry: string) =>
++    separator === ';' ? entry.toLowerCase() === dir.toLowerCase() : entry === dir;
++  if (entries.some(same)) return current;
++  return [dir, ...entries].join(separator);
++}
++
++/** Adds the payload's recipes to GOOSE_RECIPE_PATH, keeping any the user set. */
++export function withRecipeDir(current: string | undefined, recipes: string, separator: string): string {
++  const entries = (current ?? '').split(separator).filter(Boolean);
++  return entries.includes(recipes) ? entries.join(separator) : [...entries, recipes].join(separator);
++}
++
++/**
++ * Writes the harness-mcp launcher for this install and makes it, and the payload's recipes, visible to goose and the
++ * extensions it starts. `binDir` is where the launcher goes: the Windows shim folder, or a folder of our own elsewhere.
++ * Does nothing (and logs why) when the app was built without the payload.
++ */
++export async function ensureHarnessLauncher(options: {
++  resourcesPath: string;
++  binDir: string;
++  platform?: NodeJS.Platform;
++}): Promise<boolean> {
++  const platform = options.platform ?? process.platform;
++  const payload = path.join(options.resourcesPath, 'harness');
++  if (!fs.existsSync(path.join(payload, 'harness-mcp.mjs'))) {
++    log.info(`Engine Harness payload not found in ${payload}; the Game Harness extension is unavailable`);
++    return false;
++  }
++  try {
++    await fs.promises.mkdir(options.binDir, { recursive: true });
++    if (platform === 'win32') {
++      await fs.promises.writeFile(path.join(options.binDir, 'harness-mcp.cmd'), windowsLauncher(payload));
++    } else {
++      const launcher = path.join(options.binDir, 'harness-mcp');
++      const nodeShim = path.join(options.resourcesPath, 'bin', 'node');
++      await fs.promises.writeFile(launcher, posixLauncher(payload, nodeShim), { mode: 0o755 });
++    }
++    const separator = platform === 'win32' ? ';' : ':';
++    const pathKey = platform === 'win32' && process.env.Path !== undefined ? 'Path' : 'PATH';
++    process.env[pathKey] = prependToPath(process.env[pathKey] ?? '', options.binDir, separator);
++    process.env.HARNESS_DCC_DIR = path.join(payload, 'dcc');
++    process.env.GOOSE_RECIPE_PATH = withRecipeDir(process.env.GOOSE_RECIPE_PATH, path.join(payload, 'recipes'), separator);
++    log.info(`Engine Harness launcher ready in ${options.binDir}`);
++    return true;
++  } catch (error) {
++    log.error('Failed to prepare the Engine Harness launcher:', error);
++    return false;
++  }
++}
++
++/** Where the launcher goes when there is no Windows shim folder: a bin folder in the user's data. */
++export function defaultHarnessBinDir(userData: string): string {
++  return path.join(userData || path.join(os.homedir(), '.engine-harness'), 'bin');
++}
+diff --git a/ui/desktop/src/utils/winShims.ts b/ui/desktop/src/utils/winShims.ts
+index 9cbb6ad..789fb52 100644
+--- a/ui/desktop/src/utils/winShims.ts
++++ b/ui/desktop/src/utils/winShims.ts
+@@ -12,6 +12,11 @@ export function appendToWindowsPath(currentPath: string, dir: string): string {
+   return [...entries, dir].join(';');
+ }
+ 
++/** %LOCALAPPDATA%\Goose\bin: where the shims are copied, shared with goose so its portable Node.js is reused. */
++export function winShimDir(): string {
++  return path.join(process.env.LOCALAPPDATA ?? path.join(os.homedir(), 'AppData', 'Local'), 'Goose', 'bin');
++}
++
+ /**
+  * Ensures Windows shims are available in %LOCALAPPDATA%\Goose\bin
+  * This allows the bundled executables to be found via PATH regardless of where Goose is installed
+@@ -20,11 +25,7 @@ export async function ensureWinShims(): Promise<void> {
+   if (process.platform !== 'win32') return;
+ 
+   const srcDir = path.join(process.resourcesPath, 'bin'); // existing dir
+-  const tgtDir = path.join(
+-    process.env.LOCALAPPDATA ?? path.join(os.homedir(), 'AppData', 'Local'),
+-    'Goose',
+-    'bin'
+-  );
++  const tgtDir = winShimDir();
+ 
+   try {
+     await fs.promises.mkdir(tgtDir, { recursive: true });

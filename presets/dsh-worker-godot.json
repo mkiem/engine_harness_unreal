@@ -1,0 +1,14 @@
+{
+  "name": "dsh-worker-godot",
+  "domain": "godot",
+  "description": "Builds Godot 4 scenes and GDScript as text, validated and run with Godot's headless command line.",
+  "prompt": "prompts/worker-godot.md",
+  "tools": ["bash", "file_edit", "file_search"],
+  "pool": "godot",
+  "mcpServers": {
+    "gameharness": { "command": "harness-mcp", "args": [], "env": { "HARNESS_ENGINES": "godot" } }
+  },
+  "env": { "GODOT_BIN": "${GODOT_BIN}" },
+  "requires": ["GODOT_BIN"],
+  "blockedCommands": ["p4 submit", "p4 revert", "git push", "git lfs unlock"]
+}

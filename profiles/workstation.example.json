@@ -13,14 +13,38 @@
     "AUDIO_SOURCE_DIR": "D:/Project/AudioSource",
     "UNREAL_MCP_URL": "http://127.0.0.1:8000/mcp",
     "UNREAL_PROJECT": "D:/Project/Game/Game.uproject",
-    "UNREAL_EDITOR_CMD": "C:/Program Files/Epic Games/UE_5.5/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+    "UNREAL_EDITOR_CMD": "C:/Program Files/Epic Games/UE_5.5/Engine/Binaries/Win64/UnrealEditor-Cmd.exe",
+    "GODOT_BIN": "C:/Tools/Godot/Godot_v4.4-stable_win64.exe"
   },
-  "pools": { "blender": 2, "texture": 1, "wwise": 1, "unreal": 1 },
-  "locks": { "backend": "perforce", "cwd": "D:/Project" },
+  "pools": {
+    "blender": 2,
+    "texture": 1,
+    "wwise": 1,
+    "unreal": 1,
+    "sprite": 2,
+    "godot": 1
+  },
+  "locks": {
+    "backend": "perforce",
+    "cwd": "D:/Project"
+  },
   "agent": {
-    "command": ["claude", "-p", "{prompt}", "--mcp-config", "{mcpConfig}", "--strict-mcp-config", "--allowedTools", "{tools}"],
+    "command": [
+      "claude",
+      "-p",
+      "{prompt}",
+      "--mcp-config",
+      "{mcpConfig}",
+      "--strict-mcp-config",
+      "--allowedTools",
+      "{tools}"
+    ],
     "timeoutMinutes": 60,
-    "toolNames": { "bash": "Bash", "file_edit": "Edit,Write", "file_search": "Glob,Grep,Read" },
+    "toolNames": {
+      "bash": "Bash",
+      "file_edit": "Edit,Write",
+      "file_search": "Glob,Grep,Read"
+    },
     "mcpToolPattern": "mcp__{server}"
   }
 }

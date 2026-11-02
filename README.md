@@ -1,6 +1,6 @@
 # engine_harness_unreal
 
-An AI-native game development harness. It turns a creative brief into a plan of domain tickets (Blender modelling, texturing, audio in Wwise, Unreal Blueprints and placement, QA), runs each ticket through an isolated agent worker that gets only its domain's tools, and accepts a hand-off between tickets only when the delivered asset passes a typed, measured contract.
+An AI-native game development harness for Unreal Engine 5 and Godot 4. It turns a creative brief into a plan of domain tickets (Blender modelling, texturing, audio in Wwise, Unreal Blueprints and placement, QA), runs each ticket through an isolated agent worker that gets only its domain's tools, and accepts a hand-off between tickets only when the delivered asset passes a typed, measured contract.
 
 It follows the two-level super-agent design of DeepSeek's [dsh-superagent](https://github.com/deepseek-ai/dsh-superagent-prototype): a light Router plans and dispatches, Workers do the work, and people are asked only when they must decide. It adds what a studio pipeline needs: tickets that depend on each other through assets, a deterministic contract gate, exclusive locks on binary files, and pools for scarce, stateful tools such as a live Unreal Editor.
 
@@ -33,6 +33,10 @@ node src/cli.ts presets --profile profiles/workstation.example.json
 ```
 
 `npm run check` runs the typecheck, the TypeScript tests and the Python tests.
+
+## Engine Harness, the desktop app
+
+Engine Harness packages all of this as a desktop app for Windows: a fork of goose with the harness, the Unreal and Godot bridges, the Blender connection, recipes and the starter asset library built in. See [004 Studio app](docs/004-studio-app.md) to install it.
 
 ## In an agent IDE (goose, Claude Code)
 
@@ -72,7 +76,8 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 - [001 Architecture](docs/001-architecture.md): the parts, the super-agent mapping, and why we wrap goose and DSH instead of forking them
 - [002 Asset contract](docs/002-asset-contract.md): naming, every rule, Blender-to-Unreal conventions
 - [003 Task plan](docs/003-task-plan.md): milestones M1–M6 and risks
-- [004 Studio app](docs/004-studio-app.md): the goose fork for local game development, kept as a patch queue in `distro/`
+- [004 Studio app](docs/004-studio-app.md): Engine Harness, the goose fork for local game development: install, what is inside, the patch queue, the Windows CI build
+- [005 Godot and assets](docs/005-godot-and-assets.md): Godot 4 for 2D pixel-art games, measured tool cost, and the starter asset library
 
 ## Layout
 

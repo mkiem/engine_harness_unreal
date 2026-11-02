@@ -12,11 +12,17 @@ import { z } from 'zod'
 import type { AssetRecord, AssetSpec, SpecOf, TicketSpec, Violation, WorkerResult } from '../core/model.ts'
 import { looksLikeCollision, parseCollisionName, prefixProblem, TEXTURE_SUFFIX } from './naming.ts'
 import { readWav } from './wav.ts'
+import { readPng } from './png.ts'
+import { parseTscn, resourcePaths } from '../godot/tscn.ts'
 
 export interface ContractContext {
   /** The ticket's directory; relative asset paths resolve against it and may not leave it. */
   dir: string
+  /** The Godot project (the folder holding project.godot), where res:// paths resolve. */
+  projectDir?: string
 }
+
+const resPath = (project: string, res: string) => resolve(project, res.replace(/^res:\/\//, ''))
 
 export interface CheckedDelivery {
   violations: Violation[]
@@ -115,8 +121,13 @@ export function checkAsset(spec: AssetSpec, record: AssetRecord, ctx: ContractCo
   if (prefix) fail('naming.prefix', prefix)
 
   const files = record.files.map(file => {
+    if (file.path.startsWith('res://')) {
+      if (!ctx.projectDir) fail('godot.project', `${file.path} is a Godot path, but no Godot project is open`)
+      else if (!existsSync(resPath(ctx.projectDir, file.path))) fail('file.missing', `${file.path} does not exist in the Godot project`)
+      return file
+    }
     if (file.role === 'engine') {
-      if (!file.path.startsWith('/Game/')) fail('file.engine-path', `${file.path} must be a /Game/ object path`)
+      if (!file.path.startsWith('/Game/')) fail('file.engine-path', `${file.path} must be a /Game/ object path or a res:// path`)
       return file
     }
     const path = isAbsolute(file.path) ? file.path : resolve(ctx.dir, file.path)
@@ -208,6 +219,44 @@ export function checkAsset(spec: AssetSpec, record: AssetRecord, ctx: ContractCo
       if (spec.requires.oneFilePerActor && !placed.actorFile) fail('placement.ofpa', `${spec.id} has no external actor file; the map must use One File Per Actor`)
       break
     }
+    case 'sprite_sheet':
+    case 'tileset': {
+      const file = files.find(item => item.role === 'export' && extname(item.path).toLowerCase() === '.png')
+      if (!file) {
+        fail('file.export', `${spec.id} has no .png export file`)
+        break
+      }
+      const path = file.path.startsWith('res://') && ctx.projectDir ? resPath(ctx.projectDir, file.path) : resolve(ctx.dir, file.path)
+      try {
+        const png = readPng(readFileSync(path), spec.requires.maxColors)
+        checkPixelArt(spec, png, fail)
+        checked = { ...checked, facts: { ...record.facts, ...png } }
+      } catch (error) {
+        fail('image.unreadable', `${file.path}: ${(error as Error).message}`)
+      }
+      break
+    }
+    case 'godot_scene': {
+      if (!ctx.projectDir) {
+        fail('godot.project', `${spec.id} is a Godot scene, but no Godot project is open`)
+        break
+      }
+      const path = resPath(ctx.projectDir, spec.requires.path)
+      if (!existsSync(path)) {
+        fail('file.missing', `${spec.requires.path} does not exist`)
+        break
+      }
+      const scene = parseTscn(readFileSync(path, 'utf8'))
+      const root = scene.nodes.find(node => node.parent === undefined)
+      if (!root) fail('godot.root', `${spec.requires.path} has no root node`)
+      else if (root.type !== spec.requires.rootType) fail('godot.root', `${spec.requires.path} root is ${root.type ?? 'an instance'}, not ${spec.requires.rootType}`)
+      const types = new Set(scene.nodes.map(node => node.type).filter(Boolean))
+      for (const type of spec.requires.nodeTypes) if (!types.has(type)) fail('godot.node', `${spec.requires.path} has no ${type} node`)
+      if (spec.requires.script && root && !root.properties.script) fail('godot.script', `${spec.requires.path} root has no script attached`)
+      for (const res of resourcePaths(scene)) if (!existsSync(resPath(ctx.projectDir, res))) fail('godot.resource', `${spec.requires.path} uses ${res}, which does not exist`)
+      checked = { ...checked, facts: { ...record.facts, root: root?.type, nodes: scene.nodes.length, nodeTypes: [...types], resources: resourcePaths(scene), hasScript: !!root?.properties.script } }
+      break
+    }
     case 'test_result': {
       const result = facts(TestFacts)
       if (!result) break
@@ -265,6 +314,19 @@ function checkMesh(spec: SpecOf<'static_mesh'> | SpecOf<'skeletal_mesh'>, mesh: 
     fail('mesh.materials', `${spec.id} material slots are [${mesh.materialSlots.join(', ')}], expected [${slots.join(', ')}]`)
   if (spec.kind === 'skeletal_mesh' && spec.requires.bones && (mesh.bones ?? 0) < spec.requires.bones)
     fail('mesh.bones', `${spec.id} has ${mesh.bones ?? 0} bones, ${spec.requires.bones} required`)
+}
+
+function checkPixelArt(spec: SpecOf<'sprite_sheet'> | SpecOf<'tileset'>, png: ReturnType<typeof readPng>, fail: Fail): void {
+  const [cellW, cellH] = spec.kind === 'sprite_sheet' ? spec.requires.frameSize : spec.requires.tileSize
+  const unit = spec.kind === 'sprite_sheet' ? 'frame' : 'tile'
+  if (png.bitDepth !== 8 || png.interlaced) fail('image.format', `${spec.id} must be an 8-bit, non-interlaced PNG`)
+  if (png.width % cellW || png.height % cellH) fail('image.grid', `${spec.id} is ${png.width}x${png.height}, not a whole grid of ${cellW}x${cellH} ${unit}s`)
+  const cells = Math.floor(png.width / cellW) * Math.floor(png.height / cellH)
+  const needed = spec.kind === 'sprite_sheet' ? spec.requires.frames : spec.requires.minTiles
+  if (cells < needed) fail('image.cells', `${spec.id} holds ${cells} ${unit}s, ${needed} required`)
+  if (png.empty) fail('image.empty', `${spec.id} has no visible pixels`)
+  if (png.colors > spec.requires.maxColors) fail('image.palette', `${spec.id} uses ${png.colors > spec.requires.maxColors ? `more than ${spec.requires.maxColors}` : png.colors} colours; the palette budget is ${spec.requires.maxColors}`)
+  if (spec.requires.hardAlpha && !png.hardAlpha) fail('image.alpha', `${spec.id} has semi-transparent pixels; pixel art needs fully opaque or fully transparent pixels`)
 }
 
 function checkTexture(spec: SpecOf<'texture_set'>, texture: z.infer<typeof TextureFacts>, fail: Fail): void {
