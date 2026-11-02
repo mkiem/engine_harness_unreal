@@ -266,12 +266,19 @@ jobs:
           $process = Start-Process -FilePath $exe -PassThru
           $launcher = Join-Path $env:LOCALAPPDATA 'Goose\bin\harness-mcp.cmd'
           for ($i = 0; $i -lt 90 -and -not (Test-Path $launcher); $i++) { Start-Sleep -Seconds 1 }
+          # Give the goose backend time to start and write its configuration, then check where it went.
+          $root = Join-Path $env:APPDATA 'Engine Harness\goose'
+          $gooseDefault = Join-Path $env:APPDATA 'Block\goose'
+          for ($i = 0; $i -lt 60 -and -not (Test-Path $root) -and -not (Test-Path $gooseDefault); $i++) { Start-Sleep -Seconds 1 }
+          Start-Sleep -Seconds 5
           Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
           Get-Process EngineHarness, goose -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           if (-not (Test-Path $launcher)) { throw "the app did not write $launcher" }
           Get-Content $launcher
-          $root = Join-Path $env:APPDATA 'Engine Harness\goose'
-          Write-Output "goose root exists: $(Test-Path $root)"
+          Write-Output "Engine Harness config root ($root) exists: $(Test-Path $root)"
+          Write-Output "goose's default config ($gooseDefault) exists: $(Test-Path $gooseDefault)"
+          if (Test-Path $root) { Get-ChildItem -Recurse -Depth 2 $root | Select-Object -First 20 FullName | Format-Table -HideTableHeaders }
+          if ((Test-Path $gooseDefault) -and -not (Test-Path $root)) { throw 'configuration went to goose''s folder instead of Engine Harness''s own' }
       - name: The launcher answers an MCP handshake
         shell: pwsh
         run: |
