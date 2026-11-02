@@ -31,8 +31,8 @@ Rules for patches, so upgrades stay cheap: keep each patch to one concern; prefe
 
 | Patch | Change | Verified |
 | --- | --- | --- |
-| 0001 | Bundled extensions: Game Harness (on), Blender (on), Unreal Editor (off until its plugin is installed) | JSON valid; applies to v1.57.0 |
-| 0002 | Game-development section in the system prompt; the four prompt snapshots updated to match | Applies to v1.57.0; the prompt snapshot tests are run with `cargo test -p goose --lib prompt_manager` |
+| 0001 | Bundled extensions: Game Harness (on), Blender (on), Unreal Editor (off until its plugin is installed) | JSON valid; applies to v1.57.0; the desktop app's tests have not been run yet |
+| 0002 | Game-development section in the system prompt; the four prompt snapshots updated to match | Applies to v1.57.0; `cargo test -p goose --lib prompt_manager` passes (13 tests), and `test_all_platform_extensions` passes with `--features chat-recall,code-mode,platform-apps,scheduler,tree-sitter` |
 
 ## Next patches
 
