@@ -7,6 +7,8 @@
  * A backend mirrors the lock in the studio's version control, so people working by hand see it too.
  */
 import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import type { LockLease } from '../core/model.ts'
 
 export interface LockBackend {
@@ -156,6 +158,75 @@ export class LockManager {
         this.backend.release(path, ticketId)
         this.leases.delete(path)
       }
+    }
+  }
+}
+
+/**
+ * Locks shared by every process on a machine, in one JSON file guarded by a directory mutex: for the MCP server, which
+ * runs once per agent session, so subagents working in parallel see each other's locks. `mirror` also takes each lock in
+ * version control (Perforce or Git LFS), so people working by hand see it.
+ */
+export class FileLockBackend implements LockBackend {
+  readonly name: string
+  private readonly file: string
+  private readonly mirror?: LockBackend
+  constructor(file: string, mirror?: LockBackend) {
+    this.file = file
+    this.mirror = mirror
+    this.name = mirror ? `file+${mirror.name}` : 'file'
+  }
+
+  acquire(path: string, owner: string) {
+    return this.locked(held => {
+      const holder = held[path]
+      if (holder && holder.owner !== owner) return { ok: false as const, holder: holder.owner }
+      if (!holder) {
+        const mirrored = this.mirror?.acquire(path, owner)
+        if (mirrored && !mirrored.ok) return mirrored
+        held[path] = { owner, at: new Date().toISOString() }
+      }
+      return { ok: true as const }
+    })
+  }
+
+  release(path: string, owner: string) {
+    this.locked(held => {
+      if (held[path]?.owner !== owner) return
+      this.mirror?.release(path, owner)
+      delete held[path]
+    })
+  }
+
+  list(): { path: string; owner: string; at: string }[] {
+    return this.locked(held => Object.entries(held).map(([path, lock]) => ({ path, ...lock })))
+  }
+
+  private locked<T>(work: (held: Record<string, { owner: string; at: string }>) => T): T {
+    mkdirSync(dirname(this.file), { recursive: true })
+    const mutex = `${this.file}.mutex`
+    const deadline = Date.now() + 5000
+    for (;;) {
+      try {
+        mkdirSync(mutex)
+        break
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+        // A mutex older than ten seconds was left by a crashed process.
+        if (Date.now() - statSync(mutex).mtimeMs > 10_000) rmSync(mutex, { recursive: true, force: true })
+        else if (Date.now() > deadline) throw new Error(`could not take the lock file mutex ${mutex}`)
+        else Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20)
+      }
+    }
+    try {
+      const held = existsSync(this.file) ? JSON.parse(readFileSync(this.file, 'utf8')) as Record<string, { owner: string; at: string }> : {}
+      const result = work(held)
+      const tmp = `${this.file}.${process.pid}.tmp`
+      writeFileSync(tmp, JSON.stringify(held, null, 2))
+      renameSync(tmp, this.file)
+      return result
+    } finally {
+      rmSync(mutex, { recursive: true, force: true })
     }
   }
 }

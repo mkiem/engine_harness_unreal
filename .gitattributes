@@ -1,0 +1,10 @@
+# Store text with LF line endings so diffs stay clean across Windows, macOS and Linux.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.wav binary
+*.fbx binary
+*.blend binary
+*.uasset binary
+*.umap binary

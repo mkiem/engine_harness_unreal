@@ -34,6 +34,16 @@ node src/cli.ts presets --profile profiles/workstation.example.json
 
 `npm run check` runs the typecheck, the TypeScript tests and the Python tests.
 
+## In an agent IDE (goose, Claude Code)
+
+The harness also runs as an MCP server, so an agent working in your own Blender and Unreal can plan, check assets against their contracts and share file locks:
+
+```bash
+node src/mcp/main.ts
+```
+
+`distro/install/install.ps1` (Windows) or `distro/install/install.sh` puts it on your PATH as `harness-mcp` and adds the game-dev recipes to goose. `distro/` also holds the studio fork of goose as a patch queue; see [004 Studio app](docs/004-studio-app.md).
+
 ## Running real workers
 
 1. Copy `profiles/workstation.example.json` to `profiles/<machine>.local.json` and set the paths for Blender, Wwise and Unreal, the pool sizes, the lock backend (Perforce or Git LFS) and the agent command.
@@ -62,6 +72,7 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 - [001 Architecture](docs/001-architecture.md): the parts, the super-agent mapping, and why we wrap goose and DSH instead of forking them
 - [002 Asset contract](docs/002-asset-contract.md): naming, every rule, Blender-to-Unreal conventions
 - [003 Task plan](docs/003-task-plan.md): milestones M1–M6 and risks
+- [004 Studio app](docs/004-studio-app.md): the goose fork for local game development, kept as a patch queue in `distro/`
 
 ## Layout
 
@@ -74,6 +85,8 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 | `src/executors` | Simulated, agent CLI and goose worker runtimes; worker prompt |
 | `src/ingest` | Engine ingest stage (simulated, Unreal commandlet) |
 | `src/planner` | Prop template planner and LLM planner |
+| `src/mcp` | The harness as an MCP server for agent IDEs |
+| `distro/` | The studio fork of goose (pinned release and patches), recipes, installers |
 | `presets/` | One least-privilege worker preset per domain |
 | `profiles/` | Example machine profiles |
 | `prompts/` | Router, shared worker and per-domain prompts |

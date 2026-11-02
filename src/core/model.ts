@@ -196,7 +196,7 @@ export const TicketSpec = z.object({
 export type TicketSpec = z.infer<typeof TicketSpec>
 
 export const Plan = z.object({
-  id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,60}$/),
+  id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,60}$/, 'plan id must be a kebab-case name of 2 to 61 characters'),
   brief: z.string().min(1),
   /** /Game/ folder the plan's engine assets go under, such as /Game/Props/VintageRadio. */
   contentRoot: z.string().regex(/^\/Game\//).default('/Game/Generated'),
