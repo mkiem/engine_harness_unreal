@@ -90,6 +90,18 @@ jobs:
       - name: Pixel-art project, plan, real script checks and a headless run
         run: GODOT_BIN="$RUNNER_TEMP/godot/Godot_v4.4.1-stable_linux.x86_64" node scripts/e2e-godot.ts "$RUNNER_TEMP/e2e-godot"
 
+  assets-e2e:
+    name: Asset sources (real downloads)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/e2e-assets.ts "$RUNNER_TEMP/e2e-assets"
+
   backend:
     name: goose backend (Windows)
     runs-on: windows-latest

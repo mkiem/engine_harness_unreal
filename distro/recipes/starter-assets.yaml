@@ -1,0 +1,37 @@
+version: 1.0.0
+title: Starter assets for my game
+description: Picks a starter set of openly licensed assets for your kind of game, downloads it into your project with the licences recorded, and explains which marketplace packs are worth adding yourself.
+parameters:
+  - key: game
+    input_type: string
+    requirement: user_prompt
+    description: The kind of game, such as "a top-down 16-bit RPG in Godot" or "a realistic interior scene in Unreal"
+instructions: |
+  Help the developer start with good, legally clean assets instead of building everything from scratch.
+
+  1. Read assets_sources. Work out the engine (godot_status / harness_setup_check) and the style.
+  2. Propose a short starter set, five to eight items, as a checklist with source, licence and why:
+     - 2D pixel-art RPG: Kenney tiny-dungeon, tiny-town or roguelike-rpg-pack, pixel-ui-pack, rpg-audio, interface-sounds;
+       a Godot add-on for dialogue or state machines from godot-assetlib if useful.
+     - 3D (Unreal or Godot): ambientcg materials for floors and walls, a polyhaven HDRI for lighting, polyhaven or Kenney
+       models for props, prototype-textures for blockouts.
+  3. Download only what the developer agrees to, with assets_download. Prefer CC0; for anything else say the licence
+     and what it requires before downloading.
+  4. For Unreal projects, mention Fab: free Quixel Megascans and monthly free packs are claimed with the developer's Epic
+     account and added through the Fab plugin; Engine Harness never downloads or bundles them. For audio beyond Kenney,
+     point to Freesound with the CC0 filter.
+  5. Finish with where the files are and a next step, such as building a level from the tiles. When an asset is used in
+     a plan, record it in provenance with method "library", the source URL and the licence from asset.json.
+extensions:
+  - type: builtin
+    name: developer
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    timeout: 300
+activities:
+  - "Starter assets for a top-down pixel RPG"
+  - "Materials and lighting for a realistic room"
+  - "UI and sound effects for my game"
+prompt: "Set up starter assets for {{ game }}"

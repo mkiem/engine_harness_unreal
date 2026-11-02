@@ -22,6 +22,7 @@ import { checkSetup, configureUnrealProject, findBlenders, findProjects, install
 import { formatResult, NOT_FOUND, playInEditorScript, readEditorLog, runScriptFile, UnrealBridge } from '../unreal/bridge.ts'
 import { configurePixelArt, findGodot, findGodotProject, formatErrors, GodotBridge, listScripts, readProjectName, resToPath } from '../godot/bridge.ts'
 import { findNode, parseTscn, sceneTree } from '../godot/tscn.ts'
+import { AssetLibrary, installGodotAddon, libraryDirFor, SOURCES, type SourceId } from '../assets/library.ts'
 
 export interface HarnessServerOptions {
   /** The game project the agent works in; plans, ticket directories and the lock file live under <project>/.harness. */
@@ -38,6 +39,8 @@ export interface HarnessServerOptions {
   godot?: GodotBridge
   /** The engines whose tools to offer; fewer tools, less context. Defaults to HARNESS_ENGINES, else both. */
   engines?: ('unreal' | 'godot')[]
+  /** Finds and downloads openly licensed assets; tests pass one with a fake fetch. */
+  assets?: AssetLibrary
 }
 
 export function enginesFromEnv(value = process.env.HARNESS_ENGINES): ('unreal' | 'godot')[] {
@@ -68,6 +71,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   const sys = options.setup ?? systemEnv()
   const dccDir = options.dccDir ?? defaultDccDir()
   const engines = options.engines ?? enginesFromEnv()
+  const library = options.assets ?? new AssetLibrary()
   let godotPath: string | undefined | null = null
   const godotBinary = () => {
     if (godotPath === null) godotPath = findGodot(sys)[0]?.path
@@ -526,6 +530,53 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   })
 
   }
+
+  // ---- Starter assets ---------------------------------------------------------------------------------------------
+
+  const sourceIds = SOURCES.map(source => source.id) as [SourceId, ...SourceId[]]
+
+  server.registerTool('assets_sources', {
+    title: 'Asset sources',
+    description: 'Where to get ready-made game assets: openly licensed libraries the harness downloads from, and marketplaces the developer uses with their own account. Each with its licence and how to get assets.',
+    annotations: { readOnlyHint: true },
+  }, async () => text(SOURCES.map(source => `## ${source.name} (${source.id}): ${source.access === 'download' ? 'downloadable here' : 'guide only'}\n${source.license}. ${source.kinds.join(', ')}.\n${source.howTo}${source.credit ? `\n${source.credit}` : ''}`).join('\n\n')))
+
+  server.registerTool('assets_search', {
+    title: 'Search an asset library',
+    description: 'Searches an openly licensed library: polyhaven (HDRIs, textures, models), ambientcg (PBR materials), kenney (CC0 game kits: pixel-art tiles, UI, sounds), godot-assetlib (Godot add-ons).',
+    inputSchema: { source: z.enum(sourceIds), query: z.string(), kind: z.string().optional().describe('polyhaven: hdri, texture or model') },
+    annotations: { readOnlyHint: true },
+  }, async ({ source, query, kind }) => {
+    try {
+      const results = await library.search(source, query, { kind })
+      if (!results.length) return text(`No ${source} results for "${query}".`)
+      return text(results.map(result => `- ${result.id}: ${result.title} [${result.license}${result.author ? `, ${result.author}` : ''}]${result.kind ? ` (${result.kind})` : ''}`).join('\n'), { results })
+    } catch (error) {
+      return failure((error as Error).message)
+    }
+  })
+
+  server.registerTool('assets_download', {
+    title: 'Download an asset into the project',
+    description: 'Downloads one asset into the project\'s library folder (library/ in Godot, ArtSource/Library/ in Unreal) with asset.json and LICENSE.txt beside it; Godot add-ons are also installed into addons/. Record the source and licence in the asset\'s provenance (method: library).',
+    inputSchema: {
+      source: z.enum(sourceIds), id: z.string(),
+      resolution: z.string().optional().describe('polyhaven: 1k, 2k, 4k; ambientcg: 1K, 2K'),
+      format: z.string().optional().describe('polyhaven: png, jpg, hdr, exr; ambientcg: PNG or JPG'),
+    },
+  }, async ({ source, id, resolution, format }) => {
+    try {
+      const godotRoot = findGodotProject(root)
+      const kind = godotRoot ? 'godot' : findProjects(sys, root).length ? 'unreal' : 'other'
+      const done = await library.download(source, id, libraryDirFor(godotRoot ?? root, kind), { resolution, format })
+      const installed = source === 'godot-assetlib' && godotRoot ? installGodotAddon(done.dir, godotRoot) : []
+      const shown = done.files.slice(0, 15).map(file => `  ${file}`)
+      return text([`Downloaded ${source} ${id} to ${done.dir} (${done.files.length} file(s)), licence ${done.license}${done.author ? `, by ${done.author}` : ''}.`, ...shown, ...(done.files.length > 15 ? [`  … ${done.files.length - 15} more`] : []),
+        ...(installed.length ? [`Installed ${installed.join(', ')}; enable it in Project Settings → Plugins if it is an editor plugin.`] : [])].join('\n'), { ...done, installed })
+    } catch (error) {
+      return failure((error as Error).message)
+    }
+  })
 
   return server
 }
