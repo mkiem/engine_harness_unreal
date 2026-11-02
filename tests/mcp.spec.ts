@@ -29,7 +29,8 @@ describe('harness MCP server', () => {
     const { client } = await connect(tempDir())
     const { tools } = await client.listTools()
     expect(tools.map(tool => tool.name).sort()).toEqual(['harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
-      'harness_plan_prop', 'harness_plan_save', 'harness_ticket', 'harness_unlock', 'harness_validate'])
+      'harness_plan_prop', 'harness_plan_save', 'harness_scripts', 'harness_setup_blender', 'harness_setup_check', 'harness_setup_unreal_project',
+      'harness_ticket', 'harness_unlock', 'harness_validate', 'unreal_log', 'unreal_play_in_editor', 'unreal_python', 'unreal_run_script', 'unreal_status'])
     expect(client.getInstructions()).toContain('harness_validate')
   })
 
@@ -69,6 +70,26 @@ describe('harness MCP server', () => {
     await first.call('harness_unlock', { owner: 'blueprint' })
     expect((await second.call('harness_lock', { paths: ['Art/SM_Radio.blend', 'Content/BP_Radio.uasset'], owner: 'model' })).error).toBe(false)
     expect((await second.call('harness_locks')).text).toContain('Art/SM_Radio.blend: model')
+  })
+
+  it('lists the pipeline scripts with absolute paths', async () => {
+    const { call } = await connect(tempDir())
+    const scripts = await call('harness_scripts')
+    expect(scripts.text).toMatch(/## blender\/inspect_export\.py\n\/.*dcc\/blender\/inspect_export\.py\nMeasure a mesh export/)
+    expect(scripts.text).toContain('unreal/import_pipeline.py')
+  })
+
+  it('answers Unreal tools with setup advice when no editor is open', async () => {
+    const { UnrealBridge } = await import('../src/unreal/bridge.ts')
+    const server = createHarnessServer({ projectDir: tempDir(), unreal: new UnrealBridge({ discoveryMs: 10, client: () => ({
+      start: async () => {}, stop: () => {}, startSearchingForNodes: () => {}, remoteNodes: [], openCommandConnection: async () => {},
+      hasCommandConnection: () => false, closeCommandConnection: () => {}, connectedNode: null, runCommand: async () => { throw new Error('unreachable') } }) }) })
+    const client = new Client({ name: 'test', version: '1' })
+    const [a, b] = InMemoryTransport.createLinkedPair()
+    await Promise.all([server.connect(a), client.connect(b)])
+    const result = await client.callTool({ name: 'unreal_python', arguments: { code: 'print(1)' } }) as { isError: boolean; content: { text: string }[] }
+    expect(result.isError).toBe(true)
+    expect(result.content[0]!.text).toContain('harness_setup_unreal_project')
   })
 
   it('measures audio and explains conventions', async () => {

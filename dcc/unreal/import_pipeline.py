@@ -3,7 +3,8 @@ in the engine. Run by the harness through a headless commandlet:
 
     UnrealEditor-Cmd Game.uproject -run=pythonscript -script=dcc/unreal/import_pipeline.py -unattended -nullrhi
 
-The job file path arrives in HARNESS_INGEST_JOB; the result goes to the job's `result` path as
+In a live editor, run it with unreal_run_script and --job <job.json>. From the commandlet, the job file path arrives
+in HARNESS_INGEST_JOB. Either way the result goes to the job's `result` path as
 {"objectPath", "facts", "violations"}. Needs the Python Editor Script Plugin. Untested here against a live editor.
 
 Differences from the original sketch, on purpose:
@@ -17,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 import unreal  # type: ignore[import-not-found]
 
@@ -120,9 +122,10 @@ def ingest_audio_event(job: dict) -> dict:
 
 
 def main() -> None:
-    job_path = os.environ.get("HARNESS_INGEST_JOB")
+    # In a live editor (unreal_run_script) the job comes as --job <path>; from the commandlet, in HARNESS_INGEST_JOB.
+    job_path = sys.argv[sys.argv.index("--job") + 1] if "--job" in sys.argv[:-1] else os.environ.get("HARNESS_INGEST_JOB")
     if not job_path:
-        raise SystemExit("HARNESS_INGEST_JOB is not set")
+        raise SystemExit("pass --job <job.json> or set HARNESS_INGEST_JOB")
     with open(job_path, encoding="utf8") as source:
         job = json.load(source)
     kind = job["kind"]

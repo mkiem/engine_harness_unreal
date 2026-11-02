@@ -5,8 +5,9 @@
  *
  * Every tool answers with plain text a model reads well, and with structured JSON for clients that use it.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { isAbsolute, join, resolve } from 'node:path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { checkAsset, checkDelivery } from '../contracts/index.ts'
@@ -17,12 +18,28 @@ import { parsePlan, PlanError, waves } from '../core/plan.ts'
 import { RunStore } from '../core/store.ts'
 import { FileLockBackend } from '../locks/index.ts'
 import { propPlan, PropBrief } from '../planner/index.ts'
+import { checkSetup, configureUnrealProject, findBlenders, findProjects, installBlenderAddon, systemEnv, type SetupEnv } from '../setup/index.ts'
+import { formatResult, NOT_FOUND, playInEditorScript, readEditorLog, runScriptFile, UnrealBridge } from '../unreal/bridge.ts'
 
 export interface HarnessServerOptions {
   /** The game project the agent works in; plans, ticket directories and the lock file live under <project>/.harness. */
   projectDir: string
   /** Shared lock store; defaults to <project>/.harness/locks.json. */
   locks?: FileLockBackend
+  /** The connection to the open Unreal Editor; one per server. */
+  unreal?: UnrealBridge
+  /** The machine the setup tools inspect; tests pass a fake one. */
+  setup?: SetupEnv
+  /** Where the DCC scripts are (dcc/ in this repository, or the app's resources). */
+  dccDir?: string
+}
+
+/** dcc/ next to src/ in a checkout; HARNESS_DCC_DIR when packaged, where the bundle sits elsewhere. */
+export function defaultDccDir(): string {
+  if (process.env.HARNESS_DCC_DIR) return process.env.HARNESS_DCC_DIR
+  const here = dirname(fileURLToPath(import.meta.url))
+  for (const candidate of [join(here, '..', '..', 'dcc'), join(here, 'dcc'), join(here, '..', 'dcc')]) if (existsSync(candidate)) return resolve(candidate)
+  return resolve(here, '..', '..', 'dcc')
 }
 
 const text = (body: string, structured?: Record<string, unknown>) => ({
@@ -35,6 +52,9 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   const root = resolve(options.projectDir)
   const harnessDir = join(root, '.harness')
   const locks = options.locks ?? new FileLockBackend(join(harnessDir, 'locks.json'))
+  const unreal = options.unreal ?? new UnrealBridge()
+  const sys = options.setup ?? systemEnv()
+  const dccDir = options.dccDir ?? defaultDccDir()
   const within = (path: string) => (isAbsolute(path) ? path : resolve(root, path))
   const planPath = (id: string) => join(harnessDir, 'plans', `${id}.json`)
   const loadPlan = (ref: string): Plan => {
@@ -59,6 +79,8 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       'Before editing a binary file (.blend, .uasset, .umap, .wav, .wwu), take it with harness_lock, and release it with harness_unlock when done.',
       'Before telling the person an asset is ready, run harness_validate on it and fix every violation.',
       'For a multi-part request (a prop with a mesh, textures, a sound and a Blueprint), plan it with harness_plan_prop, then do the tickets wave by wave; tickets in one wave can run in parallel subagents.',
+      'The unreal_* tools drive the open Unreal Editor through Python: inspect and change the level, Blueprints and assets with unreal_python, run checked-in scripts with unreal_run_script, start Play in Editor with unreal_play_in_editor so the developer can playtest, and read unreal_log after changes.',
+      'If Blender or Unreal does not answer, run harness_setup_check, explain what is missing, and with the developer\'s agreement fix it with harness_setup_blender or harness_setup_unreal_project.',
     ].join(' '),
   })
 
@@ -221,6 +243,148 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   }, async () => {
     const held = locks.list()
     return text(held.length ? held.map(lock => `${lock.path}: ${lock.owner} since ${lock.at}`).join('\n') : 'No files are locked.', { locks: held })
+  })
+
+  // ---- DCC scripts -----------------------------------------------------------------------------------------------
+
+  server.registerTool('harness_scripts', {
+    title: 'Pipeline scripts',
+    description: 'The checked-in scripts that export, inspect and import assets the same way every time (Blender export and inspection, Unreal import and inspection, Wwise import, audio synthesis), with their absolute paths and how to run each.',
+    annotations: { readOnlyHint: true },
+  }, async () => {
+    const scripts: { path: string; summary: string }[] = []
+    for (const folder of ['blender', 'unreal', 'wwise', 'audio']) {
+      const dir = join(dccDir, folder)
+      if (!existsSync(dir)) continue
+      for (const name of readdirSync(dir).filter(file => file.endsWith('.py')).sort()) {
+        const path = join(dir, name)
+        const doc = /^"""([\s\S]*?)"""/.exec(readFileSync(path, 'utf8'))?.[1]?.trim() ?? ''
+        scripts.push({ path, summary: doc.split(/\n\s*\n/).slice(0, 2).join('\n') })
+      }
+    }
+    if (!scripts.length) return failure(`no scripts found in ${dccDir}`)
+    return text(scripts.map(script => `## ${relative(dccDir, script.path)}\n${script.path}\n${script.summary}`).join('\n\n'), { dccDir, scripts })
+  })
+
+  // ---- Unreal Editor ---------------------------------------------------------------------------------------------
+
+  const editorError = (error: unknown) => failure((error as Error).message || NOT_FOUND)
+
+  server.registerTool('unreal_status', {
+    title: 'Unreal Editor status',
+    description: 'Which Unreal Editors are open on this machine and answering (project, engine version), and which one commands go to.',
+    inputSchema: { project: z.string().optional().describe('project name or folder, when several editors are open') },
+    annotations: { readOnlyHint: true },
+  }, async ({ project }) => {
+    try {
+      const editors = await unreal.editors()
+      if (!editors.length) return failure(NOT_FOUND)
+      const target = await unreal.connect(project).catch(error => error as Error)
+      const lines = editors.map(editor => `- ${editor.projectName} (UE ${editor.engineVersion}) at ${editor.projectRoot}`)
+      return text([`Open editors:`, ...lines, target instanceof Error ? target.message : `Commands go to ${target.projectName}.`].join('\n'), { editors })
+    } catch (error) {
+      return editorError(error)
+    }
+  })
+
+  server.registerTool('unreal_python', {
+    title: 'Run Python in the Unreal Editor',
+    description: 'Runs Python in the open Unreal Editor (the `unreal` module) and returns what it printed. Use it to inspect and change levels, actors, assets and Blueprints. Prefer EditorActorSubsystem, EditorAssetLibrary, AssetToolsHelpers and the other editor subsystems; save what you change.',
+    inputSchema: {
+      code: z.string(),
+      mode: z.enum(['ExecuteFile', 'ExecuteStatement', 'EvaluateStatement']).optional().describe('ExecuteFile (default) runs a script; EvaluateStatement returns one expression\'s value'),
+      project: z.string().optional(),
+    },
+  }, async ({ code, mode, project }) => {
+    try {
+      const result = await unreal.run(code, { mode, project })
+      return result.success ? text(formatResult(result), { success: true }) : { ...text(formatResult(result), { success: false }), isError: true }
+    } catch (error) {
+      return editorError(error)
+    }
+  })
+
+  server.registerTool('unreal_run_script', {
+    title: 'Run a script file in the Unreal Editor',
+    description: 'Runs a Python script file inside the open Unreal Editor with sys.argv set, such as dcc/unreal/import_pipeline.py --job <job.json> or dcc/unreal/inspect_asset.py blueprint /Game/Props/X/BP_X (see harness_scripts).',
+    inputSchema: { path: z.string(), args: z.array(z.string()).default([]), project: z.string().optional() },
+  }, async ({ path, args, project }) => {
+    const full = isAbsolute(path) ? path : existsSync(resolve(dccDir, path)) ? resolve(dccDir, path) : existsSync(resolve(dccDir, '..', path)) ? resolve(dccDir, '..', path) : within(path)
+    if (!existsSync(full)) return failure(`no script at ${full}`)
+    try {
+      const result = await unreal.run(runScriptFile(full.replace(/\\/g, '/'), args), { project })
+      return result.success ? text(formatResult(result), { success: true }) : { ...text(formatResult(result), { success: false }), isError: true }
+    } catch (error) {
+      return editorError(error)
+    }
+  })
+
+  server.registerTool('unreal_play_in_editor', {
+    title: 'Play in Editor',
+    description: 'Starts or stops Play in Editor, or reports whether it is running. Start it when a change is ready for the developer to playtest; stop it before changing assets or Blueprints.',
+    inputSchema: { action: z.enum(['start', 'stop', 'status']), project: z.string().optional() },
+  }, async ({ action, project }) => {
+    try {
+      const result = await unreal.run(playInEditorScript(action), { project })
+      return result.success ? text(formatResult(result)) : failure(formatResult(result))
+    } catch (error) {
+      return editorError(error)
+    }
+  })
+
+  server.registerTool('unreal_log', {
+    title: 'Read the Unreal Editor log',
+    description: 'The last lines of the open project\'s editor log, where Blueprint compile errors, import warnings and Play in Editor output appear. `filter` is a case-insensitive regular expression, such as "error|warning".',
+    inputSchema: { lines: z.number().int().min(1).max(1000).default(80), filter: z.string().optional(), project: z.string().optional() },
+    annotations: { readOnlyHint: true },
+  }, async ({ lines, filter, project }) => {
+    try {
+      const editor = await unreal.connect(project)
+      return text(readEditorLog(editor.projectRoot, editor.projectName, { lines, filter }))
+    } catch (error) {
+      return editorError(error)
+    }
+  })
+
+  // ---- First-run setup -------------------------------------------------------------------------------------------
+
+  server.registerTool('harness_setup_check', {
+    title: 'Check this machine',
+    description: 'Checks what the app needs on this machine: uv, Blender and its MCP addon and connection, Unreal Engine installs, the game project\'s Python plugin and remote execution, and a running editor. Each line is ok, note or todo with the fix. Run it on first use and whenever Blender or Unreal does not answer.',
+    inputSchema: { projectDir: z.string().optional().describe('the game project folder; defaults to the current project') },
+    annotations: { readOnlyHint: true },
+  }, async ({ projectDir }) => {
+    const report = await checkSetup(sys, { projectDir: projectDir ? within(projectDir) : root, editors: () => unreal.editors(1500) })
+    return text(`${report.ok ? 'Everything needed is in place.' : 'Some things need setting up:'}\n${report.lines.join('\n')}`, { ok: report.ok, lines: report.lines })
+  })
+
+  server.registerTool('harness_setup_blender', {
+    title: 'Install the Blender addon',
+    description: 'Installs and enables the MCP for Blender addon in one Blender (the newest found, or the given version), so the app can drive it. Changes Blender\'s user add-ons and preferences: ask the developer first.',
+    inputSchema: { version: z.string().optional().describe('Blender version such as 4.3; defaults to the newest installed') },
+  }, async ({ version }) => {
+    const blenders = findBlenders(sys)
+    const blender = version ? blenders.find(item => item.version === version) : blenders[0]
+    if (!blender) return failure(blenders.length ? `no Blender ${version}; found ${blenders.map(item => item.version).join(', ')}` : 'no Blender found; install Blender 3.6 or later first')
+    try {
+      return text(installBlenderAddon(sys, blender, sys.platform === 'win32' ? 'uvx.exe' : 'uvx').map(step => `- ${step}`).join('\n'))
+    } catch (error) {
+      return failure((error as Error).message)
+    }
+  })
+
+  server.registerTool('harness_setup_unreal_project', {
+    title: 'Set up an Unreal project for the editor bridge',
+    description: 'Enables the Python Editor Script Plugin and Editor Scripting Utilities in the .uproject and turns on Python remote execution, keeping .bak copies. Changes project files: ask the developer first, and tell them to restart the editor.',
+    inputSchema: { uproject: z.string().optional().describe('path to the .uproject; defaults to the one in the project folder') },
+  }, async ({ uproject }) => {
+    const target = uproject ? within(uproject) : findProjects(sys, root)[0]
+    if (!target) return failure(`no .uproject found under ${root}; pass its path`)
+    try {
+      return text(configureUnrealProject(sys, target).map(step => `- ${step}`).join('\n'))
+    } catch (error) {
+      return failure((error as Error).message)
+    }
   })
 
   return server
