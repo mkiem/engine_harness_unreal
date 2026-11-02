@@ -6,8 +6,8 @@
  * marketplace content is redistributed. Marketplace and account-bound sources (Fab, Freesound, OpenGameArt) are
  * listed with how to get their assets; the agent guides the developer through them instead of downloading.
  */
-import { cpSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
-import { dirname, join, normalize, relative, sep } from 'node:path'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, normalize, relative, sep } from 'node:path'
 import { unzipSync } from 'fflate'
 
 export type SourceId = 'polyhaven' | 'ambientcg' | 'kenney' | 'godot-assetlib' | 'fab' | 'freesound' | 'opengameart'
@@ -33,8 +33,8 @@ export const SOURCES: Source[] = [
     credit: 'Powered by Poly Haven. Its API page asks commercial integrations to agree terms with Poly Haven; the assets themselves are CC0.' },
   { id: 'ambientcg', name: 'ambientCG', url: 'https://ambientcg.com', license: 'CC0 (public domain), no attribution required', kinds: ['material', 'texture', 'hdri'], engines: ['any'], access: 'download',
     howTo: 'assets_search source=ambientcg for PBR materials; download a 1K-PNG or 2K-JPG variant.' },
-  { id: 'kenney', name: 'Kenney', url: 'https://kenney.nl/assets', license: 'CC0 (public domain), no attribution required', kinds: ['2d', 'pixel-art', 'tileset', 'ui', 'audio', 'model'], engines: ['any'], access: 'download',
-    howTo: 'assets_search source=kenney lists curated game kits (16x16 RPG tiles, UI, sounds, low-poly kits); assets_download fetches the whole kit.' },
+  { id: 'kenney', name: 'Kenney', url: 'https://kenney.nl/assets', license: 'CC0 (public domain), no attribution required', kinds: ['2d', 'pixel-art', 'tileset', 'ui', 'audio', 'model'], engines: ['any'], access: 'guide',
+    howTo: 'assets_search source=kenney lists curated game kits (16x16 RPG tiles, UI, sounds, low-poly kits) with their pages. Kenney gives kits out from its own page (a donation is optional): the developer clicks Download there, then assets_import unpacks the saved zip into the library.' },
   { id: 'godot-assetlib', name: 'Godot Asset Library', url: 'https://godotengine.org/asset-library', license: 'Per add-on, mostly MIT; each result shows its licence', kinds: ['addon', 'script', 'template'], engines: ['godot'], access: 'download',
     howTo: 'assets_search source=godot-assetlib for add-ons such as dialogue systems or state machines; assets_download puts them in addons/.' },
   { id: 'fab', name: 'Fab (Epic Games), including Quixel Megascans', url: 'https://www.fab.com', license: 'Fab licences: use in your own projects; no redistribution of the source files', kinds: ['model', 'material', 'environment', 'blueprint'], engines: ['unreal'], access: 'guide',
@@ -138,21 +138,7 @@ export class AssetLibrary {
     const dir = join(libraryDir, source, safeId)
     mkdirSync(dir, { recursive: true })
     const files: string[] = []
-    const save = (name: string, bytes: Uint8Array) => {
-      const target = normalize(join(dir, name))
-      if (relative(dir, target).startsWith('..')) throw new Error(`refusing to write outside the library: ${name}`)
-      mkdirSync(dirname(target), { recursive: true })
-      writeFileSync(target, bytes)
-      files.push(relative(dir, target).split(sep).join('/'))
-    }
-    const saveArchiveOrFile = (name: string, bytes: Uint8Array) => {
-      if (!name.toLowerCase().endsWith('.zip')) return save(name, bytes)
-      const entries = Object.entries(unzipSync(bytes)).filter(([entry]) => !entry.endsWith('/') && !entry.startsWith('__MACOSX/'))
-      // Archives often wrap everything in one folder (repo-commit/, kit-name/); drop it so paths start at the content.
-      const first = entries[0]?.[0].split('/')[0]
-      const wrapped = entries.length > 0 && entries.every(([entry]) => entry.includes('/') && entry.split('/')[0] === first)
-      for (const [entry, content] of entries) save(wrapped ? entry.slice(first!.length + 1) : entry, content)
-    }
+    const saveArchiveOrFile = (name: string, bytes: Uint8Array) => { files.push(...unpackInto(dir, name, bytes)) }
     const bytesOf = async (url: string) => new Uint8Array(await (await this.get(url)).arrayBuffer())
     let license = 'CC0'
     let author: string | undefined
@@ -178,18 +164,8 @@ export class AssetLibrary {
         saveArchiveOrFile(pick.fileName, await bytesOf(pick.downloadLink))
         break
       }
-      case 'kenney': {
-        url = `https://kenney.nl/assets/${id}`
-        const page = await (await this.get(url)).text()
-        const zip = kenneyZipLink(page)
-        if (!zip) {
-          const around = /.{0,160}download.{0,160}/is.exec(page)?.[0].replace(/\s+/g, ' ') ?? page.slice(0, 200)
-          throw new Error(`no download link on ${url}; download it from the page and put it in ${dir} (page near "download": ${around})`)
-        }
-        author = 'Kenney'
-        saveArchiveOrFile(zip.split('/').pop()!, await bytesOf(new URL(zip, url).toString()))
-        break
-      }
+      case 'kenney':
+        throw new Error(`Kenney gives kits out from its own page: open https://kenney.nl/assets/${id}, click Download (a donation is optional), then call assets_import with the saved zip, source kenney and id ${id}.`)
       case 'godot-assetlib': {
         const asset = await (await this.get(`https://godotengine.org/asset-library/api/asset/${encodeURIComponent(id)}`)).json() as { title: string; author?: string; cost?: string; download_url?: string; browse_url?: string }
         if (!asset.download_url) throw new Error(`the Godot Asset Library lists no download for ${id}`)
@@ -207,6 +183,42 @@ export class AssetLibrary {
     writeFileSync(join(dir, 'LICENSE.txt'), `${id} from ${SOURCES.find(item => item.id === source)?.name} (${url})\nAuthor: ${author ?? 'see source'}\nLicence: ${license}\n${credit ? `\n${credit}\n` : ''}`)
     return { source, id, dir, files, license, author, url }
   }
+}
+
+/**
+ * Brings a file the developer downloaded themselves (a Kenney kit, a Freesound sound, an OpenGameArt pack, a Fab export)
+ * into the library the same way: unpacked if it is a zip, with asset.json and LICENSE.txt recording where it came from.
+ */
+export function importLocal(file: string, libraryDir: string, meta: { source: SourceId | 'other'; id: string; license: string; author?: string; url?: string }): Downloaded & { source: SourceId | 'other' } {
+  const safeId = meta.id.replace(/[^A-Za-z0-9_.-]/g, '_')
+  const dir = join(libraryDir, meta.source, safeId)
+  mkdirSync(dir, { recursive: true })
+  const files = unpackInto(dir, basename(file), new Uint8Array(readFileSync(file)))
+  const url = meta.url ?? (meta.source === 'kenney' ? `https://kenney.nl/assets/${meta.id}` : 'local file')
+  writeFileSync(join(dir, 'asset.json'), JSON.stringify({ ...meta, url, importedFrom: file, importedAt: new Date().toISOString(), files }, null, 2))
+  writeFileSync(join(dir, 'LICENSE.txt'), `${meta.id} (${url})\nAuthor: ${meta.author ?? 'see source'}\nLicence: ${meta.license}\n`)
+  return { source: meta.source as SourceId, id: meta.id, dir, files, license: meta.license, author: meta.author, url }
+}
+
+/** Writes a file, or a zip's contents without its single wrapping folder, into `dir`; answers the paths written. */
+export function unpackInto(dir: string, name: string, bytes: Uint8Array): string[] {
+  const files: string[] = []
+  const save = (entry: string, content: Uint8Array) => {
+    const target = normalize(join(dir, entry))
+    if (relative(dir, target).startsWith('..')) throw new Error(`refusing to write outside the library: ${entry}`)
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, content)
+    files.push(relative(dir, target).split(sep).join('/'))
+  }
+  if (!name.toLowerCase().endsWith('.zip')) {
+    save(name, bytes)
+    return files
+  }
+  const entries = Object.entries(unzipSync(bytes)).filter(([entry]) => !entry.endsWith('/') && !entry.startsWith('__MACOSX/'))
+  const first = entries[0]?.[0].split('/')[0]
+  const wrapped = entries.length > 0 && entries.every(([entry]) => entry.includes('/') && entry.split('/')[0] === first)
+  for (const [entry, content] of entries) save(wrapped ? entry.slice(first!.length + 1) : entry, content)
+  return files
 }
 
 /**
@@ -259,11 +271,3 @@ export function installGodotAddon(downloadDir: string, project: string): string[
   return installed
 }
 
-/** The kit's zip URL on a Kenney asset page, wherever the page puts it: an href, a data attribute, or a bare URL. */
-export function kenneyZipLink(page: string): string | undefined {
-  const candidates = [...page.matchAll(/(?:href|data-[\w-]+|content)\s*=\s*["']([^"']+?\.zip(?:\?[^"']*)?)["']/gi)].map(match => match[1]!)
-    .concat([...page.matchAll(/(https?:\/\/[^\s"'<>()]+?\.zip(?:\?[^\s"'<>()]*)?)/gi)].map(match => match[1]!))
-    .concat([...page.matchAll(/["'(](\/[^\s"'<>()]+?\.zip(?:\?[^\s"'<>()]*)?)["')]/gi)].map(match => match[1]!))
-  // Prefer the kit's own archive (kenney_<slug>.zip) over anything else zipped on the page.
-  return candidates.find(link => /kenney[_-]/i.test(link)) ?? candidates[0]
-}

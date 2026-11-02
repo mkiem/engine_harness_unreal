@@ -18,11 +18,11 @@ async function step(name: string, run: () => Promise<string>) {
   }
 }
 
-await step('kenney search + download tiny-dungeon', async () => {
+await step('kenney search, and its kit page still exists', async () => {
   const found = await library.search('kenney', 'dungeon')
-  const done = await library.download('kenney', found[0]!.id, work)
-  if (!done.files.some(file => file.endsWith('.png'))) throw new Error(`no PNG in ${done.files.slice(0, 5).join(', ')}`)
-  return `${done.files.length} files`
+  const response = await fetch(found[0]!.url!, { headers: { 'User-Agent': 'EngineHarness/0.1' } })
+  if (!response.ok) throw new Error(`${found[0]!.url} answered ${response.status}`)
+  return `${found[0]!.id} at ${found[0]!.url} (downloaded from the page, then assets_import)`
 })
 await step('polyhaven search + download a 1k texture', async () => {
   const found = await library.search('polyhaven', 'brick', { kind: 'texture' })

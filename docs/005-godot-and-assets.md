@@ -48,7 +48,7 @@ Openly licensed assets, downloaded on demand into the developer's project, with 
 
 | Source | Access | Licence | Good for |
 | --- | --- | --- | --- |
-| Kenney | search a curated list of kits, download the kit | CC0 | 16x16 pixel-art RPG tiles and characters, UI, sound effects, low-poly kits |
+| Kenney | search a curated list of kits; the developer downloads from the kit's page (a donation is optional), then `assets_import` | CC0 | 16x16 pixel-art RPG tiles and characters, UI, sound effects, low-poly kits |
 | Poly Haven | search, download at a resolution | CC0 assets | HDRIs, PBR textures, models |
 | ambientCG | search, download a variant | CC0 | PBR materials |
 | Godot Asset Library | search, download, install into `addons/` | per add-on, mostly MIT | dialogue systems, state machines, tools |
@@ -56,8 +56,8 @@ Openly licensed assets, downloaded on demand into the developer's project, with 
 | Freesound | guide only | per sound | audio, with the CC0 filter |
 | OpenGameArt | guide only | mixed | check each asset's licence |
 
-Tools: `assets_sources`, `assets_search`, `assets_download`. Downloads go to `library/` in a Godot project and `ArtSource/Library/` in an Unreal project. The **Starter assets for my game** recipe proposes a short starter set for the developer's genre and downloads only what they agree to.
+Tools: `assets_sources`, `assets_search`, `assets_download`, and `assets_import` for files the developer downloaded themselves (a Kenney kit, a Freesound sound, an OpenGameArt pack), which unpacks them into the library with the same licence record. Downloads go to `library/` in a Godot project and `ArtSource/Library/` in an Unreal project. The **Starter assets for my game** recipe proposes a short starter set for the developer's genre and downloads only what they agree to.
 
 **Poly Haven terms.** The assets are CC0. For the API itself, Poly Haven's API page says commercial integrations need a custom licence, while its GitHub README says the API is free for any use with a "Powered by Poly Haven" credit. The harness sends a unique User-Agent and shows the credit; if Engine Harness is distributed commercially, confirm the terms with Poly Haven, or remove the source from `SOURCES` in `src/assets/library.ts`.
 
-The asset sources are checked with real downloads in CI (`scripts/e2e-assets.ts`), because the development container cannot reach them.
+The asset sources are checked against the real services in CI (`scripts/e2e-assets.ts`), because the development container cannot reach them: Poly Haven, ambientCG and the Godot Asset Library download for real; for Kenney, CI checks that each kit page still exists. Kenney gives kits out through its own page rather than a direct file link, and Engine Harness respects that instead of scraping around it.

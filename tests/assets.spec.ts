@@ -4,7 +4,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
-import { AssetLibrary, kenneyZipLink, polyHavenDownloads, USER_AGENT, type Fetch } from '../src/assets/library.ts'
+import { AssetLibrary, importLocal, polyHavenDownloads, USER_AGENT, type Fetch } from '../src/assets/library.ts'
 import { createHarnessServer } from '../src/mcp/server.ts'
 import { tempDir } from './fixtures.ts'
 
@@ -24,15 +24,23 @@ function fakeFetch(routes: Record<string, unknown>) {
 const kenneyZip = zipSync({ 'kenney_tiny-dungeon/Tilemap/tilemap.png': strToU8('png'), 'kenney_tiny-dungeon/License.txt': strToU8('CC0') })
 
 describe('asset library', () => {
-  it('searches the curated Kenney kits and downloads one, unwrapped, with its licence', async () => {
-    const { fetch, seen } = fakeFetch({ 'https://kenney.nl/assets/tiny-dungeon': '<a href="/media/pages/assets/tiny-dungeon/abc/kenney_tiny-dungeon.zip">Download</a>', 'https://kenney.nl/media/': kenneyZip })
+  it('searches the curated Kenney kits, and imports a kit the developer downloaded, unwrapped, with its licence', async () => {
+    const { fetch, seen } = fakeFetch({})
     const library = new AssetLibrary({ fetch })
     expect((await library.search('kenney', 'pixel rpg tileset')).map(result => result.id)).toEqual(['tiny-dungeon', 'tiny-town', 'roguelike-rpg-pack'])
-    const dir = tempDir()
-    const done = await library.download('kenney', 'tiny-dungeon', dir)
+    await expect(library.download('kenney', 'tiny-dungeon', tempDir())).rejects.toThrow(/click Download .* assets_import/)
+    expect(seen).toEqual([])
+    const saved = join(tempDir(), 'kenney_tiny-dungeon.zip')
+    writeFileSync(saved, kenneyZip)
+    const done = importLocal(saved, tempDir(), { source: 'kenney', id: 'tiny-dungeon', license: 'CC0', author: 'Kenney' })
     expect(done.files).toEqual(['Tilemap/tilemap.png', 'License.txt'])
-    expect(JSON.parse(readFileSync(join(done.dir, 'asset.json'), 'utf8'))).toMatchObject({ source: 'kenney', license: 'CC0', author: 'Kenney' })
+    expect(JSON.parse(readFileSync(join(done.dir, 'asset.json'), 'utf8'))).toMatchObject({ source: 'kenney', license: 'CC0', author: 'Kenney', url: 'https://kenney.nl/assets/tiny-dungeon' })
     expect(readFileSync(join(done.dir, 'LICENSE.txt'), 'utf8')).toContain('Licence: CC0')
+  })
+
+  it('sends the unique User-Agent with every request', async () => {
+    const { fetch, seen } = fakeFetch({ 'https://api.polyhaven.com/assets': {} })
+    await new AssetLibrary({ fetch }).search('polyhaven', 'x')
     expect(seen.every(request => request.agent === USER_AGENT)).toBe(true)
   })
 
@@ -54,13 +62,6 @@ describe('asset library', () => {
     })
     const done = await new AssetLibrary({ fetch }).download('ambientcg', 'Bricks059', tempDir())
     expect(done.files.sort()).toEqual(['Bricks059_1K-PNG_Color.png', 'Bricks059_1K-PNG_NormalDX.png'])
-  })
-
-  it('finds the Kenney kit archive however the page links it', () => {
-    expect(kenneyZipLink("<a class='btn' href='/media/pages/assets/tiny-town/x1/kenney_tiny-town.zip'>Download</a>")).toBe('/media/pages/assets/tiny-town/x1/kenney_tiny-town.zip')
-    expect(kenneyZipLink('<button data-download-url="https://kenney.nl/media/a/kenney_ui-pack.zip?v=2">Download</button>')).toBe('https://kenney.nl/media/a/kenney_ui-pack.zip?v=2')
-    expect(kenneyZipLink('<script>window.file = "https://cdn.example/other.zip"; const kit = "/media/k/kenney_1-bit-pack.zip"</script>')).toBe('/media/k/kenney_1-bit-pack.zip')
-    expect(kenneyZipLink('<p>no archive here</p>')).toBeUndefined()
   })
 
   it('refuses marketplace sources with how to get their assets instead', async () => {

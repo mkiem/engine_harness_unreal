@@ -16,7 +16,8 @@ instructions: |
      - 3D (Unreal or Godot): ambientcg materials for floors and walls, a polyhaven HDRI for lighting, polyhaven or Kenney
        models for props, prototype-textures for blockouts.
   3. Download only what the developer agrees to, with assets_download. Prefer CC0; for anything else say the licence
-     and what it requires before downloading.
+     and what it requires before downloading. Kenney kits come from their page: give the link, ask the developer to
+     click Download (a donation is optional) and tell you where the zip is saved, then assets_import it.
   4. For Unreal projects, mention Fab: free Quixel Megascans and monthly free packs are claimed with the developer's Epic
      account and added through the Fab plugin; Engine Harness never downloads or bundles them. For audio beyond Kenney,
      point to Freesound with the CC0 filter.

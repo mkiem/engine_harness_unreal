@@ -22,7 +22,7 @@ import { checkSetup, configureUnrealProject, findBlenders, findProjects, install
 import { formatResult, NOT_FOUND, playInEditorScript, readEditorLog, runScriptFile, UnrealBridge } from '../unreal/bridge.ts'
 import { configurePixelArt, findGodot, findGodotProject, formatErrors, GodotBridge, listScripts, readProjectName, resToPath } from '../godot/bridge.ts'
 import { findNode, parseTscn, sceneTree } from '../godot/tscn.ts'
-import { AssetLibrary, installGodotAddon, libraryDirFor, SOURCES, type SourceId } from '../assets/library.ts'
+import { AssetLibrary, importLocal, installGodotAddon, libraryDirFor, SOURCES, type SourceId } from '../assets/library.ts'
 
 export interface HarnessServerOptions {
   /** The game project the agent works in; plans, ticket directories and the lock file live under <project>/.harness. */
@@ -543,7 +543,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
 
   server.registerTool('assets_search', {
     title: 'Search an asset library',
-    description: 'Searches an openly licensed library: polyhaven (HDRIs, textures, models), ambientcg (PBR materials), kenney (CC0 game kits: pixel-art tiles, UI, sounds), godot-assetlib (Godot add-ons).',
+    description: 'Searches an openly licensed library: polyhaven (HDRIs, textures, models), ambientcg (PBR materials), kenney (curated CC0 game kits: pixel-art tiles, UI, sounds; downloaded from their page, then assets_import), godot-assetlib (Godot add-ons).',
     inputSchema: { source: z.enum(sourceIds), query: z.string(), kind: z.string().optional().describe('polyhaven: hdri, texture or model') },
     annotations: { readOnlyHint: true },
   }, async ({ source, query, kind }) => {
@@ -573,6 +573,26 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       const shown = done.files.slice(0, 15).map(file => `  ${file}`)
       return text([`Downloaded ${source} ${id} to ${done.dir} (${done.files.length} file(s)), licence ${done.license}${done.author ? `, by ${done.author}` : ''}.`, ...shown, ...(done.files.length > 15 ? [`  … ${done.files.length - 15} more`] : []),
         ...(installed.length ? [`Installed ${installed.join(', ')}; enable it in Project Settings → Plugins if it is an editor plugin.`] : [])].join('\n'), { ...done, installed })
+    } catch (error) {
+      return failure((error as Error).message)
+    }
+  })
+
+  server.registerTool('assets_import', {
+    title: 'Import a downloaded asset',
+    description: 'Brings a file the developer downloaded (a Kenney kit zip, a Freesound sound, an OpenGameArt pack) into the project\'s library, unpacked, with its source and licence recorded.',
+    inputSchema: {
+      file: z.string(), source: z.enum([...sourceIds, 'other'] as [string, ...string[]]), id: z.string(),
+      license: z.string().default('CC0'), author: z.string().optional(), url: z.string().optional(),
+    },
+  }, async ({ file, source, id, license, author, url }) => {
+    const path = within(file)
+    if (!existsSync(path)) return failure(`no file at ${path}`)
+    try {
+      const godotRoot = findGodotProject(root)
+      const kind = godotRoot ? 'godot' : findProjects(sys, root).length ? 'unreal' : 'other'
+      const done = importLocal(path, libraryDirFor(godotRoot ?? root, kind), { source: source as SourceId | 'other', id, license, author, url })
+      return text(`Imported ${id} into ${done.dir} (${done.files.length} file(s)), licence ${license}.`, { ...done })
     } catch (error) {
       return failure((error as Error).message)
     }
