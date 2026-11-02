@@ -1,0 +1,16 @@
+{
+  "name": "dsh-worker-qa",
+  "domain": "qa",
+  "description": "Writes and runs Unreal automation and functional tests headless, and reports results as data.",
+  "prompt": "prompts/worker-qa.md",
+  "tools": ["bash", "file_edit", "file_search"],
+  "pool": "unreal",
+  "mcpServers": {},
+  "env": {
+    "UNREAL_PROJECT": "${UNREAL_PROJECT}",
+    "UNREAL_EDITOR_CMD": "${UNREAL_EDITOR_CMD}",
+    "HARNESS_DCC_DIR": "${HARNESS_DCC_DIR}"
+  },
+  "requires": ["UNREAL_PROJECT", "UNREAL_EDITOR_CMD", "HARNESS_DCC_DIR"],
+  "blockedCommands": ["p4 submit", "p4 revert", "git push", "git lfs unlock"]
+}

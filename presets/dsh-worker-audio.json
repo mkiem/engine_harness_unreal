@@ -1,0 +1,22 @@
+{
+  "name": "dsh-worker-audio",
+  "domain": "audio",
+  "description": "Synthesises or edits clips with reproducible scripts, imports them into Wwise over WAAPI, builds events and attenuation, and generates SoundBanks.",
+  "prompt": "prompts/worker-audio.md",
+  "tools": ["bash", "file_edit"],
+  "pool": "wwise",
+  "mcpServers": {
+    "wwise": {
+      "command": "node",
+      "args": ["${HARNESS_ROOT}/tools/mcp-servers/wwise-waapi-mcp/dist/index.js"],
+      "env": { "WAAPI_URL": "${WAAPI_URL}" }
+    }
+  },
+  "env": {
+    "WAAPI_URL": "${WAAPI_URL}",
+    "AUDIO_SOURCE_DIR": "${AUDIO_SOURCE_DIR}",
+    "HARNESS_DCC_DIR": "${HARNESS_DCC_DIR}"
+  },
+  "requires": ["WAAPI_URL", "AUDIO_SOURCE_DIR", "HARNESS_DCC_DIR", "HARNESS_ROOT"],
+  "blockedCommands": ["p4 submit", "p4 revert", "git push", "git lfs unlock"]
+}

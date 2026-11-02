@@ -1,0 +1,12 @@
+{
+  "name": "VintageRadio",
+  "description": "a 1940s wooden tabletop valve radio with a fabric speaker grille and two bakelite tuning dials",
+  "sizeCm": [40, 22, 28],
+  "maxTriangles": 6000,
+  "lods": 3,
+  "textureResolution": 2048,
+  "sound": { "name": "RadioStatic", "description": "warm AM radio static with faint crackle", "loop": true, "maxDistanceCm": 1200 },
+  "interaction": "toggle Play_RadioStatic on and off each time the player interacts",
+  "placement": { "map": "/Game/Maps/Apartment", "location": [120, -340, 85] },
+  "artReview": false
+}

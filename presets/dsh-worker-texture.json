@@ -1,0 +1,16 @@
+{
+  "name": "dsh-worker-texture",
+  "domain": "texture",
+  "description": "Bakes normal and AO maps from a mesh and exports channel-packed PBR textures with the Substance Automation Toolkit, or Blender's bake when SAT is not installed.",
+  "prompt": "prompts/worker-texture.md",
+  "tools": ["bash", "file_edit", "file_search"],
+  "pool": "texture",
+  "mcpServers": {},
+  "env": {
+    "SAT_BIN_DIR": "${SAT_BIN_DIR}",
+    "BLENDER_BIN": "${BLENDER_BIN}",
+    "HARNESS_DCC_DIR": "${HARNESS_DCC_DIR}"
+  },
+  "requires": ["BLENDER_BIN", "HARNESS_DCC_DIR"],
+  "blockedCommands": ["p4 submit", "p4 revert", "git push", "git lfs unlock"]
+}

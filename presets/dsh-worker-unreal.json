@@ -1,0 +1,18 @@
+{
+  "name": "dsh-worker-unreal",
+  "domain": "unreal",
+  "description": "Builds materials, Blueprints, Niagara systems and level placements in a live Unreal Editor over its MCP bridge, using assets that already passed ingest.",
+  "prompt": "prompts/worker-unreal.md",
+  "tools": ["bash", "file_edit", "file_search"],
+  "pool": "unreal",
+  "mcpServers": {
+    "unreal": { "type": "http", "url": "${UNREAL_MCP_URL}" }
+  },
+  "env": {
+    "UNREAL_PROJECT": "${UNREAL_PROJECT}",
+    "UNREAL_EDITOR_CMD": "${UNREAL_EDITOR_CMD}",
+    "HARNESS_DCC_DIR": "${HARNESS_DCC_DIR}"
+  },
+  "requires": ["UNREAL_MCP_URL", "UNREAL_PROJECT", "UNREAL_EDITOR_CMD", "HARNESS_DCC_DIR"],
+  "blockedCommands": ["p4 submit", "p4 revert", "git push", "git lfs unlock"]
+}

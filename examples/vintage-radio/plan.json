@@ -1,0 +1,199 @@
+{
+  "id": "vintage-radio",
+  "brief": "a 1940s wooden tabletop valve radio with a fabric speaker grille and two bakelite tuning dials",
+  "contentRoot": "/Game/Props/VintageRadio",
+  "tickets": [
+    {
+      "id": "vintage-radio-model",
+      "domain": "blender",
+      "title": "Model SM_VintageRadio",
+      "instructions": "Model a 1940s wooden tabletop valve radio with a fabric speaker grille and two bakelite tuning dials. Real-world size about 40 x 22 x 28 cm. Build it with a bpy recipe script, unwrap UVs, author convex collision hulls, generate 3 LODs, and export FBX.",
+      "produces": [
+        {
+          "id": "SM_VintageRadio",
+          "kind": "static_mesh",
+          "description": "a 1940s wooden tabletop valve radio with a fabric speaker grille and two bakelite tuning dials",
+          "requires": {
+            "maxTriangles": 6000,
+            "lods": 3,
+            "collision": "ucx",
+            "pivot": "base",
+            "approxSizeCm": [
+              40,
+              22,
+              28
+            ],
+            "sizeTolerance": 0.5,
+            "materialSlots": [
+              "MI_VintageRadio"
+            ],
+            "lightmapUv": true
+          }
+        }
+      ],
+      "consumes": [],
+      "after": [],
+      "locks": [
+        "ArtSource/Props/VintageRadio/SM_VintageRadio.blend"
+      ],
+      "review": "auto",
+      "maxRevisions": 2
+    },
+    {
+      "id": "vintage-radio-texture",
+      "domain": "texture",
+      "title": "Texture T_VintageRadio",
+      "instructions": "Author PBR textures for a 1940s wooden tabletop valve radio with a fabric speaker grille and two bakelite tuning dials on the UVs of SM_VintageRadio: bake normal and ambient occlusion from the mesh, then paint base colour, roughness and metallic, channel-packed as ORM.",
+      "produces": [
+        {
+          "id": "T_VintageRadio",
+          "kind": "texture_set",
+          "description": "PBR set for SM_VintageRadio",
+          "requires": {
+            "resolution": 2048,
+            "maps": [
+              "BaseColor",
+              "Normal",
+              "ORM"
+            ],
+            "normalConvention": "directx"
+          }
+        }
+      ],
+      "consumes": [
+        "SM_VintageRadio"
+      ],
+      "after": [],
+      "locks": [
+        "ArtSource/Props/VintageRadio/T_VintageRadio.spp"
+      ],
+      "review": "auto",
+      "maxRevisions": 2
+    },
+    {
+      "id": "vintage-radio-audio",
+      "domain": "audio",
+      "title": "Sound SFX_RadioStatic and Play_RadioStatic",
+      "instructions": "Make warm AM radio static with faint crackle as a seamless loop with a reproducible synthesis script, import it into Wwise, create the event Play_RadioStatic with 3D attenuation, and generate SoundBanks.",
+      "produces": [
+        {
+          "id": "SFX_RadioStatic",
+          "kind": "audio_clip",
+          "description": "warm AM radio static with faint crackle",
+          "requires": {
+            "sampleRate": 48000,
+            "channels": 1,
+            "bitDepth": 16,
+            "minSeconds": 1,
+            "maxSeconds": 20,
+            "maxPeakDb": -1,
+            "loudnessDb": [
+              -30,
+              -12
+            ],
+            "loop": true
+          }
+        },
+        {
+          "id": "Play_RadioStatic",
+          "kind": "audio_event",
+          "description": "Plays SFX_RadioStatic",
+          "requires": {
+            "clip": "SFX_RadioStatic",
+            "attenuation": "ATT_RadioStatic",
+            "maxDistanceCm": 1200,
+            "bus": "Master Audio Bus"
+          }
+        }
+      ],
+      "consumes": [],
+      "after": [],
+      "locks": [
+        "Wwise/Events/Play_RadioStatic.wwu"
+      ],
+      "review": "auto",
+      "maxRevisions": 2
+    },
+    {
+      "id": "vintage-radio-blueprint",
+      "domain": "unreal",
+      "title": "Blueprint BP_VintageRadio",
+      "instructions": "Create MI_VintageRadio from the project's master prop material with T_VintageRadio's maps, assign it to SM_VintageRadio, and create BP_VintageRadio (Actor) with a StaticMeshComponent showing SM_VintageRadio and an AkComponent for Play_RadioStatic. Implement BPI_Interactable: toggle Play_RadioStatic on and off each time the player interacts. Place one BP_VintageRadio in /Game/Maps/Apartment at 120, -340, 85.",
+      "produces": [
+        {
+          "id": "BP_VintageRadio",
+          "kind": "blueprint",
+          "description": "toggle Play_RadioStatic on and off each time the player interacts",
+          "requires": {
+            "parentClass": "Actor",
+            "components": [
+              "StaticMeshComponent",
+              "AkComponent"
+            ],
+            "interfaces": [
+              "BPI_Interactable"
+            ]
+          }
+        },
+        {
+          "id": "PL_VintageRadio",
+          "kind": "level_placement",
+          "description": "BP_VintageRadio placed in /Game/Maps/Apartment",
+          "requires": {
+            "map": "/Game/Maps/Apartment",
+            "actorClass": "BP_VintageRadio",
+            "location": [
+              120,
+              -340,
+              85
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "oneFilePerActor": true
+          }
+        }
+      ],
+      "consumes": [
+        "SM_VintageRadio",
+        "T_VintageRadio",
+        "Play_RadioStatic"
+      ],
+      "after": [],
+      "locks": [
+        "Content/Props/VintageRadio/BP_VintageRadio.uasset",
+        "Content/Props/VintageRadio/MI_VintageRadio.uasset"
+      ],
+      "review": "auto",
+      "maxRevisions": 2
+    },
+    {
+      "id": "vintage-radio-qa",
+      "domain": "qa",
+      "title": "Verify BP_VintageRadio",
+      "instructions": "Write and run automation tests that spawn BP_VintageRadio, check its collision blocks a player capsule, trigger the interaction and check the expected effect, and check that Play_RadioStatic posts.",
+      "produces": [
+        {
+          "id": "QA_VintageRadio",
+          "kind": "test_result",
+          "description": "Automation results for BP_VintageRadio",
+          "requires": {
+            "tests": [
+              "Project.Props.VintageRadio.Collision",
+              "Project.Props.VintageRadio.Interact"
+            ]
+          }
+        }
+      ],
+      "consumes": [
+        "PL_VintageRadio"
+      ],
+      "after": [],
+      "locks": [],
+      "review": "auto",
+      "maxRevisions": 1
+    }
+  ]
+}
