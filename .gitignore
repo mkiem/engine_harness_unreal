@@ -4,3 +4,4 @@ node_modules/
 __pycache__/
 *.pyc
 profiles/*.local.json
+dist/

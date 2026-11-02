@@ -1,0 +1,257 @@
+# Builds the Engine Harness desktop app for Windows: recreates the goose fork from distro/patches, builds the goose
+# backend and the Electron app with the harness payload inside, wraps it in an NSIS installer, then installs it on a
+# clean runner and checks that the app writes a working harness-mcp launcher.
+#
+# Runs on pull requests and pushes that touch the app, by hand (workflow_dispatch), and on studio-v* tags, which also
+# publish the installer as a GitHub release.
+name: Studio app (Windows)
+
+on:
+  push:
+    branches: ['claude/**', 'main']
+    tags: ['studio-v*']
+    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
+  pull_request:
+    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORK_DIR: goose-studio
+  APP_NAME: Engine Harness
+
+jobs:
+  harness:
+    name: Harness tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Build the payload
+        run: npm run bundle
+      - name: Smoke-test the bundled server
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            | timeout 20 node dist/payload/harness-mcp.mjs | tee init.json
+          grep -q '"engine-harness"' init.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harness-payload
+          path: dist/payload/
+          if-no-files-found: error
+          retention-days: 7
+
+  backend:
+    name: goose backend (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Recreate the fork
+        shell: bash
+        run: distro/scripts/fork.sh "$FORK_DIR"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: goose-studio
+          key: studio-windows-backend
+      - name: Build goose.exe
+        shell: pwsh
+        working-directory: goose-studio
+        run: |
+          rustup show
+          cargo build --release --target x86_64-pc-windows-msvc -p goose-cli --bin goose
+          Get-Item target/x86_64-pc-windows-msvc/release/goose.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: goose-backend
+          path: goose-studio/target/x86_64-pc-windows-msvc/release/goose.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  desktop-checks:
+    name: Desktop typecheck and tests (patched)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.10.0
+      - run: npm install -g pnpm@10.30.3
+      - name: Recreate the fork
+        shell: bash
+        run: distro/scripts/fork.sh "$FORK_DIR"
+      - name: Install, typecheck and test the patched desktop app
+        shell: bash
+        working-directory: goose-studio/ui/desktop
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          pnpm install --frozen-lockfile
+          pnpm run typecheck
+          pnpm exec vitest run src/utils/harnessLauncher.test.ts src/utils/winShims.test.ts src/components/settings/extensions
+
+  package:
+    name: Package the installer (Windows)
+    needs: [harness, backend, desktop-checks]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.10.0
+      - run: npm install -g pnpm@10.30.3
+      - name: Recreate the fork
+        shell: bash
+        run: distro/scripts/fork.sh "$FORK_DIR"
+      - uses: actions/download-artifact@v4
+        with:
+          name: goose-backend
+          path: backend
+      - uses: actions/download-artifact@v4
+        with:
+          name: harness-payload
+          path: payload
+      - name: Stage the backend, the Windows wrappers and the harness payload
+        shell: bash
+        run: |
+          desktop="$FORK_DIR/ui/desktop"
+          rm -rf "$desktop/src/bin" && mkdir -p "$desktop/src/bin"
+          cp -f backend/goose.exe "$desktop/src/bin/"
+          for file in "$desktop"/src/platform/windows/bin/*.{exe,dll,cmd}; do
+            [ -f "$file" ] && [ "$(basename "$file")" != goose.exe ] && cp -f "$file" "$desktop/src/bin/"
+          done
+          if [ -d "$desktop/src/platform/windows/bin/goose-npm" ]; then cp -r "$desktop/src/platform/windows/bin/goose-npm/" "$desktop/src/bin/goose-npm/"; fi
+          cp -r payload/. "$desktop/src/harness/"
+          ls "$desktop/src/harness"
+      - name: Build the desktop app
+        shell: bash
+        working-directory: goose-studio/ui/desktop
+        env:
+          ELECTRON_PLATFORM: win32
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          pnpm install --frozen-lockfile
+          node scripts/build-main.js
+          node scripts/prepare-platform-binaries.js
+          pnpm run make --platform=win32 --arch=x64
+      - name: Flatten the distribution
+        shell: bash
+        working-directory: goose-studio/ui/desktop
+        run: |
+          out="out/$APP_NAME-win32-x64"
+          mkdir -p "$out/resources/bin"
+          cp -r src/bin/* "$out/resources/bin/"
+          test -f "$out/resources/harness/harness-mcp.mjs"
+          mkdir -p dist-windows && cp -r "$out"/* dist-windows/
+          ls dist-windows dist-windows/resources
+      - name: Build the installer
+        shell: bash
+        working-directory: goose-studio/ui/desktop
+        run: pnpm run make:win32-installer dist-windows
+      - name: Zip the portable build
+        shell: bash
+        working-directory: goose-studio/ui/desktop
+        run: 7z a -tzip "EngineHarness-win32-x64.zip" ./dist-windows/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EngineHarness-win32-x64-setup
+          path: goose-studio/ui/desktop/out/make/nsis/win32/x64/*.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EngineHarness-win32-x64-zip
+          path: goose-studio/ui/desktop/EngineHarness-win32-x64.zip
+          if-no-files-found: error
+
+  smoke:
+    name: Install and smoke-test (Windows)
+    needs: package
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: EngineHarness-win32-x64-setup
+          path: installer
+      - name: Install silently
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem installer -Filter *.exe | Select-Object -First 1
+          Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait
+          $app = Join-Path $env:LOCALAPPDATA 'Programs\Engine Harness'
+          Get-ChildItem $app | Select-Object -First 20 | Format-Table Name
+          if (-not (Test-Path (Join-Path $app 'EngineHarness.exe'))) { throw 'EngineHarness.exe was not installed' }
+          if (-not (Test-Path (Join-Path $app 'resources\harness\harness-mcp.mjs'))) { throw 'the harness payload was not installed' }
+          if (-not (Test-Path (Join-Path $app 'resources\bin\uvx.exe'))) { throw 'uvx.exe was not installed' }
+      - name: Launch the app and wait for the harness launcher
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\Engine Harness\EngineHarness.exe'
+          $process = Start-Process -FilePath $exe -PassThru
+          $launcher = Join-Path $env:LOCALAPPDATA 'Goose\bin\harness-mcp.cmd'
+          for ($i = 0; $i -lt 90 -and -not (Test-Path $launcher); $i++) { Start-Sleep -Seconds 1 }
+          Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+          Get-Process EngineHarness, goose -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          if (-not (Test-Path $launcher)) { throw "the app did not write $launcher" }
+          Get-Content $launcher
+          $root = Join-Path $env:APPDATA 'Engine Harness\goose'
+          Write-Output "goose root exists: $(Test-Path $root)"
+      - name: The launcher answers an MCP handshake
+        shell: pwsh
+        run: |
+          $launcher = Join-Path $env:LOCALAPPDATA 'Goose\bin\harness-mcp.cmd'
+          $init = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}'
+          $list = '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+          $notify = '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+          $env:HARNESS_PROJECT_DIR = $env:RUNNER_TEMP
+          $output = ($init, $notify, $list -join "`n") | & cmd /c "`"$launcher`"" 2>&1 | Out-String
+          Write-Output $output
+          if ($output -notmatch '"engine-harness"') { throw 'no initialize answer from harness-mcp' }
+          if ($output -notmatch 'harness_setup_check') { throw 'tools/list did not include the setup tools' }
+
+  release:
+    name: Publish the release
+    if: startsWith(github.ref, 'refs/tags/studio-v')
+    needs: smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: EngineHarness-win32-x64-*
+          path: release
+          merge-multiple: true
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la release
+          gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --prerelease \
+            --title "Engine Harness ${GITHUB_REF_NAME#studio-v} (Windows)" \
+            --notes "Unsigned preview build of the Engine Harness desktop app for Windows. Windows SmartScreen will warn on first run: choose More info, then Run anyway."

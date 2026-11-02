@@ -1,0 +1,36 @@
+version: 1.0.0
+title: Set up my machine
+description: Finds your Blender, Unreal Engine and game project, connects them to Engine Harness, and tells you what is left to do.
+instructions: |
+  Get this machine ready for game development with Engine Harness, asking before you change anything.
+
+  1. Run harness_setup_check (pass the game project folder if the developer names one). Show the result as a short
+     checklist: what is ready, and what is not.
+  2. For each todo, explain the fix in one line and ask whether to do it:
+     - Blender without the MCP addon: harness_setup_blender (installs and enables the addon).
+     - An Unreal project without the Python plugin or remote execution: harness_setup_unreal_project, then tell the
+       developer to restart the editor.
+     - Missing Blender or Unreal Engine: say where to download it; you cannot install those.
+  3. After fixes, run harness_setup_check again. When Blender is connected, call get_scene_info on the Blender
+     extension to prove it; when an editor answers, call unreal_status.
+  4. Finish with what works now and one suggestion to try, such as the "New prop" recipe.
+extensions:
+  - type: builtin
+    name: developer
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    timeout: 300
+  - type: stdio
+    name: blender
+    cmd: uvx
+    args: [mcp-for-blender@2.2.6]
+    envs:
+      DISABLE_TELEMETRY: "true"
+    timeout: 600
+activities:
+  - "Set up this machine"
+  - "My game project is in D:/Projects/MyGame"
+  - "Blender is not answering"
+prompt: "Set up this machine for Engine Harness."

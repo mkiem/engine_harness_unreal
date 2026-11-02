@@ -1,0 +1,59 @@
+From 9c0adf4825df8ed8d0aaac05af0dfe72a820f990 Mon Sep 17 00:00:00 2001
+From: engine_harness_unreal <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 06:18:36 +0000
+Subject: [PATCH 4/6] Pin the Blender connection and turn its telemetry off;
+ relabel the Unreal plugin
+
+The Blender extension runs mcp-for-blender 2.2.6 (the package blender-mcp was
+renamed to), the same release the setup tools install the addon from, with
+DISABLE_TELEMETRY set. The streamable HTTP Unreal extension becomes the
+optional connection to Epic's UE 5.8+ plugin; Game Harness drives the editor
+on every UE 5.x project through Python remote execution.
+---
+ .../settings/extensions/bundled-extensions.json   | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/ui/desktop/src/components/settings/extensions/bundled-extensions.json b/ui/desktop/src/components/settings/extensions/bundled-extensions.json
+index 97824b3..a325d63 100644
+--- a/ui/desktop/src/components/settings/extensions/bundled-extensions.json
++++ b/ui/desktop/src/components/settings/extensions/bundled-extensions.json
+@@ -57,7 +57,7 @@
+     "id": "gameharness",
+     "name": "gameharness",
+     "display_name": "Game Harness",
+-    "description": "Game pipeline tools: plans, Unreal naming and interchange conventions, asset contract checks and shared file locks.",
++    "description": "Game pipeline tools: plans, Unreal and Godot conventions, asset contract checks, shared file locks, machine setup, and the Unreal Editor bridge (Python remote execution).",
+     "enabled": true,
+     "type": "stdio",
+     "cmd": "harness-mcp",
+@@ -70,22 +70,25 @@
+     "id": "blender",
+     "name": "blender",
+     "display_name": "Blender",
+-    "description": "Drives your open Blender through the blender-mcp addon (socket on localhost:9876): scene inspection, Python, modelling.",
++    "description": "Drives your open Blender through the MCP for Blender addon (socket on localhost:9876). Anonymous usage telemetry is off; turn it on in the addon's preferences if you want to share it.",
+     "enabled": true,
+     "type": "stdio",
+     "cmd": "uvx",
+     "args": [
+-      "blender-mcp"
++      "mcp-for-blender@2.2.6"
+     ],
+     "env_keys": [],
+     "timeout": 600,
+-    "bundled": true
++    "bundled": true,
++    "envs": {
++      "DISABLE_TELEMETRY": "true"
++    }
+   },
+   {
+     "id": "unreal",
+     "name": "unreal",
+-    "display_name": "Unreal Editor",
+-    "description": "Drives your open Unreal Editor through its MCP plugin (localhost:8000): actors, Blueprints, Python, Play in Editor. Enable once the plugin is installed in your project.",
++    "display_name": "Unreal MCP plugin (UE 5.8+)",
++    "description": "Optional: Epic's experimental MCP plugin for Unreal Engine 5.8 and later, if your project enables it (localhost:8000). Game Harness already drives the editor on every UE 5.x project.",
+     "enabled": false,
+     "type": "streamable_http",
+     "uri": "http://127.0.0.1:8000/mcp",

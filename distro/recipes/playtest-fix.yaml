@@ -15,6 +15,8 @@ instructions: |
     fix survives a rebuild. Re-validate with harness_validate.
   - Collision you can walk through usually means a missing or misnamed UCX_ hull; loudness means the clip's RMS or
     the Wwise event's volume; wrong scale means the export's unit settings.
+  - In Unreal, stop Play in Editor (unreal_play_in_editor) before changing assets, read unreal_log for errors after the
+    change, then start Play in Editor again so the developer can try it straight away.
   - Finish with what changed and the one thing to try in Play in Editor.
 extensions:
   - type: builtin
@@ -27,6 +29,8 @@ extensions:
   - type: stdio
     name: blender
     cmd: uvx
-    args: [blender-mcp]
+    args: [mcp-for-blender@2.2.6]
+    envs:
+      DISABLE_TELEMETRY: "true"
     timeout: 600
 prompt: "Playtest feedback: {{ feedback }}"

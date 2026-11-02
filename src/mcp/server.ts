@@ -34,11 +34,11 @@ export interface HarnessServerOptions {
   dccDir?: string
 }
 
-/** dcc/ next to src/ in a checkout; HARNESS_DCC_DIR when packaged, where the bundle sits elsewhere. */
+/** HARNESS_DCC_DIR if set; else dcc/ beside the bundle (the app's payload), else dcc/ in a checkout (src/mcp/../../dcc). */
 export function defaultDccDir(): string {
   if (process.env.HARNESS_DCC_DIR) return process.env.HARNESS_DCC_DIR
   const here = dirname(fileURLToPath(import.meta.url))
-  for (const candidate of [join(here, '..', '..', 'dcc'), join(here, 'dcc'), join(here, '..', 'dcc')]) if (existsSync(candidate)) return resolve(candidate)
+  for (const candidate of [join(here, 'dcc'), join(here, '..', '..', 'dcc')]) if (existsSync(candidate)) return resolve(candidate)
   return resolve(here, '..', '..', 'dcc')
 }
 
