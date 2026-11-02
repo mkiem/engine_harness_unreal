@@ -30,7 +30,8 @@ describe('harness MCP server', () => {
     const { tools } = await client.listTools()
     expect(tools.map(tool => tool.name).sort()).toEqual(['harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
       'harness_plan_prop', 'harness_plan_save', 'harness_scripts', 'harness_setup_blender', 'harness_setup_check', 'harness_setup_unreal_project',
-      'harness_ticket', 'harness_unlock', 'harness_validate', 'unreal_log', 'unreal_play_in_editor', 'unreal_python', 'unreal_run_script', 'unreal_status'])
+      'harness_setup_godot_project', 'harness_ticket', 'harness_unlock', 'harness_validate', 'godot_check', 'godot_run', 'godot_scene', 'godot_status',
+      'unreal_log', 'unreal_play_in_editor', 'unreal_python', 'unreal_run_script', 'unreal_status'].sort())
     expect(client.getInstructions()).toContain('harness_validate')
   })
 
@@ -98,5 +99,25 @@ describe('harness MCP server', () => {
     const { call } = await connect(project)
     expect((await call('harness_measure_audio', { path: 'a.wav' })).text).toContain('sampleRate: 48000')
     expect((await call('harness_conventions', { kind: 'static_mesh' })).text).toContain('UCX_<id>_NN')
+  })
+})
+
+describe('engine selection', () => {
+  it('offers only the chosen engines\' tools', async () => {
+    const server = createHarnessServer({ projectDir: tempDir(), engines: ['godot'] })
+    const client = new Client({ name: 'test', version: '1' })
+    const [a, b] = InMemoryTransport.createLinkedPair()
+    await Promise.all([server.connect(a), client.connect(b)])
+    const names = (await client.listTools()).tools.map(tool => tool.name)
+    expect(names.filter(name => name.startsWith('unreal_') || name === 'harness_setup_unreal_project')).toEqual([])
+    expect(names).toContain('godot_scene')
+  })
+
+  it('reports malformed check_asset input precisely', async () => {
+    const { call } = await connect(tempDir())
+    const result = await call('harness_check_asset', { spec: { id: 'SM_Box', kind: 'static_mesh', requires: {} }, record: { id: 'SM_Box' }, dir: '.' })
+    expect(result.error).toBe(true)
+    expect(result.text).toContain('spec.requires.maxTriangles')
+    expect(result.text).toContain('record.kind')
   })
 })

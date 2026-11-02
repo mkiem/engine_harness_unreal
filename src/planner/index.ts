@@ -165,3 +165,61 @@ export class LlmPlanner implements Planner {
 }
 
 const stripFence = (text: string) => text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
+
+// ---- Godot: a 2D pixel-art character ----------------------------------------------------------------------------------
+
+export const PixelCharacterBrief = z.object({
+  /** PascalCase base name; becomes SPR_<name>, SCN_<name>, res://characters/<snake_name>.tscn. */
+  name: z.string().regex(/^[A-Z][A-Za-z0-9]{1,40}$/),
+  description: z.string(),
+  /** One frame in pixels; 16x16 and 32x32 are the classic RPG sizes. */
+  frameSize: z.tuple([z.number().int().positive(), z.number().int().positive()]).default([16, 16]),
+  /** Facing directions, 4 for top-down RPGs. */
+  directions: z.number().int().min(1).max(8).default(4),
+  /** Animations and how many frames each has, per direction. */
+  animations: z.record(z.string(), z.number().int().positive()).default({ idle: 2, walk: 4 }),
+  maxColors: z.number().int().positive().default(16),
+  /** The root node: CharacterBody2D for something that moves and collides. */
+  rootType: z.string().default('CharacterBody2D'),
+  /** What the player does with it, such as "moves with the arrow keys"; becomes the script's instructions. */
+  behaviour: z.string().default('moves in four directions with the arrow keys and plays the matching walk animation'),
+  review: z.boolean().default(false),
+}).strict()
+export type PixelCharacterBrief = z.infer<typeof PixelCharacterBrief>
+
+const snake = (name: string) => name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()
+
+/** Sprite sheet → Godot scene and script → a headless run, for one 2D character. */
+export function pixelCharacterPlan(input: PixelCharacterBrief): Plan {
+  const brief = PixelCharacterBrief.parse(input)
+  const id = kebab(brief.name)
+  const sprite = `SPR_${brief.name}`
+  const scene = `SCN_${brief.name}`
+  const path = `res://characters/${snake(brief.name)}.tscn`
+  const animations = Object.keys(brief.animations)
+  const frames = Object.values(brief.animations).reduce((sum, count) => sum + count, 0) * brief.directions
+  const [w, h] = brief.frameSize
+  return parsePlan({
+    id, brief: brief.description, contentRoot: 'res://',
+    tickets: [
+      {
+        id: `${id}-sprite`, domain: 'sprite', title: `Sprite sheet ${sprite}`, review: brief.review ? 'human' : 'auto', maxRevisions: 2, consumes: [], after: [],
+        instructions: `Draw ${brief.description} as ${w}x${h} pixel art: ${animations.map(name => `${name} (${brief.animations[name]} frames)`).join(', ')}, for ${brief.directions} directions, one row per animation and direction, in at most ${brief.maxColors} colours with hard-edged transparency. Save it as res://art/${snake(brief.name)}.png.`,
+        produces: [{ id: sprite, kind: 'sprite_sheet', description: brief.description, requires: { frameSize: brief.frameSize, frames, maxColors: brief.maxColors, hardAlpha: true, animations } }],
+        locks: [`art/${snake(brief.name)}.png`],
+      },
+      {
+        id: `${id}-scene`, domain: 'godot', title: `Scene ${scene}`, review: 'auto', maxRevisions: 2, consumes: [sprite], after: [],
+        instructions: `Make ${path}: a ${brief.rootType} with an AnimatedSprite2D whose SpriteFrames uses ${sprite}'s frames (animations ${animations.join(', ')} per direction, 8 fps), a CollisionShape2D sized to the feet, and a script that ${brief.behaviour}. Run godot_check, then godot_run to make sure it loads without errors.`,
+        produces: [{ id: scene, kind: 'godot_scene', description: `${brief.name} as a playable scene`, requires: { path, rootType: brief.rootType, nodeTypes: ['AnimatedSprite2D', 'CollisionShape2D'], script: true } }],
+        locks: [`characters/${snake(brief.name)}.tscn`, `characters/${snake(brief.name)}.gd`],
+      },
+      {
+        id: `${id}-qa`, domain: 'qa', title: `Verify ${scene}`, review: 'auto', maxRevisions: 1, consumes: [scene], after: [],
+        instructions: `Check every project script with godot_check, run ${path} headless for 5 seconds with godot_run, and report each result as a test.`,
+        produces: [{ id: `QA_${brief.name}`, kind: 'test_result', description: `Checks for ${scene}`, requires: { tests: ['scripts_parse', 'scene_runs_without_errors'] } }],
+        locks: [],
+      },
+    ],
+  })
+}

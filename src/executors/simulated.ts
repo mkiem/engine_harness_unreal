@@ -7,6 +7,7 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { writePngRgba } from '../contracts/png.ts'
 import { writeWav16 } from '../contracts/wav.ts'
 import type { AssetRecord, AssetSpec, Provenance, WorkerResult } from '../core/model.ts'
 import type { Executor, Job } from '../core/ports.ts'
@@ -109,6 +110,41 @@ export class SimulatedExecutor implements Executor {
           facts: { map: spec.requires.map, actorClass: spec.requires.actorClass, location: spec.requires.location, rotation: spec.requires.rotation,
             actorFile: spec.requires.oneFilePerActor ? `__ExternalActors__/${spec.requires.map.replace(/^\/Game\//, '')}/${spec.id}.uasset` : undefined },
         }
+      case 'sprite_sheet': {
+        const [w, h] = spec.requires.frameSize
+        const columns = 4
+        const rows = Math.ceil(spec.requires.frames / columns)
+        const png = pixelCharacterSheet(w, h, columns, rows, { soft: faulty })
+        return {
+          id: spec.id, kind: spec.kind, provenance: { ...provenance, recipe: 'recipe/sprite.py' },
+          files: [{ path: write(`export/${spec.id.toLowerCase()}.png`, png), role: 'export' }, { path: write('recipe/sprite.py', '# simulated sprite recipe\n'), role: 'recipe' }],
+          facts: { animations: spec.requires.animations },
+        }
+      }
+      case 'tileset': {
+        const [w, h] = spec.requires.tileSize
+        const columns = 8
+        const rows = Math.max(1, Math.ceil(spec.requires.minTiles / columns))
+        return {
+          id: spec.id, kind: spec.kind, provenance,
+          files: [{ path: write(`export/${spec.id.toLowerCase()}.png`, pixelCharacterSheet(w, h, columns, rows, {})), role: 'export' }],
+          facts: {},
+        }
+      }
+      case 'godot_scene': {
+        if (!job.projectDir) throw new Error(`${spec.id} needs a Godot project`)
+        const relative = spec.requires.path.replace(/^res:\/\//, '')
+        const script = relative.replace(/\.tscn$/, '.gd')
+        const write = (path: string, content: string) => {
+          const full = join(job.projectDir!, path)
+          mkdirSync(dirname(full), { recursive: true })
+          writeFileSync(full, content)
+        }
+        write(script, `extends ${spec.requires.rootType}\n\n@export var speed := 60.0\n\nfunc _physics_process(_delta: float) -> void:\n\tvelocity = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down") * speed\n\tmove_and_slide()\n`)
+        const nodes = spec.requires.nodeTypes.map(type => `[node name="${type}" type="${type}" parent="."]\n`).join('\n')
+        write(relative, `[gd_scene load_steps=2 format=3]\n\n[ext_resource type="Script" path="res://${script}" id="1_script"]\n\n[node name="${spec.id.replace(/^SCN_/, '')}" type="${spec.requires.rootType}"]\nscript = ExtResource("1_script")\n\n${nodes}`)
+        return { id: spec.id, kind: spec.kind, provenance, files: [{ path: spec.requires.path, role: 'source' }, { path: `res://${script}`, role: 'source' }], facts: {} }
+      }
       case 'test_result':
         return {
           id: spec.id, kind: spec.kind, provenance,
@@ -151,4 +187,35 @@ export function radioStatic(seconds: number, sampleRate: number, options: { loop
   const ceiling = 10 ** ((options.peakDb ?? -3) / 20)
   for (let i = 0; i < out.length; i++) out[i] = ceiling * Math.tanh((out[i]! * gain) / ceiling)
   return out
+}
+
+/**
+ * A placeholder pixel-art character sheet: a little hooded figure in four colours, one frame per cell, each frame nudged
+ * so the animation reads. Original stand-in art for dry runs, not a game asset. `soft` adds half-transparent pixels,
+ * the mistake the pixel-art contract catches.
+ */
+export function pixelCharacterSheet(frameW: number, frameH: number, columns: number, rows: number, options: { soft?: boolean }): Buffer {
+  const width = frameW * columns
+  const height = frameH * rows
+  const rgba = new Uint8Array(width * height * 4)
+  const palette = [[38, 43, 68], [90, 105, 136], [235, 196, 140], [194, 75, 80]] as const
+  const set = (x: number, y: number, color: readonly number[], alpha = 255) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return
+    const i = (y * width + x) * 4
+    rgba[i] = color[0]!; rgba[i + 1] = color[1]!; rgba[i + 2] = color[2]!; rgba[i + 3] = alpha
+  }
+  for (let frame = 0; frame < columns * rows; frame++) {
+    const ox = (frame % columns) * frameW
+    const oy = Math.floor(frame / columns) * frameH
+    const bob = frame % 2
+    const cx = ox + Math.floor(frameW / 2)
+    for (let y = Math.floor(frameH * 0.25); y < frameH - 1; y++) {
+      const half = Math.max(1, Math.floor((y - frameH * 0.2) * 0.35))
+      for (let dx = -half; dx <= half; dx++) set(cx + dx, oy + y - bob, Math.abs(dx) === half ? palette[0] : palette[1])
+    }
+    for (let dx = -1; dx <= 1; dx++) set(cx + dx, oy + Math.floor(frameH * 0.4) - bob, palette[2])
+    set(cx + (frame % 4) - 2, oy + frameH - 2, palette[3])
+    if (options.soft) set(cx, oy + 1, palette[1], 128)
+  }
+  return writePngRgba(width, height, rgba)
 }

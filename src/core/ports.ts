@@ -16,6 +16,8 @@ export interface Job {
   feedback: Violation[]
   /** Answers and approvals from people, and recovery notes after a restart. */
   notes: string[]
+  /** The Godot project, for plans whose content root is res://. */
+  projectDir?: string
   signal: AbortSignal
 }
 

@@ -12,11 +12,12 @@ import { z } from 'zod'
  * The worker specialities. Each maps to one preset, which gives the worker only the tools of that domain. Engine ingest is
  * not a domain: importing an asset that passed its contract is a deterministic pipeline stage (`src/ingest`), not an agent.
  */
-export const Domain = z.enum(['blender', 'texture', 'audio', 'unreal', 'qa'])
+export const Domain = z.enum(['blender', 'texture', 'audio', 'unreal', 'qa', 'sprite', 'godot'])
 export type Domain = z.infer<typeof Domain>
 
 /** The kinds of asset that cross a ticket boundary. Each has its own contract (`src/contracts`). */
-export const AssetKind = z.enum(['static_mesh', 'skeletal_mesh', 'texture_set', 'audio_clip', 'audio_event', 'blueprint', 'level_placement', 'test_result'])
+export const AssetKind = z.enum(['static_mesh', 'skeletal_mesh', 'texture_set', 'audio_clip', 'audio_event', 'blueprint', 'level_placement', 'test_result',
+  'sprite_sheet', 'tileset', 'godot_scene'])
 export type AssetKind = z.infer<typeof AssetKind>
 
 /** Which domain may produce which kinds; a plan that asks a domain for another kind is rejected before it runs. */
@@ -26,6 +27,8 @@ export const PRODUCES: Record<Domain, readonly AssetKind[]> = {
   audio: ['audio_clip', 'audio_event'],
   unreal: ['blueprint', 'level_placement'],
   qa: ['test_result'],
+  sprite: ['sprite_sheet', 'tileset'],
+  godot: ['godot_scene'],
 }
 /** Kinds the ingest stage imports into the engine after their contract passed, before any consumer may use them. */
 export const INGESTED: readonly AssetKind[] = ['static_mesh', 'skeletal_mesh', 'texture_set', 'audio_event']
@@ -99,6 +102,37 @@ const LevelPlacementRequirements = z.object({
   oneFilePerActor: z.boolean().default(true),
 }).strict()
 
+const SpriteSheetRequirements = z.object({
+  /** One frame's size in pixels, [width, height]; the sheet must be a whole grid of frames. */
+  frameSize: z.tuple([z.number().int().positive(), z.number().int().positive()]),
+  /** At least this many frames, such as 4 directions x (1 idle + 4 walk) = 20. */
+  frames: z.number().int().positive(),
+  /** Palette budget: distinct visible colours, as a limited palette keeps pixel art coherent. */
+  maxColors: z.number().int().positive().default(32),
+  /** Every pixel fully opaque or fully transparent; soft alpha blurs pixel art. */
+  hardAlpha: z.boolean().default(true),
+  /** Animation names the sheet holds, in row order; the Godot scene's AnimatedSprite2D uses the same names. */
+  animations: z.array(z.string()).default([]),
+}).strict()
+
+const TilesetRequirements = z.object({
+  tileSize: z.tuple([z.number().int().positive(), z.number().int().positive()]),
+  minTiles: z.number().int().positive().default(1),
+  maxColors: z.number().int().positive().default(32),
+  hardAlpha: z.boolean().default(true),
+}).strict()
+
+const GodotSceneRequirements = z.object({
+  /** Where the scene lives in the project, such as res://characters/hero.tscn. */
+  path: z.string().regex(/^res:\/\/.+\.tscn$/, 'path must be a res:// .tscn path'),
+  /** Type of the root node, such as CharacterBody2D. */
+  rootType: z.string(),
+  /** Node types the scene must contain somewhere, such as AnimatedSprite2D and CollisionShape2D. */
+  nodeTypes: z.array(z.string()).default([]),
+  /** The root needs a script attached. */
+  script: z.boolean().default(true),
+}).strict()
+
 const TestResultRequirements = z.object({
   /** Automation test names to run, such as Project.Props.VintageRadio.Interact. */
   tests: z.array(z.string()).min(1),
@@ -114,6 +148,9 @@ export const AssetSpec = z.discriminatedUnion('kind', [
   z.object({ id: AssetId, kind: z.literal('blueprint'), description: z.string().default(''), requires: BlueprintRequirements }).strict(),
   z.object({ id: AssetId, kind: z.literal('level_placement'), description: z.string().default(''), requires: LevelPlacementRequirements }).strict(),
   z.object({ id: AssetId, kind: z.literal('test_result'), description: z.string().default(''), requires: TestResultRequirements }).strict(),
+  z.object({ id: AssetId, kind: z.literal('sprite_sheet'), description: z.string().default(''), requires: SpriteSheetRequirements }).strict(),
+  z.object({ id: AssetId, kind: z.literal('tileset'), description: z.string().default(''), requires: TilesetRequirements }).strict(),
+  z.object({ id: AssetId, kind: z.literal('godot_scene'), description: z.string().default(''), requires: GodotSceneRequirements }).strict(),
 ])
 export type AssetSpec = z.infer<typeof AssetSpec>
 export type SpecOf<K extends AssetKind> = Extract<AssetSpec, { kind: K }>
@@ -136,7 +173,7 @@ export const Provenance = z.object({
 export type Provenance = z.infer<typeof Provenance>
 
 export const AssetFile = z.object({
-  /** Path relative to the ticket's directory, or a /Game/ object path for assets that live only in the engine. */
+  /** Path relative to the ticket's directory, a /Game/ object path for Unreal assets, or a res:// path in a Godot project. */
   path: z.string().min(1),
   role: z.enum(['source', 'export', 'recipe', 'preview', 'report', 'engine']),
   sha256: z.string().regex(/^[0-9a-f]{64}$/).optional(),
@@ -198,8 +235,8 @@ export type TicketSpec = z.infer<typeof TicketSpec>
 export const Plan = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,60}$/, 'plan id must be a kebab-case name of 2 to 61 characters'),
   brief: z.string().min(1),
-  /** /Game/ folder the plan's engine assets go under, such as /Game/Props/VintageRadio. */
-  contentRoot: z.string().regex(/^\/Game\//).default('/Game/Generated'),
+  /** Where the plan's engine assets go: a /Game/ folder for Unreal (/Game/Props/VintageRadio), res:// for Godot. */
+  contentRoot: z.string().regex(/^(\/Game\/|res:\/\/)/, 'contentRoot must start with /Game/ (Unreal) or res:// (Godot)').default('/Game/Generated'),
   tickets: z.array(TicketSpec).min(1),
 }).strict()
 export type Plan = z.infer<typeof Plan>

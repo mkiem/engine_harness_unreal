@@ -14,6 +14,9 @@ export const PREFIX: Record<AssetKind, readonly string[]> = {
   blueprint: ['BP_'],
   level_placement: ['PL_'],
   test_result: ['QA_'],
+  sprite_sheet: ['SPR_'],
+  tileset: ['TS_'],
+  godot_scene: ['SCN_'],
 }
 
 export function prefixProblem(kind: AssetKind, id: string): string | undefined {

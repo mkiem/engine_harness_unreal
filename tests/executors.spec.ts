@@ -21,7 +21,7 @@ function job(ticketId: string, dir: string): Job {
 
 describe('presets', () => {
   it('has one preset per domain, each resolvable on the example workstation', () => {
-    expect([...presets.keys()].sort()).toEqual(['audio', 'blender', 'qa', 'texture', 'unreal'])
+    expect([...presets.keys()].sort()).toEqual(['audio', 'blender', 'godot', 'qa', 'sprite', 'texture', 'unreal'])
     const blender = resolvePreset(presets.get('blender')!, workstation, {})
     expect(blender.mcpConfig.mcpServers.blender).toEqual({ command: 'uvx', args: ['blender-mcp'], env: { BLENDER_HOST: '127.0.0.1', BLENDER_PORT: '9876' } })
     expect(blender.env.BLENDER_BIN).toContain('Blender 4.3')

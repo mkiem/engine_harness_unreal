@@ -11,12 +11,11 @@ What it enforces before exporting (the harness contract checks the result again,
 - the pivot sits at the bottom centre of the render mesh's bounds (or the world origin with --pivot origin);
 - scene units are metric with unit scale 1.0, exported with FBX_SCALE_UNITS so 1 m arrives in Unreal as 100 cm.
 
-Untested here against a live Blender: run it on Blender 3.6+ and fix what the contract reports.
+Checked end to end on Blender 5.2 (dcc/tests/e2e_blender.py); written for Blender 3.6 and later.
 """
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
 import sys
@@ -90,6 +89,13 @@ def main() -> None:
     render, collision = exported_objects(args.asset)
     apply_transforms(render + collision)
     move_pivot(render, collision, args.pivot)
+
+    # Triangulate at export (the modifier is applied by use_mesh_modifiers), so polygons with more than four sides get
+    # tangents, and Unreal shades the same triangles Blender shows.
+    for obj in render:
+        if not any(mod.type == "TRIANGULATE" for mod in obj.modifiers):
+            mod = obj.modifiers.new("harness_triangulate", "TRIANGULATE")
+            mod.keep_custom_normals = True
 
     bpy.ops.object.select_all(action="DESELECT")
     for obj in render + collision:

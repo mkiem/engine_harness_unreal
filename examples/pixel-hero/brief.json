@@ -1,0 +1,11 @@
+{
+  "name": "PixelHero",
+  "description": "a small hooded hero in a blue cloak for a top-down 16-bit style RPG",
+  "frameSize": [16, 16],
+  "directions": 4,
+  "animations": { "idle": 2, "walk": 4 },
+  "maxColors": 16,
+  "rootType": "CharacterBody2D",
+  "behaviour": "moves in four directions with the arrow keys and plays the matching walk animation",
+  "review": false
+}

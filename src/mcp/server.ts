@@ -20,6 +20,8 @@ import { FileLockBackend } from '../locks/index.ts'
 import { propPlan, PropBrief } from '../planner/index.ts'
 import { checkSetup, configureUnrealProject, findBlenders, findProjects, installBlenderAddon, systemEnv, type SetupEnv } from '../setup/index.ts'
 import { formatResult, NOT_FOUND, playInEditorScript, readEditorLog, runScriptFile, UnrealBridge } from '../unreal/bridge.ts'
+import { configurePixelArt, findGodot, findGodotProject, formatErrors, GodotBridge, listScripts, readProjectName, resToPath } from '../godot/bridge.ts'
+import { findNode, parseTscn, sceneTree } from '../godot/tscn.ts'
 
 export interface HarnessServerOptions {
   /** The game project the agent works in; plans, ticket directories and the lock file live under <project>/.harness. */
@@ -32,6 +34,16 @@ export interface HarnessServerOptions {
   setup?: SetupEnv
   /** Where the DCC scripts are (dcc/ in this repository, or the app's resources). */
   dccDir?: string
+  /** Runs Godot; tests pass one with a fake process runner. */
+  godot?: GodotBridge
+  /** The engines whose tools to offer; fewer tools, less context. Defaults to HARNESS_ENGINES, else both. */
+  engines?: ('unreal' | 'godot')[]
+}
+
+export function enginesFromEnv(value = process.env.HARNESS_ENGINES): ('unreal' | 'godot')[] {
+  const wanted = (value ?? 'unreal,godot').split(',').map(item => item.trim().toLowerCase())
+  const engines = (['unreal', 'godot'] as const).filter(engine => wanted.includes(engine))
+  return engines.length ? [...engines] : ['unreal', 'godot']
 }
 
 /** HARNESS_DCC_DIR if set; else dcc/ beside the bundle (the app's payload), else dcc/ in a checkout (src/mcp/../../dcc). */
@@ -55,6 +67,18 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   const unreal = options.unreal ?? new UnrealBridge()
   const sys = options.setup ?? systemEnv()
   const dccDir = options.dccDir ?? defaultDccDir()
+  const engines = options.engines ?? enginesFromEnv()
+  let godotPath: string | undefined | null = null
+  const godotBinary = () => {
+    if (godotPath === null) godotPath = findGodot(sys)[0]?.path
+    return godotPath
+  }
+  const godot = options.godot ?? new GodotBridge({ godot: godotBinary })
+  const godotProject = () => {
+    const project = findGodotProject(root)
+    if (!project) throw new Error(`no project.godot in ${root} or the folders directly below it`)
+    return project
+  }
   const within = (path: string) => (isAbsolute(path) ? path : resolve(root, path))
   const planPath = (id: string) => join(harnessDir, 'plans', `${id}.json`)
   const loadPlan = (ref: string): Plan => {
@@ -80,6 +104,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       'Before telling the person an asset is ready, run harness_validate on it and fix every violation.',
       'For a multi-part request (a prop with a mesh, textures, a sound and a Blueprint), plan it with harness_plan_prop, then do the tickets wave by wave; tickets in one wave can run in parallel subagents.',
       'The unreal_* tools drive the open Unreal Editor through Python: inspect and change the level, Blueprints and assets with unreal_python, run checked-in scripts with unreal_run_script, start Play in Editor with unreal_play_in_editor so the developer can playtest, and read unreal_log after changes.',
+      'For Godot projects, read and edit .tscn and .gd files directly (they are text); use godot_scene to see a scene, godot_check after editing scripts, and godot_run to catch runtime errors or open the game for the developer to play.',
       'If Blender or Unreal does not answer, run harness_setup_check, explain what is missing, and with the developer\'s agreement fix it with harness_setup_blender or harness_setup_unreal_project.',
     ].join(' '),
   })
@@ -107,6 +132,15 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       ...(texture ? ['', 'Textures:', ...Object.entries(TEXTURE_SUFFIX).map(([map, suffix]) => `- ${map}: <id>${suffix}`),
         '- BaseColor and Emissive are sRGB; Normal and ORM are linear. Normal maps use the DirectX convention. ORM packs occlusion, roughness, metallic in R, G, B.'] : []),
       ...(!kind || kind === 'audio_clip' ? ['', 'Audio: 48 kHz 16-bit PCM WAV by default; peak at or below -1 dBFS; RMS between -30 and -12 dBFS; loops crossfaded so the seam does not click. harness_measure_audio measures a file.'] : []),
+      ...(!kind || kind === 'sprite_sheet' || kind === 'tileset' ? ['', 'Pixel art (Godot 2D):',
+        '- 8-bit RGBA PNG, a whole grid of frames or tiles (16x16 or 32x32 are the classic RPG sizes), one row per animation and direction.',
+        '- A limited palette (the spec\'s maxColors) and hard-edged transparency: every pixel fully opaque or fully transparent. No anti-aliasing, no smoothing, no scaling except by whole numbers.',
+        '- Files snake_case under res://art/ (res://art/pixel_hero.png). The project should use nearest filtering and pixel snapping (harness_setup_godot_project).'] : []),
+      ...(!kind || kind === 'godot_scene' ? ['', 'Godot scenes and scripts:',
+        '- Scenes are text (.tscn): write and edit them directly. format=3; ext_resource ids like "1_script"; nodes listed parent before child.',
+        '- Files and folders snake_case (res://characters/pixel_hero.tscn), node names PascalCase, one script per scene root with the same base name.',
+        '- GDScript with static types (var speed: float = 60.0), signals for events, @export for tunables. Run godot_check after editing, then godot_run to catch runtime errors.',
+        '- 2D characters: CharacterBody2D root, AnimatedSprite2D with SpriteFrames, CollisionShape2D sized to the feet; velocity + move_and_slide().'] : []),
     ].join('\n'))
   })
 
@@ -161,7 +195,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       plan: z.string().describe('plan id or path'),
       ticket: z.string(),
       dir: z.string().optional().describe('ticket directory; defaults to the one harness_ticket gives'),
-      result: WorkerResult.optional(),
+      result: z.record(z.string(), z.unknown()).optional().describe('the result.json content: status, summary, assets'),
     },
     annotations: { readOnlyHint: true },
   }, async ({ plan: ref, ticket: id, dir, result }) => {
@@ -171,9 +205,12 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       if (!ticket) return failure(`no ticket ${id} in plan ${plan.id}`)
       const ticketDir = dir ? within(dir) : new RunStore(join(harnessDir, plan.id)).ticketDir(ticket.id)
       const resultPath = join(ticketDir, 'result.json')
-      const delivered = result ?? (existsSync(resultPath) ? WorkerResult.parse(JSON.parse(readFileSync(resultPath, 'utf8'))) : undefined)
-      if (!delivered) return failure(`no result given and no ${resultPath}`)
-      const { violations } = checkDelivery(ticket, delivered, { dir: ticketDir })
+      const raw = result ?? (existsSync(resultPath) ? JSON.parse(readFileSync(resultPath, 'utf8')) as unknown : undefined)
+      if (!raw) return failure(`no result given and no ${resultPath}`)
+      const parsed = WorkerResult.safeParse(raw)
+      if (!parsed.success) return failure(`the result does not match the report shape:\n${parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('\n')}`)
+      const delivered = parsed.data
+      const { violations } = checkDelivery(ticket, delivered, { dir: ticketDir, projectDir: findGodotProject(root) })
       if (!violations.length) return text(`✓ ${ticket.id}: every asset passes its contract (${delivered.assets.map(asset => asset.id).join(', ')}).`, { ok: true, violations: [] })
       return text(`✗ ${ticket.id}: ${violations.length} violation(s). Fix each, then validate again:\n${violations.map(v => `- [${v.rule}] ${v.asset}: ${v.message}`).join('\n')}`, { ok: false, violations })
     } catch (error) {
@@ -184,13 +221,24 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   server.registerTool('harness_check_asset', {
     title: 'Check one asset against a spec',
     description: 'Checks a single asset record against a spec, without a plan; for quick iteration in Blender or Unreal.',
-    inputSchema: { spec: AssetSpec, record: AssetRecord, dir: z.string().describe('directory the record\'s relative paths resolve against') },
+    // spec and record are checked in the handler: their full JSON schema would cost every session ~2,000 tokens.
+    inputSchema: {
+      spec: z.record(z.string(), z.unknown()).describe('an asset spec, as in a plan ticket\'s produces'),
+      record: z.record(z.string(), z.unknown()).describe('the delivered asset: id, kind, files, facts, provenance'),
+      dir: z.string().describe('directory the record\'s relative paths resolve against'),
+    },
     annotations: { readOnlyHint: true },
-  }, async ({ spec, record, dir }) => {
-    const { violations } = checkAsset(spec, record, { dir: within(dir) })
+  }, async ({ spec: rawSpec, record: rawRecord, dir }) => {
+    const spec = AssetSpec.safeParse(rawSpec)
+    const record = AssetRecord.safeParse(rawRecord)
+    if (!spec.success || !record.success) {
+      const issues = [...(spec.success ? [] : spec.error.issues.map(i => `spec.${i.path.join('.')}: ${i.message}`)), ...(record.success ? [] : record.error.issues.map(i => `record.${i.path.join('.')}: ${i.message}`))]
+      return failure(`invalid input:\n${issues.join('\n')}`)
+    }
+    const { violations } = checkAsset(spec.data, record.data, { dir: within(dir), projectDir: findGodotProject(root) })
     return violations.length
       ? text(violations.map(v => `- [${v.rule}] ${v.message}`).join('\n'), { ok: false, violations })
-      : text(`✓ ${spec.id} passes its contract.`, { ok: true, violations: [] })
+      : text(`✓ ${spec.data.id} passes its contract.`, { ok: true, violations: [] })
   })
 
   server.registerTool('harness_measure_audio', {
@@ -267,6 +315,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   })
 
   // ---- Unreal Editor ---------------------------------------------------------------------------------------------
+  if (engines.includes('unreal')) {
 
   const editorError = (error: unknown) => failure((error as Error).message || NOT_FOUND)
 
@@ -346,6 +395,8 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
     }
   })
 
+  }
+
   // ---- First-run setup -------------------------------------------------------------------------------------------
 
   server.registerTool('harness_setup_check', {
@@ -354,7 +405,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
     inputSchema: { projectDir: z.string().optional().describe('the game project folder; defaults to the current project') },
     annotations: { readOnlyHint: true },
   }, async ({ projectDir }) => {
-    const report = await checkSetup(sys, { projectDir: projectDir ? within(projectDir) : root, editors: () => unreal.editors(1500) })
+    const report = await checkSetup(sys, { projectDir: projectDir ? within(projectDir) : root, editors: () => unreal.editors(1500), godot: () => findGodot(sys), godotProject: findGodotProject })
     return text(`${report.ok ? 'Everything needed is in place.' : 'Some things need setting up:'}\n${report.lines.join('\n')}`, { ok: report.ok, lines: report.lines })
   })
 
@@ -373,7 +424,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
     }
   })
 
-  server.registerTool('harness_setup_unreal_project', {
+  if (engines.includes('unreal')) server.registerTool('harness_setup_unreal_project', {
     title: 'Set up an Unreal project for the editor bridge',
     description: 'Enables the Python Editor Script Plugin and Editor Scripting Utilities in the .uproject and turns on Python remote execution, keeping .bak copies. Changes project files: ask the developer first, and tell them to restart the editor.',
     inputSchema: { uproject: z.string().optional().describe('path to the .uproject; defaults to the one in the project folder') },
@@ -386,6 +437,95 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       return failure((error as Error).message)
     }
   })
+
+  // ---- Godot ------------------------------------------------------------------------------------------------------
+  if (engines.includes('godot')) {
+
+  const godotFailure = (error: unknown) => failure((error as Error).message)
+
+  server.registerTool('godot_status', {
+    title: 'Godot status',
+    description: 'The Godot 4 executable found and the open Godot project.',
+    annotations: { readOnlyHint: true },
+  }, async () => {
+    const installs = findGodot(sys)
+    const project = findGodotProject(root)
+    return text([
+      installs.length ? `Godot ${installs[0]!.version} at ${installs[0]!.path}` : 'Godot 4 not found (install it, or set GODOT_BIN)',
+      project ? `Project "${readProjectName(project)}" at ${project}` : `No project.godot in ${root}`,
+    ].join('\n'), { godot: installs[0] ?? null, project: project ?? null })
+  })
+
+  server.registerTool('godot_scene', {
+    title: 'Read a Godot scene',
+    description: 'A .tscn scene as a compact node tree, or one node\'s properties when `node` is given (a path like "." or "Sprite" or "UI/Health").',
+    inputSchema: { path: z.string().describe('res:// or project-relative .tscn path'), node: z.string().optional() },
+    annotations: { readOnlyHint: true },
+  }, async ({ path, node }) => {
+    try {
+      const project = godotProject()
+      const file = path.startsWith('res://') ? resToPath(project, path) : resolve(project, path)
+      if (!existsSync(file)) return failure(`no scene at ${file}`)
+      const scene = parseTscn(readFileSync(file, 'utf8'))
+      if (!node) return text(sceneTree(scene))
+      const found = findNode(scene, node)
+      if (!found) return failure(`no node ${node}; nodes: ${scene.nodes.map(item => item.parent === undefined ? '.' : item.parent === '.' ? item.name : `${item.parent}/${item.name}`).join(', ')}`)
+      const props = Object.entries(found.properties).map(([key, value]) => `${key} = ${value}`)
+      return text([`${found.name} (${found.type ?? 'instance'})`, ...props].join('\n'))
+    } catch (error) {
+      return godotFailure(error)
+    }
+  })
+
+  server.registerTool('godot_check', {
+    title: 'Validate GDScript',
+    description: 'Parses GDScript with Godot (--check-only): the given files, or every script in the project outside addons/.',
+    inputSchema: { files: z.array(z.string()).optional().describe('res:// or project-relative .gd paths') },
+    annotations: { readOnlyHint: true },
+  }, async ({ files }) => {
+    try {
+      const project = godotProject()
+      const targets = files?.length ? files.map(file => file.startsWith('res://') ? file : resolve(project, file)) : listScripts(project)
+      if (!targets.length) return text('No GDScript files to check.')
+      const { checked, errors } = await godot.check(project, targets)
+      return errors.length ? { ...text(`${errors.length} error(s) in ${checked} script(s):\n${formatErrors(errors)}`, { errors }), isError: true } : text(`✓ ${checked} script(s) parse cleanly.`, { errors: [] })
+    } catch (error) {
+      return godotFailure(error)
+    }
+  })
+
+  server.registerTool('godot_run', {
+    title: 'Run the Godot game',
+    description: 'Runs the project (or one scene) headless for `seconds` and reports errors; with window: true, opens it for the developer to play instead.',
+    inputSchema: { scene: z.string().optional(), seconds: z.number().min(1).max(60).default(5), window: z.boolean().default(false) },
+  }, async ({ scene, seconds, window }) => {
+    try {
+      const project = godotProject()
+      if (window) {
+        const pid = godot.play(project, scene)
+        return text(`Opened the game in a window${pid ? ` (pid ${pid})` : ''}. Ask the developer what they see.`)
+      }
+      const result = await godot.runHeadless(project, { scene, frames: Math.round(seconds * 60) })
+      if (result.errors.length) return { ...text(`${result.errors.length} error(s) while running:\n${formatErrors(result.errors)}`, { errors: result.errors }), isError: true }
+      return text(`Ran ${seconds} s with no errors${result.timedOut ? ' (stopped at the time limit)' : ''}.\n${result.output.split('\n').slice(-10).join('\n')}`, { errors: [] })
+    } catch (error) {
+      return godotFailure(error)
+    }
+  })
+
+  server.registerTool('harness_setup_godot_project', {
+    title: 'Pixel-art defaults for a Godot project',
+    description: 'Sets crisp pixel-art defaults in project.godot (nearest filtering, pixel snapping, base resolution scaled by whole numbers), keeping a backup. Ask the developer first.',
+    inputSchema: { width: z.number().int().default(320), height: z.number().int().default(180), windowScale: z.number().int().min(1).max(8).default(4) },
+  }, async ({ width, height, windowScale }) => {
+    try {
+      return text(configurePixelArt(sys, godotProject(), { width, height, windowScale }).join('\n'))
+    } catch (error) {
+      return godotFailure(error)
+    }
+  })
+
+  }
 
   return server
 }

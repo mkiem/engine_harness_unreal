@@ -27,6 +27,8 @@ export interface OrchestratorOptions {
   poolOf: (domain: Domain) => string
   onEvent?: (event: RunEvent) => void
   now?: () => Date
+  /** The Godot project folder, where res:// paths resolve, for Godot plans. */
+  projectDir?: string
 }
 
 /** States in which a ticket waits for a person; `answer` releases them. */
@@ -154,7 +156,7 @@ export class Orchestrator {
       try {
         result = await this.options.executor.run({
           plan: this.options.plan, ticket: spec, assignmentId: assignment.id, revision: assignment.revision,
-          dir: this.options.store.ticketDir(spec.id), inputs: this.inputsOf(spec), feedback, notes: [...ticket.notes],
+          dir: this.options.store.ticketDir(spec.id), inputs: this.inputsOf(spec), feedback, notes: [...ticket.notes], projectDir: this.options.projectDir,
           signal: controller.signal,
         })
       } catch (error) {
@@ -208,7 +210,7 @@ export class Orchestrator {
   /** The contract, then engine ingest for the kinds that live in the engine. */
   private async gate(spec: TicketSpec, result: WorkerResult): Promise<{ violations: Violation[]; assets: AssetRecord[] }> {
     const dir = this.options.store.ticketDir(spec.id)
-    const checked = checkDelivery(spec, result, { dir })
+    const checked = checkDelivery(spec, result, { dir, projectDir: this.options.projectDir })
     if (checked.violations.length || !this.options.ingestor) return checked
     const ingestor = this.options.ingestor
     const assets: AssetRecord[] = []
@@ -249,7 +251,7 @@ export class Orchestrator {
       const record = this.ticket(producer.id).delivered[assetId]
       if (!record) throw new Error(`${spec.id} started before ${assetId} was delivered`)
       const dir = this.options.store.ticketDir(producer.id)
-      return { ...record, files: record.files.map(file => file.role === 'engine' ? file : { ...file, path: resolve(dir, file.path) }) }
+      return { ...record, files: record.files.map(file => file.role === 'engine' || file.path.startsWith('res://') ? file : { ...file, path: resolve(dir, file.path) }) }
     })
   }
 

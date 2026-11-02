@@ -108,6 +108,7 @@ describe('checkSetup', () => {
       'ok   Blender 4.3 with the MCP addon (/usr/bin/blender)',
       'note Blender is not connected right now: open Blender, press N, BlenderMCP tab, Connect',
       'note no Unreal Engine found (source builds are not detected on Linux)',
+      'note Godot 4 not found (only needed for Godot projects)',
       'todo Game.uproject needs PythonScriptPlugin, EditorScriptingUtilities, remote execution; harness_setup_unreal_project turns them on',
       'note no Unreal Editor is answering right now; open your project in the editor',
     ])

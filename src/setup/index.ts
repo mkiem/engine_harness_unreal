@@ -240,7 +240,12 @@ export interface SetupReport {
 }
 
 /** Everything the app needs, each line `ok` or `todo` with the fix. `editors` reports running Unreal editors, if any. */
-export async function checkSetup(sys: SetupEnv, options: { projectDir?: string; editors?: () => Promise<{ projectName: string; engineVersion: string }[]> } = {}): Promise<SetupReport> {
+export async function checkSetup(sys: SetupEnv, options: {
+  projectDir?: string
+  editors?: () => Promise<{ projectName: string; engineVersion: string }[]>
+  godot?: () => { path: string; version: string }[]
+  godotProject?: (dir: string) => string | undefined
+} = {}): Promise<SetupReport> {
   const lines: string[] = []
   let ok = true
   const todo = (text: string) => { ok = false; lines.push(`todo ${text}`) }
@@ -264,6 +269,13 @@ export async function checkSetup(sys: SetupEnv, options: { projectDir?: string; 
   if (!engines.length) lines.push(sys.platform === 'linux' ? 'note no Unreal Engine found (source builds are not detected on Linux)' : 'todo no Unreal Engine found; install one with the Epic Games Launcher')
   for (const engine of engines) lines.push(`ok   Unreal Engine ${engine.version} (${engine.path})`)
   if (!engines.length && sys.platform !== 'linux') ok = false
+
+  const godot = options.godot?.() ?? []
+  const godotProject = options.projectDir ? options.godotProject?.(options.projectDir) : undefined
+  if (godot.length) lines.push(`ok   Godot ${godot[0]!.version} (${godot[0]!.path})`)
+  else if (godotProject) todo('this is a Godot project but Godot 4 was not found; install it from https://godotengine.org/download or set GODOT_BIN')
+  else lines.push('note Godot 4 not found (only needed for Godot projects)')
+  if (godotProject) lines.push(`ok   Godot project at ${godotProject}`)
 
   const projects: ProjectState[] = []
   if (options.projectDir) {
