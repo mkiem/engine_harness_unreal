@@ -1,0 +1,64 @@
+From aecb14730e35aeb7f7ecaf281897cc96573a7069 Mon Sep 17 00:00:00 2001
+From: engine_harness_unreal <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 05:45:46 +0000
+Subject: [PATCH 1/2] Bundle game-dev extensions: Game Harness, Blender, Unreal
+ Editor
+
+Game Harness runs the engine_harness_unreal MCP server through the
+harness-mcp launcher the studio installer puts on PATH. Blender uses
+blender-mcp through the bundled uvx. Unreal Editor connects to the editor
+plugin's MCP endpoint and stays off until that plugin is installed.
+---
+ .../extensions/bundled-extensions.json        | 40 +++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+diff --git a/ui/desktop/src/components/settings/extensions/bundled-extensions.json b/ui/desktop/src/components/settings/extensions/bundled-extensions.json
+index c843abb..97824b3 100644
+--- a/ui/desktop/src/components/settings/extensions/bundled-extensions.json
++++ b/ui/desktop/src/components/settings/extensions/bundled-extensions.json
+@@ -52,5 +52,45 @@
+     "type": "builtin",
+     "env_keys": [],
+     "bundled": true
++  },
++  {
++    "id": "gameharness",
++    "name": "gameharness",
++    "display_name": "Game Harness",
++    "description": "Game pipeline tools: plans, Unreal naming and interchange conventions, asset contract checks and shared file locks.",
++    "enabled": true,
++    "type": "stdio",
++    "cmd": "harness-mcp",
++    "args": [],
++    "env_keys": [],
++    "timeout": 300,
++    "bundled": true
++  },
++  {
++    "id": "blender",
++    "name": "blender",
++    "display_name": "Blender",
++    "description": "Drives your open Blender through the blender-mcp addon (socket on localhost:9876): scene inspection, Python, modelling.",
++    "enabled": true,
++    "type": "stdio",
++    "cmd": "uvx",
++    "args": [
++      "blender-mcp"
++    ],
++    "env_keys": [],
++    "timeout": 600,
++    "bundled": true
++  },
++  {
++    "id": "unreal",
++    "name": "unreal",
++    "display_name": "Unreal Editor",
++    "description": "Drives your open Unreal Editor through its MCP plugin (localhost:8000): actors, Blueprints, Python, Play in Editor. Enable once the plugin is installed in your project.",
++    "enabled": false,
++    "type": "streamable_http",
++    "uri": "http://127.0.0.1:8000/mcp",
++    "env_keys": [],
++    "timeout": 600,
++    "bundled": true
+   }
+ ]

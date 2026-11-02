@@ -1,0 +1,39 @@
+version: 1.0.0
+title: New prop
+description: Model, texture, sound and wire up an interactive prop in your open Blender and Unreal, then hand it to you to playtest.
+parameters:
+  - key: prop
+    input_type: string
+    requirement: user_prompt
+    description: What the prop is and what it does, such as "a 1940s valve radio that plays static when the player presses E"
+instructions: |
+  Make the prop the developer describes, in their open Blender and Unreal Editor, so they can playtest it.
+
+  1. Plan it with harness_plan_prop: pick a PascalCase name, a real-world size in centimetres and a triangle budget.
+     Read harness_conventions for each asset kind before making it.
+  2. Do the plan wave by wave. Independent tickets in one wave go to subagents in parallel, each told its ticket id
+     (harness_ticket gives the full spec) and given only its domain's extensions.
+  3. Lock files with harness_lock before editing them; validate each ticket with harness_validate and fix every
+     violation before moving on; unlock when the ticket is done.
+  4. When the Blueprint is placed, tell the developer exactly how to test it in Play in Editor, in two or three lines,
+     and stop. Their feedback starts the next round.
+extensions:
+  - type: builtin
+    name: developer
+  - type: platform
+    name: summon
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    timeout: 300
+  - type: stdio
+    name: blender
+    cmd: uvx
+    args: [blender-mcp]
+    timeout: 600
+activities:
+  - "A wooden crate the player can break"
+  - "A vintage radio that plays static when used"
+  - "A street lamp that flickers at night"
+prompt: "Make this prop: {{ prop }}"

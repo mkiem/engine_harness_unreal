@@ -1,0 +1,32 @@
+version: 1.0.0
+title: Playtest and fix
+description: Tell it what felt wrong in Play in Editor; it finds the asset or Blueprint responsible, fixes it, re-validates, and tells you what to try.
+parameters:
+  - key: feedback
+    input_type: string
+    requirement: user_prompt
+    description: What you saw while playtesting, such as "the radio is too loud and I can walk through its back"
+instructions: |
+  The developer just playtested and is telling you what is wrong. Fix exactly that.
+
+  - Find the responsible asset from the plans under .harness/plans and the project; ask one short question only if
+    two assets could be responsible.
+  - Lock what you edit with harness_lock. Change the recipe script or the Blueprint, not a hand-patched export, so the
+    fix survives a rebuild. Re-validate with harness_validate.
+  - Collision you can walk through usually means a missing or misnamed UCX_ hull; loudness means the clip's RMS or
+    the Wwise event's volume; wrong scale means the export's unit settings.
+  - Finish with what changed and the one thing to try in Play in Editor.
+extensions:
+  - type: builtin
+    name: developer
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    timeout: 300
+  - type: stdio
+    name: blender
+    cmd: uvx
+    args: [blender-mcp]
+    timeout: 600
+prompt: "Playtest feedback: {{ feedback }}"
