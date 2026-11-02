@@ -4,7 +4,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
-import { AssetLibrary, polyHavenDownloads, USER_AGENT, type Fetch } from '../src/assets/library.ts'
+import { AssetLibrary, kenneyZipLink, polyHavenDownloads, USER_AGENT, type Fetch } from '../src/assets/library.ts'
 import { createHarnessServer } from '../src/mcp/server.ts'
 import { tempDir } from './fixtures.ts'
 
@@ -54,6 +54,13 @@ describe('asset library', () => {
     })
     const done = await new AssetLibrary({ fetch }).download('ambientcg', 'Bricks059', tempDir())
     expect(done.files.sort()).toEqual(['Bricks059_1K-PNG_Color.png', 'Bricks059_1K-PNG_NormalDX.png'])
+  })
+
+  it('finds the Kenney kit archive however the page links it', () => {
+    expect(kenneyZipLink("<a class='btn' href='/media/pages/assets/tiny-town/x1/kenney_tiny-town.zip'>Download</a>")).toBe('/media/pages/assets/tiny-town/x1/kenney_tiny-town.zip')
+    expect(kenneyZipLink('<button data-download-url="https://kenney.nl/media/a/kenney_ui-pack.zip?v=2">Download</button>')).toBe('https://kenney.nl/media/a/kenney_ui-pack.zip?v=2')
+    expect(kenneyZipLink('<script>window.file = "https://cdn.example/other.zip"; const kit = "/media/k/kenney_1-bit-pack.zip"</script>')).toBe('/media/k/kenney_1-bit-pack.zip')
+    expect(kenneyZipLink('<p>no archive here</p>')).toBeUndefined()
   })
 
   it('refuses marketplace sources with how to get their assets instead', async () => {

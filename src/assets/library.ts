@@ -181,8 +181,11 @@ export class AssetLibrary {
       case 'kenney': {
         url = `https://kenney.nl/assets/${id}`
         const page = await (await this.get(url)).text()
-        const zip = /href="([^"]+\.zip)"/i.exec(page)?.[1]
-        if (!zip) throw new Error(`no download link on ${url}; download it from the page and put it in ${dir}`)
+        const zip = kenneyZipLink(page)
+        if (!zip) {
+          const around = /.{0,160}download.{0,160}/is.exec(page)?.[0].replace(/\s+/g, ' ') ?? page.slice(0, 200)
+          throw new Error(`no download link on ${url}; download it from the page and put it in ${dir} (page near "download": ${around})`)
+        }
         author = 'Kenney'
         saveArchiveOrFile(zip.split('/').pop()!, await bytesOf(new URL(zip, url).toString()))
         break
@@ -254,4 +257,13 @@ export function installGodotAddon(downloadDir: string, project: string): string[
     installed.push(`res://addons/${name}`)
   }
   return installed
+}
+
+/** The kit's zip URL on a Kenney asset page, wherever the page puts it: an href, a data attribute, or a bare URL. */
+export function kenneyZipLink(page: string): string | undefined {
+  const candidates = [...page.matchAll(/(?:href|data-[\w-]+|content)\s*=\s*["']([^"']+?\.zip(?:\?[^"']*)?)["']/gi)].map(match => match[1]!)
+    .concat([...page.matchAll(/(https?:\/\/[^\s"'<>()]+?\.zip(?:\?[^\s"'<>()]*)?)/gi)].map(match => match[1]!))
+    .concat([...page.matchAll(/["'(](\/[^\s"'<>()]+?\.zip(?:\?[^\s"'<>()]*)?)["')]/gi)].map(match => match[1]!))
+  // Prefer the kit's own archive (kenney_<slug>.zip) over anything else zipped on the page.
+  return candidates.find(link => /kenney[_-]/i.test(link)) ?? candidates[0]
 }
