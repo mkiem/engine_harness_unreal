@@ -25,7 +25,12 @@ something that builds the world, ideally both. Avoid walls of exposition: three 
 
 ## Make the story happen in the game
 
-Story progress is stored as **flags** (true/false names like `met_elder`). In `maps/maps.json`, on NPCs:
+Anything beyond a simple line belongs in an **event** (a conversation with choices, a quest, a recruit, a cutscene, a
+boss): load **events-and-cutscenes** and write it in `data/events.json`, then give the NPC `"event": "<id>"`. Plan
+quests in `data/quests.json` (each stage's text is what the player reads in the Quests menu).
+
+Story progress is stored as **flags** (true/false names like `met_elder`). Simple NPCs without events use, in
+`maps/maps.json`:
 
 - `"sets": "met_elder"`: talking sets the flag.
 - `"dialogue_after": {"met_elder": "elder_again", "beat_boss": "elder_thanks"}`: what they say changes as the story moves.
@@ -39,7 +44,7 @@ the boss; ending = the `ending` lines. `studio_check` warns when a flag is waite
 
 ## Check it
 
-`studio_check`, then play from New Game to the end with the developer (`godot_run` with `window: true`), reading every
+`studio_check`; `studio_test_event` for each event and each branch of its choices; then play from New Game to the end with the developer (`godot_run` with `window: true`), reading every
 line. Fix lines that are too long or say the same thing twice.
 
 ## Done when

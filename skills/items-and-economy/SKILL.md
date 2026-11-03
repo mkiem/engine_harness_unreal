@@ -20,9 +20,15 @@ Record the economy in words in `systems.economy` and `systems.progression` with 
 
 ## Into the data
 
-- `data/items.json`: `name`, `effect` (`heal` restores HP, `mp` restores MP), `amount`, `price`, `about` (shown in
-  menus). New kinds of effect (revive, cure poison, stat boosts, equipment) need code in `battle_logic.gd` and
-  `pause_menu.gd`; build them with the developer only when the game needs them (see **godot-rpg-template**).
+- **Consumables** in `data/items.json`: `effect` `heal` (HP), `mp`, `revive` (`revive_percent`), `cure` (`cures`: a
+  list of statuses), `damage` (a bomb: `amount`, `element`, `target: "all_enemies"`), `buff` (gives a `status`); `price`,
+  `about`.
+- **Equipment**: `slot` (`weapon`, `armor`, `accessory`), `stats` (`{"atk": 7}`; negatives are fine, such as heavy
+  armour's `spd: -1`), `users` (who can wear it), and extras that make choices interesting: a weapon `element`,
+  `resist` (elements), `immune` (statuses), `crit`, a weapon `status` (`{"id": "poison", "chance": 0.2}`). Each
+  character starts with `equipment` in `characters.json`; the pause menu's Equip page shows what changes, and
+  "Optimize" picks the best.
+- **Key items**: `"kind": "key"`: story objects (a lost charm, a gate key) given and checked by events.
 - Shops: an NPC with `"role": "shop"` and `"stock": ["potion", "ether"]` in `maps/maps.json`. The shop shows a menu with
   prices; the player buys as many as they want.
 - Chests: an NPC with `"role": "chest"`, `"item"` (and `"count"`) and/or `"gold"`, `"frame"` and `"open_frame"`
@@ -32,6 +38,12 @@ Record the economy in words in `systems.economy` and `systems.progression` with 
 
 ## Rules of thumb
 
+- **Equipment tiers**: one tier per region. The first shop sells the starting tier and one upgrade; each new town adds
+  a tier about +4 ATK/+4 DEF above the last, costing 4 to 6 battles of gold. Put one special piece in a chest off the
+  main path (the sample's Flame Sword) and one as a quest reward (the Lucky Ring).
+- Accessories are about choices, not numbers: poison immunity before the poison forest, fire resistance before the
+  fire boss. Mention them in an NPC's line so the player knows they matter.
+- Selling returns `sell_rate` (half) of the price, so old gear funds new gear.
 - Price of the basic healing item = 2 to 3 typical battles of gold. Its `amount` should heal about 40% of a hero's HP at
   the level they'll buy it.
 - A level every 3 to 4 battles early on, slowing later.

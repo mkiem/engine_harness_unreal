@@ -1,0 +1,122 @@
+{
+  "poison": {
+    "name": "Poison",
+    "about": "Loses HP every turn, even after battle, until cured.",
+    "damage_percent": 0.08,
+    "lasting": true,
+    "harmful": true,
+    "text": "%s is poisoned!",
+    "color": "#a05cd6"
+  },
+  "sleep": {
+    "name": "Sleep",
+    "about": "Can't act; wakes up when hit.",
+    "skip_turn": true,
+    "wake_on_hit": true,
+    "turns": 3,
+    "harmful": true,
+    "text": "%s falls asleep!",
+    "skip_text": "%s is fast asleep.",
+    "color": "#5c8cd6"
+  },
+  "stun": {
+    "name": "Stun",
+    "about": "Loses the next turn.",
+    "skip_turn": true,
+    "turns": 1,
+    "harmful": true,
+    "text": "%s is stunned!",
+    "skip_text": "%s is stunned and can't move!",
+    "color": "#d6c45c"
+  },
+  "silence": {
+    "name": "Silence",
+    "about": "Can't use skills.",
+    "no_skills": true,
+    "turns": 3,
+    "harmful": true,
+    "text": "%s is silenced!",
+    "color": "#8c8c8c"
+  },
+  "blind": {
+    "name": "Blind",
+    "about": "Attacks miss half the time.",
+    "hit_chance": 0.5,
+    "turns": 3,
+    "harmful": true,
+    "text": "%s is blinded!",
+    "color": "#4a4a4a"
+  },
+  "regen": {
+    "name": "Regen",
+    "about": "Recovers HP every turn.",
+    "heal_percent": 0.08,
+    "turns": 4,
+    "text": "%s is wrapped in soft light.",
+    "color": "#5cd67a"
+  },
+  "atk_up": {
+    "name": "Attack Up",
+    "about": "Attack x1.3.",
+    "stats": {
+      "atk": 1.3
+    },
+    "turns": 3,
+    "cancels": [
+      "atk_down"
+    ],
+    "text": "%s's attack rises!",
+    "color": "#d65c5c"
+  },
+  "def_up": {
+    "name": "Defence Up",
+    "about": "Defence x1.5.",
+    "stats": {
+      "def": 1.5
+    },
+    "turns": 3,
+    "cancels": [
+      "def_down"
+    ],
+    "text": "%s's defence rises!",
+    "color": "#5c7ad6"
+  },
+  "atk_down": {
+    "name": "Attack Down",
+    "about": "Attack x0.75.",
+    "stats": {
+      "atk": 0.75
+    },
+    "turns": 3,
+    "cancels": [
+      "atk_up"
+    ],
+    "harmful": true,
+    "text": "%s's attack falls!",
+    "color": "#8c5c5c"
+  },
+  "def_down": {
+    "name": "Defence Down",
+    "about": "Defence x0.6.",
+    "stats": {
+      "def": 0.6
+    },
+    "turns": 3,
+    "cancels": [
+      "def_up"
+    ],
+    "harmful": true,
+    "text": "%s's defence falls!",
+    "color": "#5c6a8c"
+  },
+  "haste": {
+    "name": "Haste",
+    "about": "Speed x1.5.",
+    "stats": {
+      "spd": 1.5
+    },
+    "turns": 4,
+    "text": "%s speeds up!",
+    "color": "#e0e05c"
+  }
+}

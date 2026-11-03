@@ -4,33 +4,42 @@
     "frame": 0,
     "level": 1,
     "stats": {
-      "hp": 30,
+      "hp": 52,
       "mp": 0,
-      "atk": 9,
-      "def": 3,
+      "atk": 11,
+      "def": 4,
       "mag": 1,
       "spd": 3
     },
+    "weak": [
+      "fire"
+    ],
     "skills": [],
     "xp": 6,
     "gold": 4,
-    "drop": {
-      "item": "potion",
-      "chance": 0.15
-    }
+    "drops": [
+      {
+        "item": "potion",
+        "chance": 0.15
+      }
+    ]
   },
   "bat": {
     "name": "Bat",
     "frame": 1,
     "level": 1,
     "stats": {
-      "hp": 22,
+      "hp": 38,
       "mp": 0,
-      "atk": 10,
-      "def": 1,
+      "atk": 11,
+      "def": 2,
       "mag": 1,
-      "spd": 9
+      "spd": 9,
+      "evade": 0.15
     },
+    "weak": [
+      "thunder"
+    ],
     "skills": [],
     "xp": 7,
     "gold": 5
@@ -40,15 +49,28 @@
     "frame": 2,
     "level": 3,
     "stats": {
-      "hp": 62,
+      "hp": 125,
       "mp": 0,
-      "atk": 15,
-      "def": 6,
+      "atk": 19,
+      "def": 8,
       "mag": 1,
       "spd": 8
     },
+    "weak": [
+      "fire"
+    ],
     "skills": [
       "bite"
+    ],
+    "ai": [
+      {
+        "skill": "bite",
+        "chance": 0.4,
+        "target": "weakest"
+      },
+      {
+        "skill": "attack"
+      }
     ],
     "xp": 14,
     "gold": 9
@@ -58,39 +80,198 @@
     "frame": 3,
     "level": 3,
     "stats": {
-      "hp": 44,
-      "mp": 15,
+      "hp": 90,
+      "mp": 30,
       "atk": 4,
-      "def": 4,
-      "mag": 12,
+      "def": 5,
+      "mag": 16,
       "spd": 6
     },
-    "skills": [
+    "weak": [
+      "ice"
+    ],
+    "absorb": [
       "fire"
+    ],
+    "skills": [
+      "ember"
+    ],
+    "ai": [
+      {
+        "skill": "ember",
+        "chance": 0.7,
+        "target": "caster"
+      },
+      {
+        "skill": "attack"
+      }
     ],
     "xp": 15,
     "gold": 11,
-    "drop": {
-      "item": "ether",
-      "chance": 0.2
-    }
+    "drops": [
+      {
+        "item": "ether",
+        "chance": 0.2
+      }
+    ]
+  },
+  "sporecap": {
+    "name": "Sporecap",
+    "frame": 4,
+    "level": 4,
+    "stats": {
+      "hp": 105,
+      "mp": 20,
+      "atk": 15,
+      "def": 5,
+      "mag": 10,
+      "spd": 4
+    },
+    "weak": [
+      "fire"
+    ],
+    "resist": [
+      "ice"
+    ],
+    "skills": [
+      "spores"
+    ],
+    "ai": [
+      {
+        "skill": "spores",
+        "chance": 0.5,
+        "if": {
+          "target_without": "sleep"
+        }
+      },
+      {
+        "skill": "attack"
+      }
+    ],
+    "xp": 16,
+    "gold": 12,
+    "drops": [
+      {
+        "item": "remedy",
+        "chance": 0.1
+      }
+    ]
+  },
+  "toxic_slime": {
+    "name": "Toxic Slime",
+    "frame": 5,
+    "level": 4,
+    "stats": {
+      "hp": 100,
+      "mp": 0,
+      "atk": 16,
+      "def": 6,
+      "mag": 2,
+      "spd": 5
+    },
+    "weak": [
+      "fire",
+      "ice"
+    ],
+    "skills": [
+      "poison_spit"
+    ],
+    "ai": [
+      {
+        "skill": "poison_spit",
+        "chance": 0.6,
+        "if": {
+          "target_without": "poison"
+        }
+      },
+      {
+        "skill": "attack"
+      }
+    ],
+    "xp": 15,
+    "gold": 10,
+    "drops": [
+      {
+        "item": "antidote",
+        "chance": 0.3
+      }
+    ]
   },
   "alpha_wolf": {
     "name": "Great Wolf",
     "frame": 2,
-    "level": 5,
+    "level": 6,
     "stats": {
-      "hp": 150,
+      "hp": 340,
       "mp": 0,
-      "atk": 17,
-      "def": 7,
-      "mag": 1,
-      "spd": 9
+      "atk": 21,
+      "def": 9,
+      "mag": 4,
+      "spd": 10
     },
-    "skills": [
-      "bite"
+    "weak": [
+      "fire"
     ],
-    "xp": 60,
-    "gold": 50
+    "immune": [
+      "sleep",
+      "stun",
+      "poison"
+    ],
+    "skills": [
+      "bite",
+      "howl",
+      "maul"
+    ],
+    "ai": [
+      {
+        "skill": "howl",
+        "if": {
+          "turn_every": 4,
+          "self_without": "atk_up"
+        }
+      },
+      {
+        "skill": "bite",
+        "chance": 0.4,
+        "target": "weakest"
+      },
+      {
+        "skill": "attack"
+      }
+    ],
+    "phases": [
+      {
+        "below": 0.5,
+        "say": "The Great Wolf howls with rage! Its eyes burn red.",
+        "stats": {
+          "atk": 1.15,
+          "spd": 1.2
+        },
+        "ai": [
+          {
+            "skill": "maul",
+            "chance": 0.35,
+            "target": "strongest"
+          },
+          {
+            "skill": "howl",
+            "if": {
+              "self_without": "atk_up"
+            },
+            "chance": 0.5
+          },
+          {
+            "skill": "bite",
+            "chance": 0.4,
+            "target": "weakest"
+          },
+          {
+            "skill": "attack"
+          }
+        ]
+      }
+    ],
+    "xp": 120,
+    "gold": 150
   }
 }

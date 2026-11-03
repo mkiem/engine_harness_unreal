@@ -9,23 +9,57 @@
   "guard_break": {
     "name": "Guard Break",
     "mp": 3,
-    "power": 1.7,
+    "power": 1.3,
     "type": "physical",
-    "about": "Smashes through armour."
+    "status": {
+      "id": "def_down",
+      "chance": 0.8
+    },
+    "about": "Lowers the target's defence."
+  },
+  "cleave": {
+    "name": "Cleave",
+    "mp": 5,
+    "power": 1.1,
+    "type": "physical",
+    "target": "all_enemies",
+    "about": "Hits every enemy."
+  },
+  "war_cry": {
+    "name": "War Cry",
+    "mp": 6,
+    "type": "support",
+    "target": "all_allies",
+    "status": {
+      "id": "atk_up",
+      "chance": 1.0
+    },
+    "about": "Raises the party's attack."
   },
   "fire": {
     "name": "Fire",
     "mp": 3,
     "power": 1.3,
     "type": "magic",
+    "element": "fire",
     "about": "A burst of flame."
   },
   "frost": {
     "name": "Frost",
     "mp": 5,
-    "power": 1.8,
+    "power": 1.6,
     "type": "magic",
+    "element": "ice",
     "about": "Freezing magic."
+  },
+  "thunder": {
+    "name": "Thunder",
+    "mp": 9,
+    "power": 1.4,
+    "type": "magic",
+    "element": "thunder",
+    "target": "all_enemies",
+    "about": "Lightning strikes every enemy."
   },
   "heal": {
     "name": "Heal",
@@ -34,11 +68,126 @@
     "type": "heal",
     "about": "Restores an ally's HP."
   },
+  "cure": {
+    "name": "Cure",
+    "mp": 3,
+    "type": "support",
+    "cures": [
+      "poison",
+      "sleep",
+      "stun",
+      "silence",
+      "blind"
+    ],
+    "about": "Cures an ally's ailments."
+  },
+  "lullaby": {
+    "name": "Lullaby",
+    "mp": 4,
+    "type": "support",
+    "target": "enemy",
+    "status": {
+      "id": "sleep",
+      "chance": 0.7
+    },
+    "about": "Puts an enemy to sleep."
+  },
+  "revive": {
+    "name": "Revive",
+    "mp": 10,
+    "power": 0.6,
+    "type": "heal",
+    "revive": true,
+    "target": "ko_ally",
+    "revive_percent": 0.3,
+    "about": "Brings a fallen ally back."
+  },
+  "aim": {
+    "name": "Aim",
+    "mp": 2,
+    "power": 1.5,
+    "type": "physical",
+    "about": "A careful, powerful shot."
+  },
+  "poison_arrow": {
+    "name": "Poison Arrow",
+    "mp": 3,
+    "power": 0.9,
+    "type": "physical",
+    "status": {
+      "id": "poison",
+      "chance": 0.75
+    },
+    "about": "May poison the target."
+  },
+  "smoke_arrow": {
+    "name": "Smoke Arrow",
+    "mp": 3,
+    "power": 0.6,
+    "type": "physical",
+    "status": {
+      "id": "blind",
+      "chance": 0.8
+    },
+    "about": "May blind the target."
+  },
   "bite": {
     "name": "Bite",
     "mp": 0,
     "power": 1.3,
     "type": "physical",
     "about": "A vicious bite."
+  },
+  "poison_spit": {
+    "name": "Poison Spit",
+    "mp": 0,
+    "power": 0.7,
+    "type": "physical",
+    "status": {
+      "id": "poison",
+      "chance": 0.6
+    },
+    "about": "May poison."
+  },
+  "spores": {
+    "name": "Sleep Spores",
+    "mp": 3,
+    "type": "support",
+    "target": "all_enemies",
+    "status": {
+      "id": "sleep",
+      "chance": 0.35
+    },
+    "about": "May put everyone to sleep."
+  },
+  "howl": {
+    "name": "Howl",
+    "mp": 0,
+    "type": "support",
+    "target": "self",
+    "status": {
+      "id": "atk_up",
+      "chance": 1.0
+    },
+    "about": "Raises its attack."
+  },
+  "maul": {
+    "name": "Maul",
+    "mp": 0,
+    "power": 1.8,
+    "type": "physical",
+    "status": {
+      "id": "stun",
+      "chance": 0.3
+    },
+    "about": "A crushing blow that may stun."
+  },
+  "ember": {
+    "name": "Ember",
+    "mp": 3,
+    "power": 1.1,
+    "type": "magic",
+    "element": "fire",
+    "about": "A small flame."
   }
 }

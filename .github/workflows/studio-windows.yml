@@ -360,6 +360,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ls -la release
-          gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --prerelease \
-            --title "Engine Harness ${GITHUB_REF_NAME#studio-v} (Windows)" \
-            --notes "Unsigned preview build of the Engine Harness desktop app for Windows. Windows SmartScreen will warn on first run: choose More info, then Run anyway."
+          # A release made by hand on GitHub (which also creates the tag) gets the installer added to it.
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --prerelease \
+              --title "Engine Harness ${GITHUB_REF_NAME#studio-v} (Windows)" \
+              --notes "Unsigned preview build of the Engine Harness desktop app for Windows. Windows SmartScreen will warn on first run: choose More info, then Run anyway."
+          fi

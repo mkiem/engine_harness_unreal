@@ -1,5 +1,7 @@
 extends Control
-## The title screen: New Game, Continue (when there is a save) and Quit.
+## The title screen: New Game, Continue (choose one of the save slots, when there is a save) and Quit.
+
+var _column: VBoxContainer
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -8,6 +10,7 @@ func _ready() -> void:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 	var column := VBoxContainer.new()
+	_column = column
 	column.set_anchors_preset(Control.PRESET_CENTER)
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(column)
@@ -42,6 +45,24 @@ func _new_game() -> void:
 	Game.new_game()
 	Router.overworld()
 
+## Replaces the menu with the save slots; Back returns to it.
 func _continue() -> void:
-	if Game.load_game():
-		Router.overworld()
+	var keep := 2
+	for child in _column.get_children().slice(keep):
+		_column.remove_child(child)
+		child.queue_free()
+	for number in range(1, Game.SLOTS + 1):
+		var button := Button.new()
+		button.text = "Slot %d: %s" % [number, Game.slot_summary(number)]
+		button.disabled = not Game.has_save(number)
+		button.pressed.connect(func():
+			if Game.load_game(number):
+				Router.overworld())
+		_column.add_child(button)
+	_add(_column, "Back", func(): get_tree().reload_current_scene())
+	await get_tree().process_frame
+	_column.position = (get_viewport_rect().size - _column.size) / 2
+	for child in _column.get_children().slice(keep):
+		if child is Button and not child.disabled:
+			child.grab_focus()
+			break

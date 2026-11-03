@@ -1,18 +1,100 @@
 {
   "hero": {
     "name": "Aria",
-    "role": "Knight: tough, hits hard, no magic to speak of",
-    "base": { "hp": 34, "mp": 4, "atk": 9, "def": 6, "mag": 2, "spd": 6 },
-    "growth": { "hp": 7, "mp": 1, "atk": 2, "def": 1.5, "mag": 0.5, "spd": 1 },
-    "skills": ["slash"],
-    "learns": { "4": "guard_break" }
+    "role": "Knight: tough, hits hard, protects the party",
+    "base": {
+      "hp": 34,
+      "mp": 6,
+      "atk": 7,
+      "def": 5,
+      "mag": 2,
+      "spd": 6
+    },
+    "growth": {
+      "hp": 7,
+      "mp": 1,
+      "atk": 2,
+      "def": 1.3,
+      "mag": 0.5,
+      "spd": 1
+    },
+    "skills": [
+      "slash"
+    ],
+    "learns": {
+      "3": "guard_break",
+      "5": "cleave",
+      "7": "war_cry"
+    },
+    "equipment": {
+      "weapon": "bronze_sword",
+      "armor": "leather_armor"
+    }
   },
   "mage": {
     "name": "Pip",
     "role": "Mage: fragile, strong spells, the party's healer",
-    "base": { "hp": 22, "mp": 14, "atk": 4, "def": 3, "mag": 9, "spd": 7 },
-    "growth": { "hp": 4, "mp": 3, "atk": 0.5, "def": 0.8, "mag": 2, "spd": 1 },
-    "skills": ["fire", "heal"],
-    "learns": { "3": "frost" }
+    "base": {
+      "hp": 22,
+      "mp": 14,
+      "atk": 3,
+      "def": 2,
+      "mag": 7,
+      "spd": 7
+    },
+    "growth": {
+      "hp": 4,
+      "mp": 3,
+      "atk": 0.5,
+      "def": 0.8,
+      "mag": 2,
+      "spd": 1
+    },
+    "skills": [
+      "fire",
+      "heal"
+    ],
+    "learns": {
+      "2": "lullaby",
+      "3": "frost",
+      "4": "cure",
+      "6": "thunder",
+      "8": "revive"
+    },
+    "equipment": {
+      "weapon": "oak_staff",
+      "armor": "cloth_robe"
+    }
+  },
+  "ranger": {
+    "name": "Bram",
+    "role": "Ranger: fast, precise, weakens enemies",
+    "base": {
+      "hp": 28,
+      "mp": 8,
+      "atk": 7,
+      "def": 3,
+      "mag": 3,
+      "spd": 10
+    },
+    "growth": {
+      "hp": 5,
+      "mp": 1.5,
+      "atk": 1.8,
+      "def": 1,
+      "mag": 0.5,
+      "spd": 1.5
+    },
+    "skills": [
+      "aim",
+      "poison_arrow"
+    ],
+    "learns": {
+      "5": "smoke_arrow"
+    },
+    "equipment": {
+      "weapon": "short_bow",
+      "armor": "leather_armor"
+    }
   }
 }

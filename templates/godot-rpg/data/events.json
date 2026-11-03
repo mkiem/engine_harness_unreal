@@ -1,0 +1,258 @@
+{
+  "elder": [
+    {
+      "if": {
+        "quest": "wolf",
+        "stage": "done"
+      },
+      "then": [
+        {
+          "say": [
+            "You drove off the Great Wolf!",
+            "Fernvale owes you everything."
+          ],
+          "who": "Elder"
+        }
+      ],
+      "else": [
+        {
+          "if": {
+            "flag": "accepted_quest"
+          },
+          "then": [
+            {
+              "say": [
+                "The Great Wolf waits in Whisperwood, east of the meadow.",
+                "Rest at the inn first, and visit the blacksmith."
+              ],
+              "who": "Elder"
+            }
+          ],
+          "else": [
+            {
+              "say": [
+                "Welcome to Fernvale, travellers.",
+                "A great wolf is leading the monsters out of Whisperwood.",
+                "If it isn't stopped, we won't last the winter."
+              ],
+              "who": "Elder"
+            },
+            {
+              "choice": "Will you help us?",
+              "options": [
+                {
+                  "text": "We'll stop the wolf.",
+                  "then": [
+                    {
+                      "set": "accepted_quest"
+                    },
+                    {
+                      "quest": "wolf",
+                      "stage": "start"
+                    },
+                    {
+                      "say": [
+                        "Thank you! I've opened the gate east of the meadow.",
+                        "Take these, and be careful."
+                      ],
+                      "who": "Elder"
+                    },
+                    {
+                      "give": "potion",
+                      "count": 2
+                    },
+                    {
+                      "give": "phoenix_feather"
+                    }
+                  ]
+                },
+                {
+                  "text": "Not yet.",
+                  "then": [
+                    {
+                      "say": [
+                        "I understand. Come back when you're ready."
+                      ],
+                      "who": "Elder"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "kid": [
+    {
+      "if": {
+        "quest": "charm",
+        "stage": "done"
+      },
+      "then": [
+        {
+          "say": [
+            "My charm keeps me safe now!"
+          ],
+          "who": "Tomo"
+        }
+      ],
+      "else": [
+        {
+          "if": {
+            "item": "kid_charm"
+          },
+          "then": [
+            {
+              "say": [
+                "My charm! You found it!",
+                "Here, take this. Dad says it's lucky."
+              ],
+              "who": "Tomo"
+            },
+            {
+              "take": "kid_charm"
+            },
+            {
+              "give": "lucky_ring"
+            },
+            {
+              "quest": "charm",
+              "stage": "done"
+            }
+          ],
+          "else": [
+            {
+              "if": {
+                "flag": "charm_quest"
+              },
+              "then": [
+                {
+                  "say": [
+                    "Did you find my charm? It's somewhere in the meadow..."
+                  ],
+                  "who": "Tomo"
+                }
+              ],
+              "else": [
+                {
+                  "say": [
+                    "I lost my wooden charm in the meadow.",
+                    "I'm not allowed to go back there alone..."
+                  ],
+                  "who": "Tomo"
+                },
+                {
+                  "set": "charm_quest"
+                },
+                {
+                  "quest": "charm",
+                  "stage": "start"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "charm_spot": [
+    {
+      "say": [
+        "Something glints in the grass..."
+      ]
+    },
+    {
+      "give": "kid_charm"
+    },
+    {
+      "quest": "charm",
+      "stage": "found"
+    },
+    {
+      "hide": "charm_spot"
+    }
+  ],
+  "forest_enter": [
+    {
+      "say": [
+        "Whisperwood. The trees close in overhead.",
+        "Somewhere deep in the woods, something howls."
+      ]
+    }
+  ],
+  "bram": [
+    {
+      "say": [
+        "Whoa, easy! I'm Bram, a ranger.",
+        "I've been tracking the Great Wolf for days."
+      ],
+      "who": "Bram"
+    },
+    {
+      "choice": "Travel with Bram?",
+      "options": [
+        {
+          "text": "Join us!",
+          "then": [
+            {
+              "join": "ranger",
+              "level": 4
+            },
+            {
+              "say": [
+                "Bram joins the party!"
+              ]
+            },
+            {
+              "hide": "bram"
+            }
+          ]
+        },
+        {
+          "text": "Maybe later.",
+          "then": [
+            {
+              "say": [
+                "I'll be right here."
+              ],
+              "who": "Bram"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "wolf_warning": [
+    {
+      "say": [
+        "Huge paw prints, and the smell of wet fur.",
+        "Whatever made these is close. Better be ready."
+      ]
+    }
+  ],
+  "great_wolf": [
+    {
+      "say": [
+        "A huge wolf blocks the path, growling.",
+        "Its eyes fix on you. There's no turning back."
+      ]
+    },
+    {
+      "battle": [
+        "alpha_wolf"
+      ],
+      "flag": "beat_alpha",
+      "no_run": true,
+      "ending": true,
+      "background": "#3a1e1e",
+      "then": [
+        {
+          "quest": "wolf",
+          "stage": "done"
+        }
+      ]
+    }
+  ]
+}

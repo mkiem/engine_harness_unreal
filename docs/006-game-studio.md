@@ -11,8 +11,14 @@ is written from notes.
 2. Pick the recipe **Start a new game** (or just say "I want to make a game").
 3. Answer about ten short questions (what kind of game, which games it should feel like, the setting, the hero...). Every
    question comes with options and a recommendation; "you choose" always works.
-4. A playable game appears: a title screen, a village to walk, monsters in the meadow, a shop, an inn, a chest, a boss and
-   an ending. Everything in it is a placeholder.
+4. A playable game appears: a short but complete RPG to learn from and reshape. It has:
+   - a village with an elder who gives you a quest, an inn, a shop and a blacksmith;
+   - a meadow with a side quest;
+   - a forest where a ranger joins you;
+   - a boss with two phases;
+   - an ending.
+
+   Everything in it is a placeholder.
 5. Phase by phase, the agent replaces the placeholders with their game: art, characters, maps, battles, items, story,
    menus, music. After each step it runs the game and says what to try.
 6. The agent simulates every battle to tune difficulty, then plays the game through with them.
@@ -24,7 +30,7 @@ Next time, open the game's folder and pick **Continue my game**: the agent reads
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| Skills | `skills/<name>/SKILL.md` | How to run each phase with a beginner (13 skills, below) |
+| Skills | `skills/<name>/SKILL.md` | How to run each phase with a beginner (14 skills, below) |
 | Studio tools | `src/mcp/server.ts` (`studio_*`) | Create, check, simulate, paint, compose, export |
 | Template | `templates/godot-rpg/` | A complete, data-driven Godot 4 RPG every game starts from |
 | Design document | `<game>/design/game.json`, `GAME_DESIGN.md` | The project's memory: every decision, and each phase's status |
@@ -47,7 +53,7 @@ recommendation, explain each term once, show then ask, keep scope small), and wh
 | World and maps | `world-building`: regions, text maps, NPCs, warps |
 | Battle system | `battle-design`: feel, enemies per area, encounters, bosses |
 | Items and economy | `items-and-economy`: items, prices, shops, chests, rewards |
-| Story and dialogue | `story-and-dialogue`: premise, beats, dialogue, flags, the ending |
+| Story and dialogue | `story-and-dialogue`: premise, beats, dialogue, flags, the ending; `events-and-cutscenes`: every event command, quests, recruits, cutscenes, boss fights, with tested patterns |
 | UI and menus | `ui-and-menus`: colours, pixel fonts, title screen, usability |
 | Music and sound | `audio-and-music`: mood, writing music with notes, sound presets |
 | Playtest and balance | `playtest-and-balance`: simulation bands, tuning table, guided playtest |
@@ -65,7 +71,8 @@ on Windows), replacing older copies of its own and leaving the user's skills alo
 | `studio_next` | Where the game stands: phases, the current checklist, the skill to load, the next step |
 | `studio_design_read`, `studio_design_update` | Read and change the design; every decision logged with why |
 | `studio_check` | Data references in plain words, scripts (real Godot), the self-test, and real runs of the title screen, a walk into a battle, and the ending |
-| `studio_simulate_battle` | Each encounter group and boss fought hundreds of times with the game's rules: win rate, rounds, HP left, a verdict |
+| `studio_simulate_battle` | Each encounter group and story battle fought hundreds of times with the game's rules (equipment, elements, statuses, enemy AI, boss phases), for any party and level: win rate, rounds, HP left, a verdict |
+| `studio_test_event` | A story event played without the screen in a given situation (flags, items, quests, members), with chosen answers: every line, every change, what stopped it |
 | `studio_paint`, `studio_preview` | Pixel art from text grids into sprite sheets; an enlarged preview to look at |
 | `studio_music`, `studio_sound` | Chiptune music from notes (melody, bass, drums); 18 sound effect presets |
 | `studio_install_godot` | Godot 4.4.1 into Engine Harness's folder (about 60 MB) |
@@ -73,16 +80,55 @@ on Windows), replacing older copies of its own and leaving the user's skills alo
 
 ### The template
 
-Everything a game contains is data: party, characters, enemies, skills, items, formulas (as maths), encounters,
-dialogue, text maps with a legend, NPCs, warps, story events, UI colours and font. Code is only for new kinds of
-behaviour. Story events need no code: an NPC can set a flag, change what it says once a flag is set, appear or leave,
-start a boss battle, end the game; chests give items once; warps can stay shut until a flag. The data checks catch broken
-references, uneven maps, NPCs on walls, warps that bounce, pictures out of range and flags nothing sets.
+Everything a game contains is data; code is only needed for new kinds of behaviour. The template is a classic 16-bit
+style RPG.
+
+- **Party**: up to four members fight together, and the rest wait in reserve and earn half XP. Members join and leave
+  through the story, taking their equipment with them.
+- **Equipment**: weapon, armour and an accessory per member. Items can add stats (including negative ones), a weapon
+  element, resistances, status immunities, extra critical hits, or a status on hit. The Equip menu compares stats and
+  has an Optimize button.
+- **Battles**:
+  - turn order by speed, with critical hits, misses and evasion;
+  - elements (weaknesses, resistances, absorbing);
+  - 11 statuses: poison, sleep, stun, silence, blind, regen, attack and defence up and down, haste;
+  - skills that hit one or every enemy, heal or buff one or every ally, revive, or cure;
+  - consumables: heal, MP, revive, cure, bombs, buffs;
+  - enemy AI rules (conditions, targeting, chances), and boss phases that change a boss's stats and tactics as its HP
+    falls.
+- **Story**: events are lists of commands, run from NPCs, from arriving on a map, or from stepping on a tile. They
+  cover:
+  - dialogue with speakers, choices and conditions;
+  - flags, items, gold and quests;
+  - recruits;
+  - people who appear and leave;
+  - cutscene moves;
+  - inns, shops, story battles (which can be lost without game over, or end the game), warps and the ending.
+- **Menus and saving**:
+  - shops that buy and sell, showing what equipment changes;
+  - inns with prices;
+  - three save slots, with play time;
+  - a pause menu with Items, Equip, Skills (healing outside battle), Status, Party, Quests and Save.
+
+The data checks cover all of it in plain words:
+- references between files, values the game understands, enemy AI and boss phases;
+- maps: uneven rows, NPCs and triggers on walls, warps that bounce;
+- story: event commands, quests, overlong lines, and story flags nothing sets.
+
+A game that adds its own kinds of skills, items or event commands declares them, and the checks accept them.
 
 ## How it is tested
 
-- `tests/studio.spec.ts`, `tests/skills.spec.ts`: project creation, data checks, design, phases, painting, music, and
-  that every skill is well formed, covers its phase and names only real tools.
+- `tests/studio.spec.ts`, `tests/skills.spec.ts`: project creation, data checks (including every RPG system and event
+  command), design, phases, painting, music, and that every skill is well formed, covers its phase and names only real
+  tools.
+- The template's own `tools/self_test.tscn`, run by `studio_check`, with real Godot:
+  - data references, formulas, levelling, equipment on and off, joining and leaving;
+  - three-slot save round trips;
+  - every encounter and story battle reaching an end;
+  - the battle rules themselves: poison, immunity, sleep and waking, buffs wearing off, weakness, resistance, absorb,
+    revive, boss phases;
+  - every event run through each of its choices.
 - `scripts/e2e-studio.ts` with real Godot, through the bundled payload as the app runs it: new game, concept, a painted
   monster, a boss theme and a spell sound, the full check (scripts, self-test, title, a walk into a battle won, the
   ending), every encounter group and the boss simulated, and a Windows .exe built. CI runs it on Linux and on Windows
@@ -96,5 +142,5 @@ references, uneven maps, NPCs on walls, warps that bounce, pictures out of range
   or phase checks yet; the concept skill says so.
 - Painted art and written music are simple by design. For a richer look, the skills point to openly licensed packs
   (Kenney, CC0) and record their licences.
-- Equipment, party members joining mid-game, status effects and minigames are not in the template; the agent builds them
-  as new code when a game needs them.
+- Minigames, vehicles, day and night, and real-time (action) battles are not in the template; the agent builds them as
+  new code when a game needs them, following the template's patterns.

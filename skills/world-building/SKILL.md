@@ -39,7 +39,10 @@ and walkable.
 4. NPC `role`: `inn` (heals the party), `shop` (sells `stock`, a list of item ids), `chest` (gives `item` or `gold`
    once), `battle` (a boss, see **battle-design**); `dialogue` is a key in `data/dialogue.json` (write the lines, see
    **story-and-dialogue**, which also covers flags: people who appear later and doors that open later).
-5. Encounter zones are in `data/encounters.json`; tall grass (or any tile with `encounters: true`) triggers them when
+5. Moments tied to places: `"on_enter": [{"event": "...", "once": true}]` for arriving, and `"triggers": [{"x": .., "y":
+   .., "event": "...", "once": true}]` for a tile (a warning before the boss, a view, an ambush). `"battle_background"`
+   (a colour or a picture) gives the area's battles their own look. See **events-and-cutscenes**.
+6. Encounter zones are in `data/encounters.json`; tall grass (or any tile with `encounters: true`) triggers them when
    the map names a zone (see **battle-design**).
 
 Map sizes: the screen shows 20x11 tiles at 320x180. Towns 20-30 wide; wild areas 30-60; dungeon rooms 15-25. Leave paths

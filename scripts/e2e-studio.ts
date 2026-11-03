@@ -48,8 +48,8 @@ await call('studio_next')
 const slime = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
   '..........oooooooo', '........oogggggggloo', '.......ogggwwgggwwgo', '.......oggwokgwokggo', '......ogggwwgggwwgggo',
   '......ogggggggggggggo', '.....ogggggggggggggggo', '.....oooooooooooooooo']
-const painted = await call('studio_paint', { file: 'art/enemies.png', at: [4, 0], frame: [32, 32], rows: slime, palette: { o: '#181425', g: '#3e8948', l: '#63c74d', w: '#ffffff', k: '#000000' } })
-if (!painted.includes('grown to fit')) { console.log('FAIL: painting a fifth enemy should grow the sheet'); failed = true }
+const painted = await call('studio_paint', { file: 'art/enemies.png', at: [6, 0], frame: [32, 32], rows: slime, palette: { o: '#181425', g: '#3e8948', l: '#63c74d', w: '#ffffff', k: '#000000' } })
+if (!painted.includes('grown to fit')) { console.log('FAIL: painting a seventh enemy should grow the sheet'); failed = true }
 await call('studio_preview', { file: 'art/enemies.png', frame: [32, 32] })
 await call('studio_music', { file: 'boss', tempo: 160, voices: [{ notes: 'A4 C5 E5 A4 G4:2 E4:2 F4 A4 C5 F4 E4:4' }, { notes: 'A2:2 A2:2 F2:2 G2:2 F2:2 F2:2 E2:4', wave: 'triangle' }] })
 await call('studio_sound', { name: 'fire', preset: 'fire' })
@@ -57,10 +57,19 @@ const check = await call('studio_check')
 if (!check.includes('✓ Map walk into a battle')) { console.log('FAIL: the full check did not walk into a battle'); failed = true }
 if (!check.includes('✓ Ending')) { console.log('FAIL: the ending did not run'); failed = true }
 const sim = await call('studio_simulate_battle', { level: 1, runs: 200 })
-if (!/slime at level 1: (easy|fair)/.test(sim)) { console.log('FAIL: a lone slime should be easy or fair'); failed = true }
+if (!/slime at level 1 \(hero, mage\): (easy|fair)/.test(sim)) { console.log('FAIL: a lone slime should be easy or fair'); failed = true }
 await call('studio_simulate_battle', { enemies: ['wolf'], level: 1, runs: 200 })
-const boss = await call('studio_simulate_battle', { enemies: ['alpha_wolf'], level: 3, runs: 200 })
-if (!/alpha_wolf at level 3: (fair|hard)/.test(boss)) { console.log('FAIL: the boss should be fair or hard at level 3'); failed = true }
+const boss = await call('studio_simulate_battle', { enemies: ['alpha_wolf'], level: 5, party: ['hero', 'mage', 'ranger'], runs: 200 })
+if (!/alpha_wolf at level 5 \(hero, mage, ranger\): (fair|hard)/.test(boss)) { console.log('FAIL: the boss should be fair or hard at level 5 with the full party'); failed = true }
+// Story events, played without the screen: the elder's quest (both answers), Tomo's charm, and the boss.
+const accept = await call('studio_test_event', { event: 'elder', choices: [0] })
+if (!accept.includes('accepted_quest') || !accept.includes('"quest_wolf":"start"')) { console.log('FAIL: accepting the elder\'s quest should set accepted_quest and start the quest'); failed = true }
+const decline = await call('studio_test_event', { event: 'elder', choices: [1] })
+if (decline.includes('accepted_quest')) { console.log('FAIL: declining the elder should not start the quest'); failed = true }
+const charm = await call('studio_test_event', { event: 'kid', flags: ['charm_quest'], quests: { charm: 'found' }, items: { kid_charm: 1 } })
+if (!charm.includes('"lucky_ring":1') || !charm.includes('"quest_charm":"done"')) { console.log('FAIL: returning the charm should give the Lucky Ring and finish the quest'); failed = true }
+const wolf = await call('studio_test_event', { event: 'great_wolf', map: 'forest' })
+if (!wolf.includes('Stopped by a battle against alpha_wolf that ends the game')) { console.log('FAIL: the Great Wolf should start the final battle'); failed = true }
 await call('studio_design_read', { section: 'phases' })
 if (doExport) {
   const built = await call('studio_export', { installTemplates: true })

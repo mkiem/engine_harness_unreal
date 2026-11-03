@@ -40,7 +40,7 @@ Engine Harness packages all of this as a desktop app for Windows: a fork of goos
 
 ## Make a game, even if you never have
 
-Open Engine Harness on an empty folder and choose **Start a new game**. The game studio interviews you about the game you want, one question at a time, creates a playable Godot RPG, and then works through it with you phase by phase: art, characters, maps, battles, items, story, menus, music, balance, and a Windows `.exe` to share. It paints pixel art, writes music, simulates every battle for difficulty and plays the game to check it, so nothing else needs installing. See [006 The game studio](docs/006-game-studio.md).
+Open Engine Harness on an empty folder and choose **Start a new game**. The game studio interviews you about the game you want, one question at a time, creates a playable Godot RPG (party and equipment, elements and status effects, enemy AI and boss phases, quests, recruits and cutscenes, shops, inns and save slots), and then works through it with you phase by phase: art, characters, maps, battles, items, story, menus, music, balance, and a Windows `.exe` to share. It paints pixel art, writes music, simulates every battle for difficulty and plays the game to check it, so nothing else needs installing. See [006 The game studio](docs/006-game-studio.md).
 
 ## In an agent IDE (goose, Claude Code)
 
