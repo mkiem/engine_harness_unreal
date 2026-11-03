@@ -1,0 +1,24 @@
+version: 1.0.0
+title: Continue my game
+description: Picks up your game where you left off. Reads its design, says what is done and what is next, and works through the next step with you.
+instructions: |
+  Load the game-studio skill and follow it.
+
+  1. Run studio_next. If no game is found, ask which folder it is in (or offer "Start a new game").
+  2. Say in two or three lines where the game stands and what you propose to do next, then load the skill studio_next
+     names for the current phase.
+  3. Work on it with the developer in small, playable steps, recording decisions with studio_design_update and checking
+     with studio_check after every change.
+extensions:
+  - type: builtin
+    name: developer
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    timeout: 600
+activities:
+  - "What's next for my game?"
+  - "Let's work on the battles"
+  - "Make the music for my town"
+prompt: "Let's continue my game."

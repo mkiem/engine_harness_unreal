@@ -1,0 +1,4 @@
+{
+  "potion": { "name": "Potion", "effect": "heal", "amount": 25, "price": 8, "about": "Restores 25 HP." },
+  "ether": { "name": "Ether", "effect": "mp", "amount": 10, "price": 15, "about": "Restores 10 MP." }
+}

@@ -17,12 +17,12 @@ On first launch, pick a model provider, open the **Set up my machine** recipe, a
 | Unreal bridge | `src/unreal` (part of Game Harness) | Python in the open editor over Unreal's built-in remote execution: no plugin to compile; Play in Editor; the editor log |
 | Godot bridge | `src/godot` (part of Game Harness) | Scenes read as text; GDScript checks and game runs through Godot's headless command line |
 | Blender extension | [MCP for Blender](https://github.com/ahujasid/blender-mcp) 2.2.6 through the bundled `uvx`, telemetry off | Live scene access and Python in the open Blender |
-| Recipes | `distro/recipes`, bundled in `resources/harness/recipes` | Set up my machine, New prop, Playtest and fix, New 2D character (Godot), Starter assets |
+| Recipes | `distro/recipes`, bundled in `resources/harness/recipes` | Start a new game, Continue my game, Set up my machine, New prop, Playtest and fix, New 2D character (Godot), Starter assets |
 | DCC scripts | `dcc/`, bundled in `resources/harness/dcc` | Deterministic export, inspection and import, found by the agent through `harness_scripts` |
 
 ### How the harness runs inside the app
 
-The payload (`npm run bundle`: one JavaScript file with every dependency, the DCC scripts and the recipes) ships in `resources/harness`. At startup the app writes a `harness-mcp` launcher beside the Windows shims (`%LOCALAPPDATA%\Goose\bin`, on PATH for every extension) and adds the recipes to `GOOSE_RECIPE_PATH`. The launcher runs the payload with Node.js found the way goose's bundled `npx.cmd` finds it: the portable Node.js goose keeps in `%LOCALAPPDATA%\Goose\node`, else a system Node.js 22+, else `npx.cmd` downloads the portable one. Electron's `RunAsNode` fuse stays off: the signed app executable is never usable as a general Node runtime.
+The payload (`npm run bundle`: one JavaScript file with every dependency, the DCC scripts, the recipes, the game templates and the game studio's skills) ships in `resources/harness`. At startup the app writes a `harness-mcp` launcher beside the Windows shims (`%LOCALAPPDATA%\Goose\bin`, on PATH for every extension) adds the recipes to `GOOSE_RECIPE_PATH`, and installs the studio's skills where goose reads them (see [006](006-game-studio.md)). The launcher runs the payload with Node.js found the way goose's bundled `npx.cmd` finds it: the portable Node.js goose keeps in `%LOCALAPPDATA%\Goose\node`, else a system Node.js 22+, else `npx.cmd` downloads the portable one. Electron's `RunAsNode` fuse stays off: the signed app executable is never usable as a general Node runtime.
 
 ### Kept apart from goose
 
@@ -48,6 +48,8 @@ Rules for patches, so upgrades stay cheap: one concern per patch; add files rath
 | 0005 | Branding, own installer id, updates off, own `GOOSE_PATH_ROOT`, NOTICE | Prompt tests; Windows installer build (CI) |
 | 0006 | System prompt: run the setup check on first use or when a tool does not answer | Prompt tests |
 | 0007 | System prompt: Godot scenes and scripts as text; offer starter assets with their licences | Prompt tests |
+| 0008 | Install the game studio's skills into `<GOOSE_PATH_ROOT>/config/skills` at startup | Unit tests; Windows smoke test |
+| 0009 | System prompt: people new to game development go through the game-studio skill | Prompt tests |
 
 ## The CI build
 

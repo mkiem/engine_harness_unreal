@@ -1,0 +1,33 @@
+version: 1.0.0
+title: Start a new game
+description: Makes a game with you from scratch, even if you have never made one. A short interview about the game you want, then a playable Godot RPG you shape step by step, from characters and maps to music and a Windows build.
+parameters:
+  - key: idea
+    input_type: string
+    requirement: optional
+    default: "I'm not sure yet"
+    description: Your idea in a few words, such as "a cosy RPG about a cat wizard", or leave it empty to brainstorm together
+instructions: |
+  The developer may never have made a game. Load the game-studio skill and follow it, then the game-concept skill for
+  the interview.
+
+  1. Greet them in two lines: you'll make a game together, step by step, and they can say "you choose" at any time.
+  2. Run the concept interview one question at a time (game-concept), starting from their idea: "{{ idea }}".
+  3. Before creating the project, check Godot with godot_status; if it is missing, offer studio_install_godot (about
+     60 MB, kept in Engine Harness's own folder).
+  4. Create the game with studio_new_project, run studio_check, then open it with godot_run (window: true) and tell
+     them what to try. Explain that everything is a placeholder they will replace phase by phase.
+  5. Finish with studio_next, and propose the next phase in one line.
+extensions:
+  - type: builtin
+    name: developer
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    timeout: 600
+activities:
+  - "A cosy RPG in a forest village"
+  - "A spooky adventure in a haunted town"
+  - "Help me come up with an idea"
+prompt: "I want to make a game. My idea: {{ idea }}"

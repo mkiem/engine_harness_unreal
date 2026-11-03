@@ -1,0 +1,97 @@
+{
+  "town": {
+    "name": "Fernvale",
+    "file": "town.txt",
+    "music": "res://audio/town.wav",
+    "encounters": "",
+    "npcs": [
+      {
+        "id": "elder",
+        "x": 9,
+        "y": 8,
+        "frame": 0,
+        "dialogue": "elder",
+        "dialogue_after": {
+          "beat_alpha": "elder_after"
+        }
+      },
+      {
+        "id": "innkeeper",
+        "x": 3,
+        "y": 5,
+        "frame": 1,
+        "dialogue": "innkeeper",
+        "role": "inn"
+      },
+      {
+        "id": "merchant",
+        "x": 15,
+        "y": 5,
+        "frame": 2,
+        "dialogue": "merchant",
+        "role": "shop",
+        "stock": [
+          "potion",
+          "ether"
+        ]
+      },
+      {
+        "id": "kid",
+        "x": 11,
+        "y": 10,
+        "frame": 3,
+        "dialogue": "kid"
+      }
+    ],
+    "warps": [
+      {
+        "x": 8,
+        "y": 13,
+        "to": "meadow",
+        "to_x": 8,
+        "to_y": 1
+      }
+    ]
+  },
+  "meadow": {
+    "name": "South Meadow",
+    "file": "meadow.txt",
+    "music": "res://audio/field.wav",
+    "encounters": "meadow",
+    "npcs": [
+      {
+        "id": "chest1",
+        "x": 21,
+        "y": 1,
+        "frame": 4,
+        "open_frame": 5,
+        "role": "chest",
+        "item": "ether",
+        "count": 1,
+        "gold": 20
+      },
+      {
+        "id": "alpha",
+        "x": 21,
+        "y": 7,
+        "frame": 6,
+        "dialogue": "alpha",
+        "role": "battle",
+        "enemies": [
+          "alpha_wolf"
+        ],
+        "flag": "beat_alpha",
+        "ending": true
+      }
+    ],
+    "warps": [
+      {
+        "x": 8,
+        "y": 0,
+        "to": "town",
+        "to_x": 8,
+        "to_y": 12
+      }
+    ]
+  }
+}

@@ -31,6 +31,7 @@ describe('harness MCP server', () => {
     expect(tools.map(tool => tool.name).sort()).toEqual(['assets_download', 'assets_import', 'assets_search', 'assets_sources', 'harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
       'harness_plan_prop', 'harness_plan_save', 'harness_scripts', 'harness_setup_blender', 'harness_setup_check', 'harness_setup_unreal_project',
       'harness_setup_godot_project', 'harness_ticket', 'harness_unlock', 'harness_validate', 'godot_check', 'godot_run', 'godot_scene', 'godot_status',
+      'studio_check', 'studio_design_read', 'studio_design_update', 'studio_export', 'studio_install_godot', 'studio_music', 'studio_new_project', 'studio_next', 'studio_paint', 'studio_preview', 'studio_simulate_battle', 'studio_sound',
       'unreal_log', 'unreal_play_in_editor', 'unreal_python', 'unreal_run_script', 'unreal_status'].sort())
     expect(client.getInstructions()).toContain('harness_validate')
   })

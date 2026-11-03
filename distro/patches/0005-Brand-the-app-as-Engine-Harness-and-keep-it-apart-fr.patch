@@ -1,7 +1,7 @@
 From ba56b11fdcdeb8f4439fda405f3d3da7315022f4 Mon Sep 17 00:00:00 2001
 From: engine_harness_unreal <noreply@anthropic.com>
 Date: Mon, 2 Nov 2026 06:21:21 +0000
-Subject: [PATCH 5/7] Brand the app as Engine Harness and keep it apart from
+Subject: [PATCH 5/9] Brand the app as Engine Harness and keep it apart from
  goose
 
 Product, window, executable and installer names; its own installer id, so it

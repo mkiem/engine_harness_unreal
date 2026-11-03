@@ -25,7 +25,15 @@ const COLOR_TYPES: Record<number, { name: PngFacts['colorType']; channels: numbe
   4: { name: 'grey-alpha', channels: 2 }, 6: { name: 'rgba', channels: 4 },
 }
 
-export function readPng(buffer: Buffer, colorLimit = 4096): PngFacts {
+interface Parsed {
+  header: { width: number; height: number; bitDepth: number; colorType: number; interlace: number }
+  kind: { name: PngFacts['colorType']; channels: number }
+  palette?: Buffer
+  transparency?: Buffer
+  data: Buffer[]
+}
+
+function parse(buffer: Buffer): Parsed {
   if (buffer.length < 33 || !buffer.subarray(0, 8).equals(SIGNATURE)) throw new Error('not a PNG file')
   let offset = 8
   let header: { width: number; height: number; bitDepth: number; colorType: number; interlace: number } | undefined
@@ -46,12 +54,11 @@ export function readPng(buffer: Buffer, colorLimit = 4096): PngFacts {
   if (!header) throw new Error('PNG has no IHDR chunk')
   const kind = COLOR_TYPES[header.colorType]
   if (!kind) throw new Error(`unknown PNG colour type ${header.colorType}`)
-  const facts = { width: header.width, height: header.height, colorType: kind.name, bitDepth: header.bitDepth, interlaced: header.interlace === 1 }
-  if (header.interlace === 1 || header.bitDepth !== 8) {
-    // Measured size only; pixel art is 8-bit and non-interlaced in practice, and the contract says so.
-    return { ...facts, colors: 0, hardAlpha: false, empty: false }
-  }
+  return { header, kind, palette, transparency, data }
+}
 
+/** Unfilters the image data into one byte array of samples per row (8-bit, non-interlaced only). */
+function samples({ header, kind, data }: Parsed): Buffer {
   const raw = inflateSync(Buffer.concat(data))
   const bpp = kind.channels
   const stride = header.width * bpp
@@ -84,31 +91,56 @@ export function readPng(buffer: Buffer, colorLimit = 4096): PngFacts {
     }
     previous = out
   }
+  return pixels
+}
 
+/** The pixel at index i as [r, g, b, alpha]. */
+function pixelAt(parsed: Parsed, pixels: Buffer, i: number): [number, number, number, number] {
+  const p = i * parsed.kind.channels
+  const { palette, transparency } = parsed
+  switch (parsed.header.colorType) {
+    case 0: return [pixels[p]!, pixels[p]!, pixels[p]!, 255]
+    case 2: return [pixels[p]!, pixels[p + 1]!, pixels[p + 2]!, 255]
+    case 3: {
+      const index = pixels[p]!
+      return [palette?.[index * 3] ?? 0, palette?.[index * 3 + 1] ?? 0, palette?.[index * 3 + 2] ?? 0, transparency && index < transparency.length ? transparency[index]! : 255]
+    }
+    case 4: return [pixels[p]!, pixels[p]!, pixels[p]!, pixels[p + 1]!]
+    default: return [pixels[p]!, pixels[p + 1]!, pixels[p + 2]!, pixels[p + 3]!]
+  }
+}
+
+export function readPng(buffer: Buffer, colorLimit = 4096): PngFacts {
+  const parsed = parse(buffer)
+  const { header, kind } = parsed
+  const facts = { width: header.width, height: header.height, colorType: kind.name, bitDepth: header.bitDepth, interlaced: header.interlace === 1 }
+  if (header.interlace === 1 || header.bitDepth !== 8) {
+    // Measured size only; pixel art is 8-bit and non-interlaced in practice, and the contract says so.
+    return { ...facts, colors: 0, hardAlpha: false, empty: false }
+  }
+  const pixels = samples(parsed)
   const seen = new Set<number>()
   let hardAlpha = true
   let visible = 0
   for (let i = 0; i < header.width * header.height; i++) {
-    let r: number, g: number, b: number, alpha: number
-    const p = i * bpp
-    switch (header.colorType) {
-      case 0: r = g = b = pixels[p]!; alpha = 255; break
-      case 2: r = pixels[p]!; g = pixels[p + 1]!; b = pixels[p + 2]!; alpha = 255; break
-      case 3: {
-        const index = pixels[p]!
-        r = palette?.[index * 3] ?? 0; g = palette?.[index * 3 + 1] ?? 0; b = palette?.[index * 3 + 2] ?? 0
-        alpha = transparency && index < transparency.length ? transparency[index]! : 255
-        break
-      }
-      case 4: r = g = b = pixels[p]!; alpha = pixels[p + 1]!; break
-      default: r = pixels[p]!; g = pixels[p + 1]!; b = pixels[p + 2]!; alpha = pixels[p + 3]!
-    }
+    const [r, g, b, alpha] = pixelAt(parsed, pixels, i)
     if (alpha !== 0 && alpha !== 255) hardAlpha = false
     if (alpha === 0) continue
     visible++
     if (seen.size <= colorLimit) seen.add((r << 16) | (g << 8) | b)
   }
   return { ...facts, colors: seen.size, hardAlpha, empty: visible === 0 }
+}
+
+/** Decodes a PNG (8-bit, non-interlaced) into RGBA bytes, for tools that edit pixel art. */
+export function decodePngRgba(buffer: Buffer): { width: number; height: number; rgba: Uint8Array } {
+  const parsed = parse(buffer)
+  const { width, height, bitDepth, interlace } = parsed.header
+  if (interlace === 1 || bitDepth !== 8) throw new Error('only 8-bit, non-interlaced PNGs can be edited; re-save it as an ordinary 8-bit PNG')
+  const pixels = samples(parsed)
+  const rgba = new Uint8Array(width * height * 4)
+  for (let i = 0; i < width * height; i++) rgba.set(pixelAt(parsed, pixels, i), i * 4)
+  return { width, height, rgba }
 }
 
 /** Writes an 8-bit RGBA PNG (filter 0); for the simulated sprite worker and tests. */

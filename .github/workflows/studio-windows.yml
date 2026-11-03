@@ -10,9 +10,9 @@ on:
   push:
     branches: ['claude/**', 'main']
     tags: ['studio-v*']
-    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
+    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'templates/**', 'skills/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
   pull_request:
-    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
+    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'templates/**', 'skills/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
   workflow_dispatch:
 
 permissions:
@@ -90,6 +90,48 @@ jobs:
           chmod +x "$RUNNER_TEMP/godot/Godot_v4.4.1-stable_linux.x86_64"
       - name: Pixel-art project, plan, real script checks and a headless run
         run: GODOT_BIN="$RUNNER_TEMP/godot/Godot_v4.4.1-stable_linux.x86_64" node scripts/e2e-godot.ts "$RUNNER_TEMP/e2e-godot"
+
+  studio-e2e:
+    name: Game studio end to end (${{ matrix.os }}, real Godot 4.4, Windows .exe)
+    needs: harness
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            godot: Godot_v4.4.1-stable_linux.x86_64
+            zip: Godot_v4.4.1-stable_linux.x86_64.zip
+          - os: windows-latest
+            godot: Godot_v4.4.1-stable_win64_console.exe
+            zip: Godot_v4.4.1-stable_win64.exe.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: harness-payload
+          path: dist/payload
+      - name: Download Godot 4.4.1
+        shell: bash
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/${{ matrix.zip }}
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          chmod +x "$RUNNER_TEMP/godot/${{ matrix.godot }}" || true
+      - name: New game, art, music, checks, the ending, balance and a Windows build, through the bundled server
+        shell: bash
+        run: GODOT_BIN="$RUNNER_TEMP/godot/${{ matrix.godot }}" node scripts/e2e-studio.ts "$RUNNER_TEMP/e2e-studio" --export --server dist/payload/harness-mcp.mjs
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'windows-latest'
+        with:
+          name: sample-game-windows
+          path: ${{ runner.temp }}/e2e-studio/fernvale_tales/builds/windows/
+          if-no-files-found: error
+          retention-days: 7
 
   assets-e2e:
     name: Asset sources (real downloads)
@@ -259,6 +301,8 @@ jobs:
           if (-not (Test-Path (Join-Path $app 'EngineHarness.exe'))) { throw 'EngineHarness.exe was not installed' }
           if (-not (Test-Path (Join-Path $app 'resources\harness\harness-mcp.mjs'))) { throw 'the harness payload was not installed' }
           if (-not (Test-Path (Join-Path $app 'resources\bin\uvx.exe'))) { throw 'uvx.exe was not installed' }
+          if (-not (Test-Path (Join-Path $app 'resources\harness\skills\game-studio\SKILL.md'))) { throw 'the studio skills were not installed' }
+          if (-not (Test-Path (Join-Path $app 'resources\harness\templates\godot-rpg\project.godot'))) { throw 'the game templates were not installed' }
       - name: Launch the app and wait for the harness launcher
         shell: pwsh
         run: |
@@ -279,18 +323,24 @@ jobs:
           Write-Output "goose's default config ($gooseDefault) exists: $(Test-Path $gooseDefault)"
           if (Test-Path $root) { Get-ChildItem -Recurse -Depth 2 $root | Select-Object -First 20 FullName | Format-Table -HideTableHeaders }
           if ((Test-Path $gooseDefault) -and -not (Test-Path $root)) { throw 'configuration went to goose''s folder instead of Engine Harness''s own' }
+          $skills = Join-Path $root 'config\skills'
+          if (Test-Path $skills) { Get-ChildItem $skills | Format-Table -HideTableHeaders Name }
+          if (-not (Test-Path (Join-Path $skills 'game-studio\SKILL.md'))) { throw "the app did not install the studio skills into $skills, where goose reads them" }
       - name: The launcher answers an MCP handshake
         shell: pwsh
         run: |
           $launcher = Join-Path $env:LOCALAPPDATA 'Goose\bin\harness-mcp.cmd'
           $init = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}'
           $list = '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+          $newGame = '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"studio_new_project","arguments":{"title":"Smoke Quest"}}}'
           $notify = '{"jsonrpc":"2.0","method":"notifications/initialized"}'
           $env:HARNESS_PROJECT_DIR = $env:RUNNER_TEMP
-          $output = ($init, $notify, $list -join "`n") | & cmd /c "`"$launcher`"" 2>&1 | Out-String
+          $output = ($init, $notify, $list, $newGame -join "`n") | & cmd /c "`"$launcher`"" 2>&1 | Out-String
           Write-Output $output
           if ($output -notmatch '"engine-harness"') { throw 'no initialize answer from harness-mcp' }
           if ($output -notmatch 'harness_setup_check') { throw 'tools/list did not include the setup tools' }
+          if ($output -notmatch 'studio_new_project') { throw 'tools/list did not include the studio tools' }
+          if (-not (Test-Path (Join-Path $env:RUNNER_TEMP 'smoke_quest\project.godot'))) { throw 'studio_new_project did not create a game from the installed template' }
 
   release:
     name: Publish the release

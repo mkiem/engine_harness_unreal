@@ -1,0 +1,24 @@
+{
+  "title": "{{TITLE}}",
+  "tagline": "{{PITCH}}",
+  "tile_size": 16,
+  "tiles": "res://art/tiles.png",
+  "hero_sprite": "res://art/hero.png",
+  "npc_sprites": "res://art/npcs.png",
+  "npc_frames": 7,
+  "enemy_sprites": "res://art/enemies.png",
+  "enemy_frames": 4,
+  "title_background": "#1d2b53",
+  "battle_background": "#1d2b53",
+  "title_music": "res://audio/title.wav",
+  "battle_music": "res://audio/battle.wav",
+  "ui": {
+    "panel": "#181425e6",
+    "border": "#c2c3c7",
+    "text": "#fff1e8",
+    "accent": "#ffa300",
+    "corner": 2,
+    "font": "",
+    "font_size": 8
+  }
+}

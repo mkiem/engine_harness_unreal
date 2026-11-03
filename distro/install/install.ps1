@@ -1,7 +1,7 @@
 # Sets up the Game Harness on this Windows machine for goose (stock goose today, the studio build later):
 #   - installs the harness's dependencies,
 #   - puts a `harness-mcp` launcher on your PATH, which the bundled Game Harness extension and the recipes run,
-#   - points goose at the game-dev recipes,
+#   - points goose at the game-dev recipes, and installs the game studio's skills in ~\.agents\skills,
 #   - checks for uv (Blender extension) and Blender.
 # Run from the repository:  powershell -ExecutionPolicy Bypass -File distro\install\install.ps1
 $ErrorActionPreference = 'Stop'
@@ -37,6 +37,16 @@ $recipePath = [Environment]::GetEnvironmentVariable('GOOSE_RECIPE_PATH', 'User')
 if (-not $recipePath) { $recipePath = $recipes }
 elseif (-not ($recipePath -split ';' | Where-Object { $_ -eq $recipes })) { $recipePath = "$recipePath;$recipes" }
 [Environment]::SetEnvironmentVariable('GOOSE_RECIPE_PATH', $recipePath, 'User')
+
+# The game studio's skills, where goose (and other agents) read skills: ~/.agents/skills.
+$skills = Join-Path $HOME '.agents\skills'
+New-Item -ItemType Directory -Force -Path $skills | Out-Null
+foreach ($dir in Get-ChildItem (Join-Path $root 'skills') -Directory) {
+  $target = Join-Path $skills $dir.Name
+  if (Test-Path $target) { Remove-Item -Recurse -Force $target }
+  Copy-Item -Recurse $dir.FullName $target
+}
+Write-Host "Game studio skills installed in $skills"
 
 Write-Host ''
 Write-Host 'Checks:'

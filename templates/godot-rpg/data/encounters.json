@@ -1,0 +1,4 @@
+{
+  "meadow": { "rate": 0.12, "groups": [["slime"], ["slime", "slime"], ["bat"], ["slime", "bat"]] },
+  "forest": { "rate": 0.15, "groups": [["wolf"], ["wisp"], ["bat", "bat"], ["wolf", "slime"]] }
+}
