@@ -109,6 +109,8 @@ export function parseGodotErrors(output: string): GodotError[] {
     if (!match) continue
     // Quitting a running scene from a test leaves objects alive; Godot reports that at exit, and it is not a game error.
     if (/resources still in use at exit|ObjectDB instances leaked/.test(match[1]!)) continue
+    // Headless runs use a dummy renderer that has no textures; importing a model's thumbnails trips over that.
+    if (/servers\/rendering\/dummy\//.test(lines[i + 1] ?? '')) continue
     const location = /(?:at|in)\s*:?\s*(?:\S+\s+)?\(?(res:\/\/[^:)]+):(\d+)\)?/.exec(lines[i + 1] ?? '') ?? /(res:\/\/[^:)\s]+):(\d+)/.exec(line)
     errors.push({ message: match[1]!, file: location?.[1], line: location ? Number(location[2]) : undefined })
   }

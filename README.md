@@ -84,6 +84,7 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 - [005 Godot and assets](docs/005-godot-and-assets.md): Godot 4 for 2D pixel-art games, measured tool cost, and the starter asset library
 - [006 The game studio](docs/006-game-studio.md): making a whole game with a beginner: the skills, studio tools, template and design document
 - [007 Design references](docs/007-design-references.md): loopyhop's Gameplay Atlas (280 mechanics) and Game Art Style (37 styles), bundled with permission: mechanic cards, the art bible, and the RPG features built from them
+- [008 3D characters and textures](docs/008-3d-characters.md): rigged, textured, animated characters for Godot and Unreal from reference images (yours, or your own image model's) in four styles; baked PBR textures for every prop
 
 ## Layout
 
@@ -98,6 +99,7 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 | `src/planner` | Prop template planner and LLM planner |
 | `src/mcp` | The harness as an MCP server for agent IDEs |
 | `src/studio` | The game studio: design document, phases, project creation, art and music making |
+| `src/character` | 3D characters: the reference guide and checker, image model adapters, the build and engine installs |
 | `skills/` | The game studio's agent skills, one per phase |
 | `templates/godot-rpg` | The Godot 4 RPG every studio game starts from |
 | `catalog/loopyhop` | Gameplay Atlas and Game Art Style by loopyhop (with permission; no game screenshots) |

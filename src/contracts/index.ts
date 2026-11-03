@@ -48,6 +48,8 @@ export const MeshFacts = z.object({
   /** Rotation zero and scale one on every exported object: unapplied transforms import rotated or scaled. */
   transformsApplied: z.boolean(),
   bones: z.number().int().nonnegative().optional(),
+  /** Animation names in the file (skeletal meshes). */
+  animations: z.array(z.string()).optional(),
 })
 
 const TextureMapFacts = z.object({ path: z.string(), width: z.number().int(), height: z.number().int(), srgb: z.boolean() })

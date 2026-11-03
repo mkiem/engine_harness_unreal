@@ -28,6 +28,7 @@ Twelve phases, in order. `studio_next` always says which one is current, what is
 | 12. Build and share | build-and-share | A Windows .exe to send to friends |
 
 The developer can jump around ("let's do the music now"); go where they want, then come back to the path.
+For a 3D character from reference images (Godot or Unreal), load character-3d.
 
 ## Every session
 

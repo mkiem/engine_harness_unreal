@@ -28,7 +28,7 @@ describe('harness MCP server', () => {
   it('lists its tools with instructions for the agent', async () => {
     const { client } = await connect(tempDir())
     const { tools } = await client.listTools()
-    expect(tools.map(tool => tool.name).sort()).toEqual(['assets_download', 'assets_import', 'assets_search', 'assets_sources', 'harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
+    expect(tools.map(tool => tool.name).sort()).toEqual(['assets_download', 'assets_import', 'assets_search', 'assets_sources', 'character_build', 'character_check_references', 'character_generate_references', 'character_image_model', 'character_install', 'character_reference_guide', 'character_sample_references', 'character_styles', 'harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
       'harness_plan_prop', 'harness_plan_save', 'harness_scripts', 'harness_setup_blender', 'harness_setup_check', 'harness_setup_unreal_project',
       'harness_setup_godot_project', 'harness_ticket', 'harness_unlock', 'harness_validate', 'godot_check', 'godot_run', 'godot_scene', 'godot_status',
       'studio_art_style', 'studio_art_styles', 'studio_check', 'studio_design_read', 'studio_design_update', 'studio_export', 'studio_find_mechanic', 'studio_install_godot', 'studio_mechanic', 'studio_music', 'studio_new_project', 'studio_next', 'studio_paint', 'studio_preview', 'studio_simulate_battle', 'studio_sound', 'studio_test_event',

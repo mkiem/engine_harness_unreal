@@ -21,7 +21,8 @@ and lists real games that use them. Use it to show options instead of describing
    `design/ART_DIRECTION.md` is written with the full art-direction brief for this game. Every later picture follows
    that file. The template is pixel art: a pixel style (`16bit-pixel`, `8bit-pixel`, `topdown-tile-pixel`,
    `detailed-pixel`, `luminous-pixel`, `monochrome-pixel`, `coarse-pixel`) fits without code changes. A painted or 3D
-   style is possible later, but means new art at a higher resolution; say so.
+   style is possible later, but means new art at a higher resolution; say so. For 3D characters (in a 3D Godot or
+   Unreal game), the character-3d skill builds them from reference images in a voxel, low-poly, toon or retro style.
 
 1. **Resolution.** The game draws at 320x180 and scales up (a pixel stays crisp). Offer 320x180 (default, classic 16-bit
    feel) or 256x144 (chunkier, more retro). Changing it later means changing `project.godot` and the design.

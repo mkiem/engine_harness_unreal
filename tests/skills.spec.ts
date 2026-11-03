@@ -50,7 +50,7 @@ describe('the studio skills', () => {
     await Promise.all([server.connect(a), client.connect(b)])
     const tools = new Set((await client.listTools()).tools.map(t => t.name))
     for (const name of skills) {
-      for (const [mention] of read(name).matchAll(/\b(?:studio|godot|assets|harness|unreal)_[a-z_]+\b/g)) expect(tools, `${name} mentions ${mention}`).toContain(mention)
+      for (const [mention] of read(name).matchAll(/\b(?:studio|godot|assets|harness|unreal|character)_[a-z_]+\b/g)) expect(tools, `${name} mentions ${mention}`).toContain(mention)
     }
   })
 })

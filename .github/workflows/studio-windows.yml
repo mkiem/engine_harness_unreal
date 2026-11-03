@@ -70,8 +70,41 @@ jobs:
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libsm6 libxkbcommon0
           pip install bpy==5.2.3
-      - name: Recipe, export, inspection and contract, with real Blender
+      - name: Recipe, export, inspection, texture bake and contracts, with real Blender
         run: python dcc/tests/e2e_blender.py "$RUNNER_TEMP/e2e"
+
+  character-e2e:
+    name: 3D characters end to end (real Blender 5.2 and Godot 4.4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Blender as the bpy module
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libsm6 libxkbcommon0
+          pip install bpy==5.2.3
+      - name: Download Godot 4.4.1
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          chmod +x "$RUNNER_TEMP/godot/Godot_v4.4.1-stable_linux.x86_64"
+      - name: Sample references, four styles, contracts, and each character loaded in Godot
+        run: |
+          HARNESS_BLENDER_PYTHON="$(which python)" GODOT_BIN="$RUNNER_TEMP/godot/Godot_v4.4.1-stable_linux.x86_64" \
+            node scripts/e2e-character.ts "$RUNNER_TEMP/e2e-character"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: character-previews
+          path: ${{ runner.temp }}/e2e-character/characters/*/build/*_preview.png
+          if-no-files-found: ignore
 
   godot-e2e:
     name: Godot end to end (real Godot 4.4)
@@ -205,7 +238,7 @@ jobs:
 
   package:
     name: Package the installer (Windows)
-    needs: [harness, blender-e2e, godot-e2e, backend, desktop-checks]
+    needs: [harness, blender-e2e, character-e2e, godot-e2e, backend, desktop-checks]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

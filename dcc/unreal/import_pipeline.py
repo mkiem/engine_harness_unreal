@@ -49,14 +49,23 @@ def ingest_static_mesh(job: dict) -> dict:
     options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH if options.import_as_skeletal else unreal.FBXImportType.FBXIT_STATIC_MESH
     options.import_materials = False
     options.import_textures = False
-    options.import_animations = False
+    options.import_animations = bool(req.get("animations", False))  # characters bring their idle, walk, run, attack
     options.auto_compute_lod_distances = True
-    data = options.static_mesh_import_data
-    data.combine_meshes = True
-    data.generate_lightmap_u_vs = bool(req.get("lightmapUv", True))
-    data.auto_generate_collision = req.get("collision") == "engine"
-    data.import_mesh_lo_ds = req.get("lods", 1) > 1
-    data.normal_import_method = unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS
+    if options.import_as_skeletal:
+        # A new skeleton from the FBX (the harness's characters use Godot's humanoid bone names), its animations with it.
+        options.skeleton = None
+        data = options.skeletal_mesh_import_data
+        data.import_morph_targets = False
+        data.import_mesh_lo_ds = req.get("lods", 1) > 1
+        data.normal_import_method = unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS
+        options.create_physics_asset = req.get("collision") == "engine"
+    else:
+        data = options.static_mesh_import_data
+        data.combine_meshes = True
+        data.generate_lightmap_u_vs = bool(req.get("lightmapUv", True))
+        data.auto_generate_collision = req.get("collision") == "engine"
+        data.import_mesh_lo_ds = req.get("lods", 1) > 1
+        data.normal_import_method = unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS
     task = import_task(job["file"], job["destination"], options)
     objects = task.get_editor_property("imported_object_paths") or []
     if not objects:
@@ -80,6 +89,17 @@ def ingest_static_mesh(job: dict) -> dict:
             for axis, (got, want) in enumerate(zip(facts["boundsCm"], expected)):
                 if abs(got / want - 1) > req.get("sizeTolerance", 0.5):
                     problems.append(violation(asset, "ingest.size", f"{asset} is {got} cm along {'XYZ'[axis]} in the engine, expected about {want} cm"))
+    elif isinstance(mesh, unreal.SkeletalMesh):
+        extent = mesh.get_bounds().box_extent
+        facts["boundsCm"] = [round(extent.x * 2, 2), round(extent.y * 2, 2), round(extent.z * 2, 2)]
+        animations = []
+        for found in unreal.EditorAssetLibrary.list_assets(job["destination"], recursive=True):
+            loaded = unreal.EditorAssetLibrary.load_asset(str(found).split(".")[0])
+            if isinstance(loaded, unreal.AnimSequence):
+                animations.append(loaded.get_name())
+        facts["animations"] = sorted(animations)
+        if req.get("animations") and not animations:
+            problems.append(violation(asset, "ingest.animations", f"{asset} imported without its animations"))
     return {"objectPath": path, "facts": facts, "violations": problems}
 
 
@@ -133,7 +153,8 @@ def main() -> None:
         result = ingest_static_mesh(job)
     elif kind == "texture_set":
         folder = os.path.dirname(job["file"]) if job.get("file") else ""
-        files = sorted(os.path.join(folder, name) for name in os.listdir(folder) if name.startswith(job["asset"]))
+        files = sorted(os.path.join(folder, name) for name in os.listdir(folder)
+                       if name.startswith(job["asset"] + "_") and name.lower().endswith((".png", ".tga", ".exr")))
         result = ingest_texture_set(job, files)
     elif kind == "audio_event":
         result = ingest_audio_event(job)

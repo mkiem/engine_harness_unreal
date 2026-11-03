@@ -1,7 +1,8 @@
 """End-to-end check of the Blender half of the pipeline with real Blender (the bpy module, or a Blender binary):
 
   recipe → .blend → export_static_prop.py (FBX + inspection facts) → result.json → `harness validate` against the
-  vintage-radio plan's contract.
+  vintage-radio plan's contract; then bake_textures.py bakes the recipe's coloured material into T_VintageRadio_BC,
+  _ORM and _N, validated against the texture ticket's contract.
 
     python dcc/tests/e2e_blender.py [work dir]          # needs `import bpy` to work in this Python
 
@@ -28,6 +29,16 @@ def run_script(path: Path, *args: str) -> None:
         runpy.run_path(str(path), run_name="__main__")
     finally:
         sys.argv = saved
+
+
+def distinct_colours(path: Path) -> int:
+    """How many 4-bit-per-channel colour bins a baked map uses (a flat grey bake has one or two)."""
+    import bpy as blender
+    image = blender.data.images.load(str(path))
+    pixels = list(image.pixels[:])
+    bins = {(int(pixels[i] * 15), int(pixels[i + 1] * 15), int(pixels[i + 2] * 15)) for i in range(0, len(pixels), 4 * 211)}
+    blender.data.images.remove(image)
+    return len(bins)
 
 
 def main() -> int:
@@ -75,6 +86,36 @@ def main() -> int:
     print(check.stdout + check.stderr)
     if check.returncode != 0:
         return check.returncode
+
+    # Textures: bake the recipe's material (wood, cloth, bakelite, brass) into the texture set on the model's UVs.
+    textures = work / "work" / "vintage-radio-texture"
+    (textures / "export").mkdir(parents=True, exist_ok=True)
+    blender.ops.wm.open_mainfile(filepath=str(blend))
+    run_script(BLENDER / "bake_textures.py", "--object", "SM_VintageRadio_LOD0", "--asset", "T_VintageRadio",
+               "--out", str(textures / "export"), "--size", "2048", "--ao-samples", "16",
+               "--facts", str(textures / "export" / "T_VintageRadio.facts.json"))
+    texture_facts = json.loads((textures / "export" / "T_VintageRadio.facts.json").read_text())
+    colours = distinct_colours(textures / "export" / "T_VintageRadio_BC.png")
+    print(f"T_VintageRadio_BC has {colours} distinct colour bins")
+    if colours < 6:
+        print("FAIL: the base colour is nearly flat; the recipe's colours did not bake")
+        return 1
+    (textures / "result.json").write_text(json.dumps({
+        "status": "ready",
+        "summary": "T_VintageRadio baked from the recipe's material with bake_textures.py",
+        "assets": [{
+            "id": "T_VintageRadio", "kind": "texture_set",
+            "files": [{"path": f"export/{m['path']}", "role": "export"} for m in texture_facts["maps"].values()],
+            "facts": {**texture_facts, "maps": {k: {**m, "path": f"export/{m['path']}"} for k, m in texture_facts["maps"].items()}},
+            "provenance": {"method": "procedural", "tool": f"blender {blender.app.version_string}",
+                           "recipe": "dcc/blender/bake_textures.py", "license": "proprietary"},
+        }],
+    }, indent=2))
+    texture_check = subprocess.run(["node", str(ROOT / "src" / "cli.ts"), "validate", "--plan", str(ROOT / "examples" / "vintage-radio" / "plan.json"),
+                                    "--ticket", "vintage-radio-texture", "--dir", str(textures)], capture_output=True, text=True, env={**os.environ})
+    print(texture_check.stdout + texture_check.stderr)
+    if texture_check.returncode != 0:
+        return texture_check.returncode
 
     # The gate must also refuse the classic mistake: a hull named for the wrong mesh imports as visible geometry.
     blender.ops.wm.open_mainfile(filepath=str(blend))
