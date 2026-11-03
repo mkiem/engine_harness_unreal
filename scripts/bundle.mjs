@@ -4,6 +4,7 @@
 //   recipes/          the game-dev recipes
 //   templates/        game templates the studio starts projects from (godot-rpg)
 //   skills/           the game studio's agent skills (SKILL.md each), installed by the app where the agent finds them
+//   catalog/          design references (loopyhop's Gameplay Atlas and Game Art Style, with permission; see its NOTICE)
 //   NOTICE.md         licences of what is bundled
 // Usage: node scripts/bundle.mjs
 import { build } from 'esbuild'
@@ -33,6 +34,7 @@ cpSync(join(root, 'dcc'), join(out, 'dcc'), { recursive: true, filter: path => !
 cpSync(join(root, 'distro', 'recipes'), join(out, 'recipes'), { recursive: true })
 cpSync(join(root, 'templates'), join(out, 'templates'), { recursive: true, filter: path => !/[\\/]\.godot([\\/]|$)|[\\/]builds([\\/]|$)/.test(path) })
 cpSync(join(root, 'skills'), join(out, 'skills'), { recursive: true })
+cpSync(join(root, 'catalog'), join(out, 'catalog'), { recursive: true })
 
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const licence = name => {
@@ -44,6 +46,8 @@ writeFileSync(join(out, 'NOTICE.md'), [
   '',
   'Bundled into harness-mcp.mjs (each under its own licence; transitive licence texts are in harness-mcp.mjs.LEGAL.txt):',
   ...deps.map(name => `- ${name}: ${licence(name)}`),
+  '',
+  'catalog/loopyhop: Gameplay Atlas and Game Art Style by loopyhop, included with permission (see catalog/loopyhop/NOTICE.md).',
   '',
 ].join('\n'))
 writeFileSync(join(out, 'version.json'), JSON.stringify({ version: pkg.version, builtAt: new Date().toISOString() }, null, 2))

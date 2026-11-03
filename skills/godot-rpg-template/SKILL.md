@@ -14,13 +14,13 @@ phases, an ending) uses every feature below; read its files as examples.
 | File | Format |
 | --- | --- |
 | `game.json` | `title`, `tagline`, `tile_size` (16), sprite sheets (`tiles`, `hero_sprite`, `npc_sprites`, `enemy_sprites`), `npc_frames`, `enemy_frames`, `title_background`, `battle_background`, `title_music`, `battle_music`, `ending_music`, `ui` (`panel`, `border`, `text`, `accent` colours, `corner`, `font`, `font_size`) |
-| `rules.json` | `max_party` (4), `reserve_xp` (0.5), `elements` (["fire", "ice", "thunder", "holy"]), `hit_chance`, `crit_chance`, `crit_multiplier`, `weak_multiplier` (1.5), `resist_multiplier` (0.5), `spread_power` (0.75: hitting everyone is weaker per target), `sell_rate` (0.5) |
+| `rules.json` | `show_intent` (true: enemies' plans are shown), `max_party` (4), `reserve_xp` (0.5), `elements` (["fire", "ice", "thunder", "holy"]), `hit_chance`, `crit_chance`, `crit_multiplier`, `weak_multiplier` (1.5), `resist_multiplier` (0.5), `spread_power` (0.75: hitting everyone is weaker per target), `sell_rate` (0.5) |
 | `party.json` | `members` (starting character ids), `level`, `gold`, `items` (`{id: count}`), `map`, `position` `[x, y]` |
 | `characters.json` | per id: `name`, `role`, `base` `{hp, mp, atk, def, mag, spd}`, `growth` (per level, may be fractional), `skills` (known at start), `learns` `{"level": skill}`, `equipment` `{weapon, armor, accessory}` (item ids), optional `weak` (elements) |
-| `skills.json` | per id: `name`, `mp`, `type` (`physical`, `magic`, `heal`, `support`), `power` (multiplier), `target` (`enemy`, `all_enemies`, `ally`, `all_allies`, `self`, `ko_ally`; default from type), `element`, `status` `{id, chance}` (inflicted on hit, or given by a support skill), `cures` (status ids), `revive` + `revive_percent`, `about` |
+| `skills.json` | per id: `name`, `mp`, `type` (`physical`, `magic`, `heal`, `support`), `power` (multiplier), `target` (`enemy`, `all_enemies`, `ally`, `all_allies`, `self`, `ko_ally`; default from type), `element`, `status` `{id, chance}` (inflicted on hit, or given by a support skill), `cures` (status ids), `revive` + `revive_percent`, `charge` (turns of gathering power first), `interrupts` (cancels a gathering enemy), `breaks` (extra shield points), `about` |
 | `items.json` | **Consumables**: `effect` (`heal`, `mp`, `revive`, `cure`, `damage`, `buff`), `amount`, `cures`, `status`, `target`, `element`, `price`, `about`. **Equipment**: `slot` (`weapon`, `armor`, `accessory`), `stats` `{atk: 3, ...}` (may be negative), `users` (character ids; empty = anyone), `element` (weapon), `resist` (elements), `immune` (statuses), `crit` (extra critical chance), `status` (weapon: `{id, chance}` on hit), `price`. **Key items**: `"kind": "key"` (story only; can't be sold or used) |
-| `statuses.json` | per id: `name`, `about`, `text` ("%s is poisoned!"), `turns` (0 = until cured), and effects: `damage_percent` / `heal_percent` (each turn), `skip_turn` (+ `wake_on_hit`, `skip_text`), `no_skills`, `hit_chance` (multiplier), `stats` (multipliers, such as `{"atk": 1.3}`), `cancels` (opposites), `lasting` (stays after battle), `harmful`, `color` |
-| `enemies.json` | per id: `name`, `frame`, `level`, `stats` `{hp, mp, atk, def, mag, spd, crit?, evade?}`, `skills`, `weak`/`resist`/`absorb` (elements), `immune` (statuses), `statuses` (start with), `element` (its attacks), `on_hit` `{id, chance}`, `ai` (rules, below), `phases` (below), `xp`, `gold`, `drops` `[{item, chance}]`, optional `scale` (sprite size) |
+| `statuses.json` | per id: `name`, `about`, `text` ("%s is poisoned!"), `turns` (0 = until cured), and effects: `damage_percent` / `heal_percent` (each turn), `skip_turn` (+ `wake_on_hit`, `skip_text`), `no_skills`, `hit_chance` (multiplier), `stats` (multipliers, such as `{"atk": 1.3}`), `damage_taken` (multiplier), `draw_attacks` (taunt), `restores_shield` (Broken), `cancels` (opposites), `lasting` (stays after battle), `harmful`, `color`. `taunt` and `broken` drive the taunt and break systems |
+| `enemies.json` | per id: `name`, `frame`, `level`, `stats` `{hp, mp, atk, def, mag, spd, crit?, evade?}`, `skills`, `weak`/`resist`/`absorb` (elements), `immune` (statuses), `statuses` (start with), `element` (its attacks), `on_hit` `{id, chance}`, `ai` (rules, below), `phases` (below), `shield` (break points), `uninterruptible`, `xp`, `gold`, `drops` `[{item, chance}]`, optional `scale` (sprite size) |
 | `formulas.json` | maths as text: `physical`, `magic`, `heal` (variables `atk`, `mag`, `def`, `level`, `power`, `variance`), `xp_to_next` (`level`), `run_chance` (`spd`) |
 | `encounters.json` | per zone: `rate` (chance per step on encounter tiles), `groups` (lists of enemy ids) |
 | `dialogue.json` | per key: lines. Used by NPCs without events, locked warps (`locked`), and `ending` |
@@ -48,12 +48,14 @@ the time.
   `[{x, y, to, to_x, to_y, requires?, locked?}]`, and `npcs`:
   `{id, x, y, frame, event?, dialogue?, dialogue_after?, sets?, only_if?, hide_if?, role?}` with roles `inn` (`price`),
   `shop` (`stock`; players buy, see what equipment changes, and sell at `sell_rate`), `chest` (`item`, `count`, `gold`,
-  `open_frame`), `battle` (`enemies`, `flag`, `ending`). An NPC with an `event` runs it instead of dialogue and role.
+  `open_frame`), `battle` (`enemies`, `flag`, `ending`), `waystone` (`name`, `arrive` `[x, y]`: touching attunes it,
+  then travel to any other attuned waystone). An NPC with an `event` runs it instead of dialogue and role.
 
 ## Art and sound
 
+- Follow `design/ART_DIRECTION.md` when it exists (the **art-direction** skill writes it).
 - `art/tiles.png` (16x16, one row), `art/hero.png` (2 frames x 4 directions), `art/npcs.png` (16x16 frames; the sample:
-  0-3 villagers, 4-5 chest closed/open, 6 Great Wolf, 7 blacksmith, 8 ranger), `art/enemies.png` (32x32 frames: slime,
+  0-3 villagers, 4-5 chest closed/open, 6 Great Wolf, 7 blacksmith, 8 ranger, 9 waystone), `art/enemies.png` (32x32 frames: slime,
   bat, wolf, wisp, sporecap, toxic slime).
 - `audio/`: music `title`, `town`, `field`, `battle` and sounds `select`, `confirm`, `cancel`, `hit`, `heal`, `magic`,
   `levelup`, `victory`, `defeat`, `coin`, `item`, `door`, `encounter`, plus a skill's own id when that file exists.
@@ -67,7 +69,7 @@ the time.
 | `autoload/game_state.gd` (`Game`) | Party, reserve, equipment (`equip`, `gear_traits`, `best_equipment`), stats, XP and level-ups, inventory, flags, quests, join/leave/swap, items and skills outside battle, 3 save slots |
 | `autoload/router.gd` (`Router`) | Screen changes with a fade |
 | `autoload/sound.gd` (`Sound`) | `music(path)`, `play(name, fallback)` |
-| `battle/battle_logic.gd` (`BattleLogic`) | **All battle rules**: turn order by speed, `begin_turn`/`end_turn` (statuses), `act` (attack, skills, items, defend, run), targets and scopes, hit, critical, elements, statuses, revive, enemy AI, boss phases, rewards, the autopilot |
+| `battle/battle_logic.gd` (`BattleLogic`) | **All battle rules**: `start_round` (enemy intents), turn order by speed, `begin_turn`/`end_turn` (statuses), `act` (attack, skills, items, defend, run), charged skills and interrupts, taunt, break shields, targets and scopes, hit, critical, elements, statuses, revive, enemy AI, boss phases, rewards, the autopilot |
 | `battle/battle_scene.gd` | The battle screen: menus, targets, damage numbers, status tags, level-up messages |
 | `world/overworld.gd` | The map: movement, NPCs, inn, shop, chests, warps, triggers, encounters, and the host events run on |
 | `world/event_runner.gd` (`EventRunner`) | Runs event commands; `EventRunner.test(conditions)` |

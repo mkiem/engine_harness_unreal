@@ -53,6 +53,9 @@ Ask afterwards, one at a time:
 3. Did you ever run out of money or potions? (Economy.)
 4. What was the best moment? What would make it better?
 
+For each mechanic card still `prototyping` (see **mechanic-design**), watch for its playtest question and record the
+answer in its `prototype.result`, then mark it `kept` or `cut`.
+
 Write the answers in the design's `phases.balance.notes` and fix the top issues together. If the game crashes or
 behaves oddly, reproduce it with `studio_check` and `godot_run` output, and fix it before anything else. For story
 bugs ("the gate never opened"), replay the event with `studio_test_event` in the same situation.

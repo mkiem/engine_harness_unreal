@@ -10,9 +10,9 @@ on:
   push:
     branches: ['claude/**', 'main']
     tags: ['studio-v*']
-    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'templates/**', 'skills/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
+    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'templates/**', 'skills/**', 'catalog/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
   pull_request:
-    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'templates/**', 'skills/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
+    paths: ['distro/**', 'src/**', 'dcc/**', 'scripts/**', 'templates/**', 'skills/**', 'catalog/**', 'package.json', 'package-lock.json', '.github/workflows/studio-windows.yml']
   workflow_dispatch:
 
 permissions:

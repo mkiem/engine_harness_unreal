@@ -16,6 +16,7 @@ export const EVENT_COMMANDS = ['say', 'choice', 'if', 'set', 'unset', 'give', 't
 export const CONDITIONS = ['flag', 'not_flag', 'item', 'count', 'gold', 'member', 'quest', 'stage', 'not_stage']
 export const AI_CONDITIONS = ['hp_below', 'hp_above', 'turn_every', 'turn_at_least', 'ally_hurt', 'ally_down', 'target_without', 'self_without']
 export const MAX_LINE = 90
+export const NPC_ROLES = ['inn', 'shop', 'chest', 'battle', 'waystone']
 const STATS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd']
 
 type Rows = (map: string) => string[]
@@ -64,6 +65,7 @@ export function checkData(d: ProjectData, rows: Rows, exists: Exists, read: (pat
   const SKILL_TYPES_ = [...SKILL_TYPES, ...extra('extra_skill_types')]
   const ITEM_EFFECTS_ = [...ITEM_EFFECTS, ...extra('extra_item_effects')]
   const AI_CONDITIONS_ = [...AI_CONDITIONS, ...extra('extra_ai_conditions')]
+  const NPC_ROLES_ = [...NPC_ROLES, ...extra('extra_npc_roles')]
   const runner = read('scripts/world/event_runner.gd')
   const declared = runner ? /const COMMANDS := \[([^\]]*)\]/s.exec(runner)?.[1]?.match(/"([a-z_]+)"/g)?.map(x => x.slice(1, -1)) : undefined
   const COMMANDS_ = declared?.length ? declared : EVENT_COMMANDS
@@ -98,6 +100,7 @@ export function checkData(d: ProjectData, rows: Rows, exists: Exists, read: (pat
     statusRef(`skill ${id}`, skill.status?.id)
     for (const status of skill.cures ?? []) statusRef(`skill ${id}`, status)
     if (skill.type === 'support' && !skill.status && !skill.cures?.length) problems.push(`skill ${id} is a support skill but neither gives a status nor cures one`)
+    if (skill.charge !== undefined && (!Number.isInteger(skill.charge) || skill.charge < 0)) problems.push(`skill ${id} has charge ${skill.charge}; use the number of turns it gathers power, such as 1`)
   }
   for (const [id, item] of Object.entries(d.items)) {
     if (item.slot !== undefined) {
@@ -140,6 +143,8 @@ export function checkData(d: ProjectData, rows: Rows, exists: Exists, read: (pat
       for (const key of Object.keys(rule.if ?? {})) if (!AI_CONDITIONS_.includes(key)) problems.push(`enemy ${id}'s AI has condition ${key}; conditions are ${AI_CONDITIONS_.join(', ')}`)
     }
     if (rules.length && !rules.some((r: any) => !r.if && (r.chance ?? 1) >= 1)) problems.push(`enemy ${id}'s AI has no rule that always applies; end it with {"skill": "attack"} so it never stands still`)
+    if (e.shield !== undefined && (!Number.isInteger(e.shield) || e.shield < 0)) problems.push(`enemy ${id} has shield ${e.shield}; use a whole number of weakness or critical hits that break it, such as 3`)
+    if (e.shield && !(e.weak?.length) && !Object.values(d.skills).some((s: any) => s.breaks)) problems.push(`enemy ${id} has a break shield but no weakness, and no skill breaks shields: only critical hits can break it`)
     for (const phase of e.phases ?? []) if (typeof phase.below !== 'number' || phase.below <= 0 || phase.below >= 1) problems.push(`enemy ${id} has a phase with "below" ${phase.below}; use a fraction of HP between 0 and 1, such as 0.5`)
   }
   for (const [zone, info] of Object.entries(d.encounters)) for (const group of info.groups ?? []) for (const enemy of group) if (!has(d.enemies, enemy)) problems.push(`encounter zone ${zone} has enemy ${enemy}, which is not in enemies.json`)
@@ -175,7 +180,10 @@ export function checkData(d: ProjectData, rows: Rows, exists: Exists, read: (pat
     for (const npc of info.npcs ?? []) {
       const who = `NPC ${npc.id} on ${id}`
       if (npc.event) checkEventRef(who, npc.event)
-      else if (npc.role !== 'chest' && !has(d.dialogue, npc.dialogue ?? '')) problems.push(`${who} says ${npc.dialogue}, which is not in dialogue.json (or give them an "event")`)
+      else if (npc.role !== 'chest' && npc.role !== 'waystone' && !has(d.dialogue, npc.dialogue ?? '')) problems.push(`${who} says ${npc.dialogue}, which is not in dialogue.json (or give them an "event")`)
+      if (npc.role && !NPC_ROLES_.includes(npc.role)) problems.push(`${who} has role ${npc.role}; roles are ${NPC_ROLES_.join(', ')}`)
+      if (npc.role === 'waystone' && Array.isArray(npc.arrive) && solid(r, npc.arrive[0], npc.arrive[1])) problems.push(`waystone ${npc.id} on ${id} sends travellers to ${npc.arrive.join(',')}, a solid tile`)
+      if (npc.role === 'waystone' && !Array.isArray(npc.arrive) && solid(r, npc.x, npc.y + 1)) problems.push(`waystone ${npc.id} on ${id} has a solid tile below it; give it "arrive": [x, y] for where travellers appear`)
       if (solid(r, npc.x, npc.y)) problems.push(`${who} stands on a solid tile at ${npc.x},${npc.y}`)
       if (npcFrames && (npc.frame ?? 0) >= npcFrames) problems.push(`${who} uses picture ${npc.frame} but art/npcs.png has frames 0 to ${npcFrames - 1} (npc_frames in game.json)`)
       for (const item of npc.stock ?? []) if (!has(d.items, item)) problems.push(`shop ${npc.id} on ${id} sells ${item}, which is not in items.json`)

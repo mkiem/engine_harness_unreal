@@ -179,7 +179,51 @@ describe('what is next', () => {
     updateDesign(project, { phases: { concept: { status: 'done' } } })
     reports = phaseReports(project, readDesign(project))
     expect(currentPhase(reports)?.id).toBe('art')
-    expect(reports.find(r => r.id === 'art')!.checks.map(c => c.done)).toEqual([false, false, false])
+    expect(reports.find(r => r.id === 'art')!.checks.map(c => c.done)).toEqual([false, false, false, false])
+  })
+})
+
+describe('the design references (loopyhop, with permission)', () => {
+  it('search mechanics and styles, add a card, apply a style and hold art to a locked palette', async () => {
+    const root = tempDir('studio-refs-')
+    const server = createHarnessServer({ projectDir: root, templatesDir: TEMPLATES })
+    const client = new Client({ name: 'test', version: '1' })
+    const [a, b] = InMemoryTransport.createLinkedPair()
+    await Promise.all([server.connect(a), client.connect(b)])
+    const call = async (name: string, args: Record<string, unknown> = {}) => (await client.callTool({ name, arguments: args })) as { content: { text: string }[]; isError?: boolean; structuredContent?: any }
+    await call('studio_new_project', { title: 'Moss Knight', pitch: 'A cosy RPG' })
+
+    const groups = (await call('studio_find_mechanic')).content[0]!.text
+    expect(groups).toContain('The Gameplay Atlas has 280 mechanics')
+    expect(groups).toContain('used with permission')
+    const found = await call('studio_find_mechanic', { query: 'enemy telegraphs its next attack' })
+    expect(found.structuredContent.ids).toContain('combat-intent-preview')
+    const card = (await call('studio_mechanic', { id: 'combat-intent-preview', add: true })).content[0]!.text
+    expect(card).toContain('# Previewing enemy intent')
+    expect(card).toContain('Playtest question:')
+    expect(card).toContain('Added to the design as a mechanic card')
+    const design = JSON.parse(readFileSync(join(root, 'moss_knight', 'design', 'game.json'), 'utf8'))
+    expect(design.mechanics[0]).toMatchObject({ name: 'Previewing enemy intent', atlasId: 'combat-intent-preview', status: 'idea' })
+    expect(readFileSync(join(root, 'moss_knight', 'design', 'GAME_DESIGN.md'), 'utf8')).toContain('### Previewing enemy intent (idea)')
+    expect((await call('studio_mechanic', { id: 'combat-intent-preview', add: true })).content[0]!.text).toContain('already in the design')
+
+    expect((await call('studio_art_styles', { query: 'snes pixel' })).structuredContent.ids[0]).toBe('16bit-pixel')
+    const applied = (await call('studio_art_style', { id: '16bit-pixel', apply: true })).content[0]!.text
+    expect(applied).toContain('Applied')
+    const direction = readFileSync(join(root, 'moss_knight', 'design', 'ART_DIRECTION.md'), 'utf8')
+    expect(direction).toContain('# Art direction: 16-bit-inspired pixel art')
+    expect(direction).toContain('Act as the art director for an original game.')
+    expect(direction).toContain('https://store.steampowered.com/app/')
+    expect(direction).toContain('used with permission')
+
+    await call('studio_design_update', { patch: { art: { palette: ['#1a1c2c', '#5d275d', '#b13e53', '#ef7d57'], paletteLocked: true } } })
+    expect(readFileSync(join(root, 'moss_knight', 'design', 'ART_DIRECTION.md'), 'utf8')).toContain('(locked: use only these colours): #1a1c2c')
+    const warned = (await call('studio_paint', { file: 'art/x.png', rows: ['ab'], palette: { a: '#1a1c2c', b: '#ff0000' } })).content[0]!.text
+    expect(warned).toContain('Warning: 1 colour(s) are not in the locked palette (#ff0000, nearest #b13e53)')
+    const snapped = (await call('studio_paint', { file: 'art/x.png', rows: ['ab'], palette: { a: '#1a1c2c', b: '#ff0000' }, snapToPalette: true })).content[0]!.text
+    expect(snapped).toContain('Snapped 1 colour(s) to the locked palette: #ff0000 -> #b13e53')
+    const check = (await call('studio_check', { quick: true })).content[0]!.text
+    expect(check).toMatch(/· Palette: pictures with colours outside the locked palette[\s\S]*art\/tiles\.png/)
   })
 })
 

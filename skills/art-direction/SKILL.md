@@ -9,6 +9,20 @@ Goal: a look the developer loves and can describe, then real art in it: tiles, h
 
 ## 1. Agree the look (one question at a time)
 
+Styles are told apart by **how things are drawn** (outlines, brushwork or pixel density, palette, lighting,
+materials, how space is shown), not by the setting: "fantasy" or "cyberpunk" is a subject, not a style. The bundled
+**Game Art Style** collection by loopyhop (37 styles, used with permission) names them, says what to look for in each,
+and lists real games that use them. Use it to show options instead of describing them:
+
+0. **Pick a style.** `studio_art_styles` (search with the developer's words: "SNES", "watercolor", "dark ink", or a
+   family: pixel, 3D, paint, shape) and offer two or three with their reference games. Let the developer look at the
+   reference games' official store pages (the links are in each entry) and say which one feels like their game. Then
+   `studio_art_style` with `apply: true`: the design records the style and its three "in every picture" cues, and
+   `design/ART_DIRECTION.md` is written with the full art-direction brief for this game. Every later picture follows
+   that file. The template is pixel art: a pixel style (`16bit-pixel`, `8bit-pixel`, `topdown-tile-pixel`,
+   `detailed-pixel`, `luminous-pixel`, `monochrome-pixel`, `coarse-pixel`) fits without code changes. A painted or 3D
+   style is possible later, but means new art at a higher resolution; say so.
+
 1. **Resolution.** The game draws at 320x180 and scales up (a pixel stays crisp). Offer 320x180 (default, classic 16-bit
    feel) or 256x144 (chunkier, more retro). Changing it later means changing `project.godot` and the design.
 2. **Palette.** A small fixed set of colours makes pixel art look coherent. Propose two or three palettes of 8 to 16
@@ -21,6 +35,19 @@ Goal: a look the developer loves and can describe, then real art in it: tiles, h
    take tiles, paint the characters.
 
 Record all of it: `studio_design_update` with `art.palette`, `art.style`, `art.resolution`, `art.references`.
+
+### The art bible
+
+Every game needs a short **art bible** so every picture belongs together. It lives in the design's `art` section and
+`design/ART_DIRECTION.md` (rewritten automatically):
+
+- `lookFor`: the three things every picture shows (from the style; adjust them to this game).
+- `palette` and `paletteLocked: true`: once locked, `studio_paint` warns about any other colour (or snaps it with
+  `snapToPalette: true`), and `studio_check` lists pictures that use other colours.
+- `rules`, one line each: `outline` (dark outline on characters, none on tiles?), `shading` (two tones per material,
+  light from the top left?), `proportions` (heads a third of the height?), `lighting`, `ui`, `motion`, `effects`.
+- `avoid`: a short list of mistakes ("pure black outlines", "more than three shades per colour", "tiny details lost at
+  16x16").
 
 ## 2. Make the art, one file at a time
 
@@ -63,6 +90,12 @@ Pixel art rules that make a beginner's sprites look good:
 `assets_search` (for example "tiles", "rpg", "characters"), `assets_download` or `assets_import` a pack the developer has,
 then copy or rearrange the needed frames into the template's sheets (a Python or Node script is fine for
 cropping and arranging). Note the source and licence in the design's decisions; CC-BY packs need a credit in the game.
+
+## Respect the work
+
+The style references are real games: study how they apply the style, then design original characters, places and
+objects. Never trace or copy their sprites, characters or logos, and never download their screenshots into the
+project.
 
 ## Done when
 

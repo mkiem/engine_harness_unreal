@@ -5,7 +5,7 @@
   "tiles": "res://art/tiles.png",
   "hero_sprite": "res://art/hero.png",
   "npc_sprites": "res://art/npcs.png",
-  "npc_frames": 9,
+  "npc_frames": 10,
   "enemy_sprites": "res://art/enemies.png",
   "enemy_frames": 6,
   "title_background": "#1d2b53",

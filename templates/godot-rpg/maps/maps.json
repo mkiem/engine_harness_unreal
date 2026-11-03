@@ -59,6 +59,18 @@
         "y": 10,
         "frame": 3,
         "event": "kid"
+      },
+      {
+        "id": "waystone",
+        "x": 12,
+        "y": 9,
+        "frame": 9,
+        "role": "waystone",
+        "name": "Fernvale Square",
+        "arrive": [
+          12,
+          10
+        ]
       }
     ],
     "warps": [
@@ -152,6 +164,18 @@
         "frame": 6,
         "event": "great_wolf",
         "hide_if": "beat_alpha"
+      },
+      {
+        "id": "waystone",
+        "x": 2,
+        "y": 6,
+        "frame": 9,
+        "role": "waystone",
+        "name": "Whisperwood Edge",
+        "arrive": [
+          2,
+          7
+        ]
       }
     ],
     "triggers": [

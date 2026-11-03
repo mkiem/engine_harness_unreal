@@ -233,3 +233,35 @@ export function writeAudio(project: string, file: string, wav: Buffer): string {
   writeFileSync(path, wav)
   return relative.includes('/') ? relative : `audio/${basename(path)}`
 }
+
+// ---- palette ----------------------------------------------------------------------------------------------------------
+
+const hex = (rgb: number[]) => `#${rgb.slice(0, 3).map(v => v.toString(16).padStart(2, '0')).join('')}`
+const normal = (color: string) => { const c = parseColor(color); return c[3] === 0 ? '' : hex(c) }
+
+/** The palette colour closest to a colour (by perceptual-ish weighted distance). */
+export function nearestColor(color: string, palette: string[]): string {
+  const [r, g, b] = parseColor(color)
+  let best = palette[0]!
+  let bestDistance = Infinity
+  for (const candidate of palette) {
+    const [pr, pg, pb] = parseColor(candidate)
+    const distance = 2 * (r - pr) ** 2 + 4 * (g - pg) ** 2 + 3 * (b - pb) ** 2
+    if (distance < bestDistance) { best = candidate; bestDistance = distance }
+  }
+  return normal(best)
+}
+
+/** The colours (as #rrggbb) not in the palette; transparent ones never count. */
+export function offPalette(colors: string[], palette: string[]): string[] {
+  const allowed = new Set(palette.map(normal))
+  return [...new Set(colors.map(normal).filter(c => c && !allowed.has(c)))]
+}
+
+/** The distinct visible colours of an image that are not in the palette. */
+export function imageOffPalette(project: string, file: string, palette: string[]): { colors: number; off: string[] } {
+  const image = decodePngRgba(readFileSync(join(project, file)))
+  const seen = new Set<string>()
+  for (let i = 0; i < image.rgba.length; i += 4) if (image.rgba[i + 3]! > 0) seen.add(hex([image.rgba[i]!, image.rgba[i + 1]!, image.rgba[i + 2]!]))
+  return { colors: seen.size, off: offPalette([...seen], palette) }
+}

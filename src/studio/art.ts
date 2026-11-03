@@ -98,9 +98,9 @@ export function heroPng(cloth: RGB = P.blue, hair: RGB = P.orange): Buffer {
 }
 
 /** Map figures, one per 16x16 frame: four townspeople facing down, a closed and an open chest, the great wolf, the
- * blacksmith and the ranger. */
+ * blacksmith, the ranger and a waystone. */
 export function npcsPng(): Buffer {
-  const c = new Canvas(144, 16)
+  const c = new Canvas(160, 16)
   const looks: [RGB, RGB][] = [[P.plum, P.light], [P.moss, P.brown], [P.red, P.ink], [P.yellow, P.orange]]
   looks.forEach(([cloth, hair], i) => person(c, i * 16, 0, 'down', 0, cloth, hair))
   // chest, closed (frame 4) and open (frame 5)
@@ -122,6 +122,11 @@ export function npcsPng(): Buffer {
   c.rect(112 + 5, 8, 6, 5, P.bark)
   person(c, 128, 0, 'down', 0, P.leaf, P.moss)
   c.rect(128 + 4, 1, 8, 2, P.moss)
+  // waystone (frame 9): a standing stone with a glowing rune
+  const sx = 144
+  c.rect(sx + 4, 2, 8, 13, P.ink); c.rect(sx + 5, 3, 6, 11, P.stone); c.rect(sx + 5, 3, 2, 11, P.light)
+  c.rect(sx + 7, 6, 2, 5, P.sky); c.set(sx + 6, 8, P.sky); c.set(sx + 9, 8, P.sky)
+  c.rect(sx + 3, 14, 10, 2, P.leaf)
   return c.png()
 }
 

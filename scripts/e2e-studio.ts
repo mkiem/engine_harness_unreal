@@ -44,11 +44,20 @@ await call('studio_design_update', {
   decision: 'A cosy classic RPG with short battles', why: 'The developer loves FF4 but has little time to play',
 })
 await call('studio_next')
+// The design references (loopyhop, with permission): the twist as a mechanic card, a style as the art direction.
+const found = await call('studio_find_mechanic', { query: 'enemy telegraphs its next attack' })
+if (!found.includes('combat-intent-preview')) { console.log('FAIL: the atlas search should find the intent preview mechanic'); failed = true }
+const card = await call('studio_mechanic', { id: 'command-interrupt-action', add: true })
+if (!card.includes('Added to the design as a mechanic card')) { console.log('FAIL: a mechanic card should be added to the design'); failed = true }
+const styled = await call('studio_art_style', { id: '16bit-pixel', apply: true })
+if (!styled.includes('design/ART_DIRECTION.md')) { console.log('FAIL: applying a style should write the art direction'); failed = true }
+await call('studio_design_update', { patch: { art: { palette: ['#181425', '#3e8948', '#63c74d', '#ffffff', '#000000', '#b13e53', '#ef7d57', '#ffcd75'], paletteLocked: true } }, decision: 'Lock the palette' })
 // Art and sound made in the studio: a new monster painted into the enemy sheet, a boss theme and a spell sound.
 const slime = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
   '..........oooooooo', '........oogggggggloo', '.......ogggwwgggwwgo', '.......oggwokgwokggo', '......ogggwwgggwwgggo',
   '......ogggggggggggggo', '.....ogggggggggggggggo', '.....oooooooooooooooo']
-const painted = await call('studio_paint', { file: 'art/enemies.png', at: [6, 0], frame: [32, 32], rows: slime, palette: { o: '#181425', g: '#3e8948', l: '#63c74d', w: '#ffffff', k: '#000000' } })
+const painted = await call('studio_paint', { file: 'art/enemies.png', at: [6, 0], frame: [32, 32], rows: slime, palette: { o: '#181425', g: '#3e8948', l: '#63c74d', w: '#ffffff', k: '#000001' } })
+if (!painted.includes('not in the locked palette (#000001, nearest #000000)')) { console.log('FAIL: painting off the locked palette should warn'); failed = true }
 if (!painted.includes('grown to fit')) { console.log('FAIL: painting a seventh enemy should grow the sheet'); failed = true }
 await call('studio_preview', { file: 'art/enemies.png', frame: [32, 32] })
 await call('studio_music', { file: 'boss', tempo: 160, voices: [{ notes: 'A4 C5 E5 A4 G4:2 E4:2 F4 A4 C5 F4 E4:4' }, { notes: 'A2:2 A2:2 F2:2 G2:2 F2:2 F2:2 E2:4', wave: 'triangle' }] })
@@ -56,6 +65,7 @@ await call('studio_sound', { name: 'fire', preset: 'fire' })
 const check = await call('studio_check')
 if (!check.includes('✓ Map walk into a battle')) { console.log('FAIL: the full check did not walk into a battle'); failed = true }
 if (!check.includes('✓ Ending')) { console.log('FAIL: the ending did not run'); failed = true }
+if (!check.includes('· Palette: pictures with colours outside the locked palette')) { console.log('FAIL: studio_check should list pictures outside the locked palette'); failed = true }
 const sim = await call('studio_simulate_battle', { level: 1, runs: 200 })
 if (!/slime at level 1 \(hero, mage\): (easy|fair)/.test(sim)) { console.log('FAIL: a lone slime should be easy or fair'); failed = true }
 await call('studio_simulate_battle', { enemies: ['wolf'], level: 1, runs: 200 })

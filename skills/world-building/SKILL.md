@@ -42,7 +42,11 @@ and walkable.
 5. Moments tied to places: `"on_enter": [{"event": "...", "once": true}]` for arriving, and `"triggers": [{"x": .., "y":
    .., "event": "...", "once": true}]` for a tile (a warning before the boss, a view, an ambush). `"battle_background"`
    (a colour or a picture) gives the area's battles their own look. See **events-and-cutscenes**.
-6. Encounter zones are in `data/encounters.json`; tall grass (or any tile with `encounters: true`) triggers them when
+6. **Fast travel** (`exploration-fast-travel-network` in the Gameplay Atlas): an NPC with `"role": "waystone"`,
+   a `name` and `"arrive": [x, y]` (a walkable tile beside it). Touching one attunes it; any attuned waystone then
+   travels to the others. One per region at most, placed where the player first arrives, so the first journey is
+   always on foot.
+7. Encounter zones are in `data/encounters.json`; tall grass (or any tile with `encounters: true`) triggers them when
    the map names a zone (see **battle-design**).
 
 Map sizes: the screen shows 20x11 tiles at 320x180. Towns 20-30 wide; wild areas 30-60; dungeon rooms 15-25. Leave paths

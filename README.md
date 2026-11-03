@@ -40,7 +40,7 @@ Engine Harness packages all of this as a desktop app for Windows: a fork of goos
 
 ## Make a game, even if you never have
 
-Open Engine Harness on an empty folder and choose **Start a new game**. The game studio interviews you about the game you want, one question at a time, creates a playable Godot RPG (party and equipment, elements and status effects, enemy AI and boss phases, quests, recruits and cutscenes, shops, inns and save slots), and then works through it with you phase by phase: art, characters, maps, battles, items, story, menus, music, balance, and a Windows `.exe` to share. It paints pixel art, writes music, simulates every battle for difficulty and plays the game to check it, so nothing else needs installing. See [006 The game studio](docs/006-game-studio.md).
+Open Engine Harness on an empty folder and choose **Start a new game**. The game studio interviews you about the game you want, one question at a time, creates a playable Godot RPG (party and equipment, elements and status effects, enemy AI and boss phases, quests, recruits and cutscenes, shops, inns and save slots), and then works through it with you phase by phase: art, characters, maps, battles, items, story, menus, music, balance, and a Windows `.exe` to share. It paints pixel art, writes music, simulates every battle for difficulty and plays the game to check it, so nothing else needs installing. Ideas start from two bundled references by loopyhop: a Gameplay Atlas of 280 mechanics from real games and a Game Art Style atlas of 37 styles. See [006 The game studio](docs/006-game-studio.md).
 
 ## In an agent IDE (goose, Claude Code)
 
@@ -83,6 +83,7 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 - [004 Studio app](docs/004-studio-app.md): Engine Harness, the goose fork for local game development: install, what is inside, the patch queue, the Windows CI build
 - [005 Godot and assets](docs/005-godot-and-assets.md): Godot 4 for 2D pixel-art games, measured tool cost, and the starter asset library
 - [006 The game studio](docs/006-game-studio.md): making a whole game with a beginner: the skills, studio tools, template and design document
+- [007 Design references](docs/007-design-references.md): loopyhop's Gameplay Atlas (280 mechanics) and Game Art Style (37 styles), bundled with permission: mechanic cards, the art bible, and the RPG features built from them
 
 ## Layout
 
@@ -99,6 +100,7 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 | `src/studio` | The game studio: design document, phases, project creation, art and music making |
 | `skills/` | The game studio's agent skills, one per phase |
 | `templates/godot-rpg` | The Godot 4 RPG every studio game starts from |
+| `catalog/loopyhop` | Gameplay Atlas and Game Art Style by loopyhop (with permission; no game screenshots) |
 | `distro/` | The studio fork of goose (pinned release and patches), recipes, installers |
 | `presets/` | One least-privilege worker preset per domain |
 | `profiles/` | Example machine profiles |
