@@ -14,12 +14,11 @@ func _ready() -> void:
 	var title := Label.new()
 	title.text = Data.game.get("title", ProjectSettings.get_setting("application/config/name"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_font_size_override("font_size", ThemeDB.get_default_theme().default_font_size * 2)
 	column.add_child(title)
 	var tagline := Label.new()
 	tagline.text = Data.game.get("tagline", "")
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tagline.add_theme_font_size_override("font_size", 8)
 	column.add_child(tagline)
 	_add(column, "New Game", _new_game)
 	if Game.has_save():
@@ -36,7 +35,6 @@ func _ready() -> void:
 func _add(column: VBoxContainer, text: String, action: Callable) -> void:
 	var button := Button.new()
 	button.text = text
-	button.add_theme_font_size_override("font_size", 8)
 	button.pressed.connect(action)
 	column.add_child(button)
 

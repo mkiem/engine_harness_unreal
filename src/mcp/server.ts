@@ -24,8 +24,9 @@ import { configurePixelArt, findGodot, findGodotProject, formatErrors, GodotBrid
 import { findNode, parseTscn, sceneTree } from '../godot/tscn.ts'
 import { AssetLibrary, importLocal, installGodotAddon, libraryDirFor, SOURCES, type SourceId } from '../assets/library.ts'
 import { readDesign, renderDesign, updateDesign } from '../studio/design.ts'
-import { describeNext, phaseReports, balanceResults } from '../studio/phases.ts'
+import { battleGroups, describeNext, phaseReports, balanceResults } from '../studio/phases.ts'
 import { checkProjectData, createProject, defaultTemplatesDir, findStudioProject, slugOf } from '../studio/project.ts'
+import { compose, paint, preview, sound, SOUND_PRESETS, writeAudio } from '../studio/make.ts'
 import { GODOT_VERSION, hasWindowsTemplates, installGodot, installWindowsTemplates, managedGodot } from '../godot/install.ts'
 
 export interface HarnessServerOptions {
@@ -707,14 +708,19 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
           await godot.importProject(dir)
           const scripts = await godot.check(dir, listScripts(dir))
           lines.push(scripts.errors.length ? `✗ Scripts: ${scripts.errors.length} error(s)\n${formatErrors(scripts.errors)}` : `✓ Scripts: ${scripts.checked} parse cleanly`)
+          if (scripts.errors.length) lines.push('· The game was not run: fix the scripts first')
+        }
+        if (godotBinary() && !lines.some(line => line.startsWith('✗ Scripts'))) {
           const self = await godot.exec(dir, ['res://tools/self_test.tscn'])
           const fails = `${self.stdout}\n${self.stderr}`.split(/\r?\n/).filter(line => line.startsWith('SELFTEST FAIL')).map(line => line.slice(14))
           lines.push(fails.length || self.errors.length ? `✗ Self-test:\n${[...fails, ...self.errors.map(e => e.message)].map(f => `  - ${f}`).join('\n')}` : '✓ Self-test: formulas, levelling and saving work')
-          for (const [scene, label] of [['res://scenes/main_menu.tscn', 'Title screen'], ['res://scenes/overworld.tscn', 'Map walk into a battle']] as const) {
-            const run = await godot.exec(dir, [scene, '--', '--autotest'], 120_000)
+          for (const [scene, label] of [['res://scenes/main_menu.tscn', 'Title screen'], ['res://scenes/overworld.tscn', 'Map walk into a battle'], ['res://scenes/ending.tscn', 'Ending']] as const) {
+            const run = await godot.exec(dir, [scene, '--', '--autotest'], 40_000)
             const out = `${run.stdout}\n${run.stderr}`
             const reached = out.match(/AUTOTEST [^\n]+/g) ?? []
-            lines.push(run.errors.length ? `✗ ${label}:\n${formatErrors(run.errors)}` : `✓ ${label}: ${reached.map(r => r.replace('AUTOTEST ', '')).join('; ') || 'ran'}`)
+            if (run.errors.length) lines.push(`✗ ${label}:\n${formatErrors(run.errors)}`)
+            else if (run.timedOut || !reached.length) lines.push(`✗ ${label}: the game did not finish its test run${run.timedOut ? ' within 40 seconds' : ''}${reached.length ? ` (got as far as: ${reached.map(r => r.replace('AUTOTEST ', '')).join('; ')})` : ''}`)
+            else lines.push(`✓ ${label}: ${reached.map(r => r.replace('AUTOTEST ', '')).join('; ')}`)
           }
         }
       }
@@ -738,8 +744,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
     try {
       const dir = studioProject(project)
       if (!godotBinary()) return failure('Godot is needed to simulate battles: run studio_install_godot first')
-      const groups: string[][] = enemies?.length ? [enemies] : [...new Map(Object.values((JSON.parse(readFileSync(join(dir, 'data', 'encounters.json'), 'utf8')) as Record<string, { groups?: string[][] }>))
-        .flatMap(zone => zone.groups ?? []).map(group => [group.join('+'), group] as const)).values()]
+      const groups: string[][] = enemies?.length ? [enemies] : battleGroups(dir)
       await godot.importProject(dir)
       const store = join(dir, '.studio', 'balance.json')
       const saved = { results: balanceResults(dir) as Record<string, unknown> }
@@ -755,6 +760,104 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       mkdirSync(dirname(store), { recursive: true })
       writeFileSync(store, `${JSON.stringify(saved, null, 2)}\n`)
       return text(`${lines.join('\n')}\n\nAs a guide: ordinary battles "easy" to "fair", a region's toughest groups "fair" to "hard", bosses "hard". Change numbers in data/enemies.json, data/skills.json or data/formulas.json and simulate again.`)
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  // Art and sound made in the studio, for developers without drawing or music software.
+  const insideProject = (project: string, file: string) => {
+    const inside = relative(resolve(project), resolve(project, file))
+    if (!inside || inside.startsWith('..') || isAbsolute(inside)) throw new Error(`${file} is outside the game's folder`)
+    return inside.replace(/\\/g, '/')
+  }
+
+  server.registerTool('studio_paint', {
+    title: 'Paint pixel art',
+    description: 'Paints pixel art from a text grid into an image in the game (one character per pixel; the palette names each character\'s colour; "." is transparent). Paints one frame of a sprite sheet, growing the sheet when needed: tiles are 16x16 frames in one row of art/tiles.png, the hero is 2 columns x 4 rows (down, left, right, up) of art/hero.png, NPCs are 16x16 frames of art/npcs.png, enemies 32x32 frames of art/enemies.png. Look at the result with studio_preview.',
+    inputSchema: {
+      file: z.string().describe('image in the game, such as art/enemies.png'),
+      rows: z.array(z.string()).min(1).describe('one string per pixel row'),
+      palette: z.record(z.string(), z.string()).describe('character to "#rrggbb" (or "transparent")'),
+      at: z.tuple([z.number().int().min(0), z.number().int().min(0)]).optional().describe('[column, row] of the frame in the sheet, default [0, 0]'),
+      frame: z.tuple([z.number().int().min(1), z.number().int().min(1)]).optional().describe('frame size in pixels, default the grid size'),
+      project: z.string().optional(),
+    },
+  }, async ({ file, rows, palette, at, frame, project }) => {
+    try {
+      const dir = studioProject(project)
+      const done = paint(dir, { file: insideProject(dir, file), rows, palette, at: at as [number, number] | undefined, frame: frame as [number, number] | undefined })
+      const shown = preview(dir, done.file, { frame: [done.frameWidth, done.frameHeight] })
+      return text(`Painted a ${done.frameWidth}x${done.frameHeight} frame at pixel ${done.x},${done.y} of ${done.file} (${done.colors} colours; the sheet is ${done.width}x${done.height}${done.grew ? ', grown to fit' : ''}). Enlarged preview: ${shown.path}`, { ...done, preview: shown.path })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_preview', {
+    title: 'Look at an image enlarged',
+    description: 'Writes an enlarged copy of a game image (on a checkerboard, with lines between frames) to .studio/previews/ so it can be looked at; answers its path. Open the preview to check pixel art before showing it in the game.',
+    inputSchema: {
+      file: z.string(), scale: z.number().int().min(1).max(32).optional(),
+      frame: z.tuple([z.number().int().min(1), z.number().int().min(1)]).optional().describe('frame size, to draw lines between frames'),
+      project: z.string().optional(),
+    },
+    annotations: { readOnlyHint: true },
+  }, async ({ file, scale, frame, project }) => {
+    try {
+      const dir = studioProject(project)
+      const shown = preview(dir, insideProject(dir, file), { scale, frame: frame as [number, number] | undefined })
+      return text(`Preview (${shown.width}x${shown.height}): ${shown.path}`, { ...shown })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  const VoiceSchema = z.object({
+    notes: z.string().describe('notes with lengths in beats, such as "C4 E4 G4:2 R A3:0.5" (R is a rest; sharps C#4, flats Bb3)'),
+    wave: z.enum(['square', 'pulse', 'triangle', 'sine', 'saw', 'noise']).optional().describe('square/pulse: chiptune lead; triangle: soft lead or bass; sine: pure; saw: buzzy; noise: drums (higher notes are brighter)'),
+    volume: z.number().min(0).max(1).optional(),
+    envelope: z.enum(['pluck', 'hold', 'hit']).optional(),
+  })
+
+  server.registerTool('studio_music', {
+    title: 'Write music',
+    description: 'Writes a music track or jingle from notes: several voices (melody, bass, drums) played together at a tempo, as a WAV in audio/. The game loops music tracks. Music for places is set in maps/maps.json ("music"), the title and battle music in data/game.json.',
+    inputSchema: {
+      file: z.string().describe('such as "town" (audio/town.wav) or "audio/boss.wav"'),
+      tempo: z.number().min(20).max(400).describe('beats per minute; 70-90 calm, 100-120 walking, 140-170 battle'),
+      voices: z.array(VoiceSchema).min(1),
+      repeat: z.number().int().min(1).max(16).optional().describe('repeat the phrase this many times in the file'),
+      project: z.string().optional(),
+    },
+  }, async ({ file, tempo, voices, repeat, project }) => {
+    try {
+      const dir = studioProject(project)
+      const made = compose(voices, tempo, { repeat })
+      const written = writeAudio(dir, insideProject(dir, file), made.wav)
+      return text(`Wrote ${written} (${made.seconds.toFixed(1)} s). In the game it is res://${written}; play the game to hear it.`, { file: written, seconds: made.seconds })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_sound', {
+    title: 'Make a sound effect',
+    description: `Writes a sound effect into audio/ from a preset (${Object.entries(SOUND_PRESETS).map(([id, p]) => `${id}: ${p.about}`).join('; ')}), or from notes like studio_music. The game plays audio/<name>.wav for: select, hit, heal, magic, levelup, victory, defeat, coin, door, encounter, and a skill's own id when that file exists (audio/fire.wav for the skill "fire").`,
+    inputSchema: {
+      name: z.string().describe('file name in audio/, such as "hit" or "fire"'),
+      preset: z.string().optional(),
+      tempo: z.number().min(20).max(1200).optional(),
+      voices: z.array(VoiceSchema).optional().describe('instead of a preset'),
+      project: z.string().optional(),
+    },
+  }, async ({ name, preset, tempo, voices, project }) => {
+    try {
+      const dir = studioProject(project)
+      if (!preset && !voices?.length) return failure(`give a preset (${Object.keys(SOUND_PRESETS).join(', ')}) or voices`)
+      const wav = voices?.length ? compose(voices, tempo ?? 480).wav : sound(preset!)
+      const written = writeAudio(dir, insideProject(dir, name), wav)
+      return text(`Wrote ${written}.`, { file: written })
     } catch (error) {
       return studioFailure(error)
     }

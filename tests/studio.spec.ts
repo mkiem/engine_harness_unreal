@@ -3,9 +3,10 @@ import { join, resolve } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { describe, expect, it } from 'vitest'
-import { readPng } from '../src/contracts/png.ts'
+import { decodePngRgba, readPng } from '../src/contracts/png.ts'
 import { readWav } from '../src/contracts/wav.ts'
 import { createHarnessServer } from '../src/mcp/server.ts'
+import { compose, noteFrequency, paint, parseNotes, preview, sound } from '../src/studio/make.ts'
 import { mergePatch, readDesign, updateDesign } from '../src/studio/design.ts'
 import { currentPhase, describeNext, phaseReports } from '../src/studio/phases.ts'
 import { checkProjectData, createProject, findStudioProject, placeholdersLeft } from '../src/studio/project.ts'
@@ -116,5 +117,43 @@ describe('studio tools', () => {
     expect(check.content[0]!.text).toContain('✓ Data: every reference between the data files resolves')
     expect(check.content[0]!.text).toContain('Godot is not installed')
     expect((await call('studio_simulate_battle')).content[0]!.text).toContain('studio_install_godot')
+
+    const painted = await call('studio_paint', { file: 'art/enemies.png', rows: ['.rr.', 'rkkr', 'rrrr'], palette: { r: '#d63c3c', k: '#181425' }, at: [4, 0], frame: [32, 32] })
+    expect(painted.isError).toBeFalsy()
+    expect(painted.content[0]!.text).toContain('the sheet is 160x32, grown to fit')
+    expect(readPng(readFileSync(join(root, 'star_field', 'art', 'enemies.png'))).width).toBe(160)
+    expect((await call('studio_paint', { file: '../outside.png', rows: ['a'], palette: { a: '#fff' } })).isError).toBe(true)
+    expect((await call('studio_music', { file: 'boss', tempo: 150, voices: [{ notes: 'A3 C4 E4:2' }, { notes: 'A2:4', wave: 'triangle' }] })).content[0]!.text).toContain('audio/boss.wav')
+    expect(readWav(readFileSync(join(root, 'star_field', 'audio', 'boss.wav'))).channels).toBe(1)
+    expect((await call('studio_sound', { name: 'fire', preset: 'fire' })).isError).toBeFalsy()
+    expect((await call('studio_sound', { name: 'x', preset: 'nope' })).content[0]!.text).toContain('no sound preset')
+  })
+})
+
+describe('making art and sound', () => {
+  it('paints a text grid into one frame of a sheet and keeps the rest', () => {
+    const project = newGame()
+    const before = decodePngRgba(readFileSync(join(project, 'art', 'tiles.png')))
+    const done = paint(project, { file: 'art/tiles.png', rows: ['ab', 'ba'], palette: { a: '#ff0000', b: 'transparent' }, at: [1, 0], frame: [16, 16] })
+    expect(done).toMatchObject({ x: 16, y: 0, width: before.width, grew: false, colors: 1 })
+    const after = decodePngRgba(readFileSync(join(project, 'art', 'tiles.png')))
+    expect([...after.rgba.subarray(16 * 4, 16 * 4 + 4)]).toEqual([255, 0, 0, 255])
+    expect(after.rgba[(16 + 1) * 4 + 3]).toBe(0)                                  // 'b' is transparent, and the old tile is cleared
+    expect([...after.rgba.subarray(0, 4)]).toEqual([...before.rgba.subarray(0, 4)]) // frame 0 untouched
+    expect(() => paint(project, { file: 'art/x.png', rows: ['az'], palette: { a: '#000' } })).toThrow(/no colour for: "z"/)
+    const shown = preview(project, 'art/tiles.png', { scale: 4, frame: [16, 16] })
+    expect(readPng(readFileSync(shown.path))).toMatchObject({ width: before.width * 4, height: 64 })
+  })
+
+  it('writes notes as music and sound', () => {
+    expect(noteFrequency('A4')).toBe(440)
+    expect(Math.round(noteFrequency('C4'))).toBe(262)
+    expect(Math.round(noteFrequency('F#3'))).toBe(185)
+    expect(parseNotes('C4 R:2 G4:0.5')).toEqual([[noteFrequency('C4'), 1], [0, 2], [noteFrequency('G4'), 0.5]])
+    expect(() => parseNotes('H4')).toThrow(/not a note/)
+    const made = compose([{ notes: 'C4 E4 G4 C5' }, { notes: 'C2:4', wave: 'noise' }], 120, { repeat: 2 })
+    expect(made.seconds).toBeCloseTo(4, 1)
+    expect(readWav(made.wav).seconds).toBeCloseTo(4, 1)
+    expect(readWav(sound('levelup')).seconds).toBeGreaterThan(0.3)
   })
 })

@@ -22,7 +22,6 @@ func _ready() -> void:
 	_buttons = VBoxContainer.new()
 	row.add_child(_buttons)
 	_info = Label.new()
-	_info.add_theme_font_size_override("font_size", 8)
 	_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(_info)
 	_panel.visible = false
@@ -55,7 +54,6 @@ func _refresh() -> void:
 func _add_button(text: String, action: Callable) -> void:
 	var button := Button.new()
 	button.text = text
-	button.add_theme_font_size_override("font_size", 8)
 	button.pressed.connect(action)
 	_buttons.add_child(button)
 

@@ -29,6 +29,53 @@ func reload() -> void:
 	game = read_json("res://data/game.json")
 	maps = read_json("res://maps/maps.json")
 	legend = read_json("res://maps/legend.json")
+	apply_ui()
+
+## The look of every box, button and text, from "ui" in data/game.json: panel, border, text and accent colours, a
+## font file (a .ttf or .otf in fonts/, pixel fonts look best) and the text size.
+func apply_ui() -> void:
+	var ui: Dictionary = game.get("ui", {})
+	var theme := ThemeDB.get_default_theme()
+	theme.default_font_size = int(ui.get("font_size", 8))
+	if ui.is_empty():
+		return
+	var panel_color := Color(ui.get("panel", "#181425e6"))
+	var border := Color(ui.get("border", "#c2c3c7"))
+	var text := Color(ui.get("text", "#fff1e8"))
+	var accent := Color(ui.get("accent", "#ffa300"))
+	var box := func(fill: Color, edge: Color) -> StyleBoxFlat:
+		var style := StyleBoxFlat.new()
+		style.bg_color = fill
+		style.border_color = edge
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(int(ui.get("corner", 2)))
+		style.set_content_margin_all(3)
+		return style
+	theme.set_stylebox("panel", "PanelContainer", box.call(panel_color, border))
+	theme.set_stylebox("panel", "Panel", box.call(panel_color, border))
+	theme.set_stylebox("normal", "Button", box.call(panel_color, border))
+	theme.set_stylebox("hover", "Button", box.call(panel_color.lightened(0.15), accent))
+	theme.set_stylebox("pressed", "Button", box.call(accent.darkened(0.4), accent))
+	theme.set_stylebox("focus", "Button", box.call(panel_color.lightened(0.1), accent))
+	for type in ["Label", "Button"]:
+		theme.set_color("font_color", type, text)
+	for name in ["font_hover_color", "font_focus_color", "font_pressed_color"]:
+		theme.set_color(name, "Button", accent)
+	var font_path := str(ui.get("font", ""))
+	if font_path != "":
+		var font: Font = null
+		if ResourceLoader.exists(font_path):
+			font = load(font_path)
+		elif FileAccess.file_exists(font_path):
+			var file := FontFile.new()
+			if file.load_dynamic_font(ProjectSettings.globalize_path(font_path)) == OK:
+				font = file
+		if font:
+			if font is FontFile:
+				font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+			theme.default_font = font
+		else:
+			push_error("Missing font: %s" % font_path)
 
 func read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):

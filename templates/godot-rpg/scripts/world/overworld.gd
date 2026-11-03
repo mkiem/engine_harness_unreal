@@ -1,6 +1,9 @@
 extends Node2D
 ## The map you walk around: built from maps/<id>.txt with the tiles in maps/legend.json, plus the NPCs, warps and
 ## encounters in maps/maps.json. Arrow keys move, Enter/Space talks, Esc opens the menu.
+## Story events come from the NPC entries: "sets" a flag after talking, "dialogue_after" {flag: key} changes what they
+## say, "only_if"/"hide_if" a flag shows or hides them, and roles: inn, shop, battle (a fixed fight such as a boss),
+## chest (gives an item or gold once). A warp with "requires" a flag stays shut until it is set.
 
 const STEP_TIME := 0.14
 
@@ -27,6 +30,30 @@ func _ready() -> void:
 	menu = preload("res://scripts/ui/pause_menu.gd").new()
 	add_child(menu)
 	_load_map(Game.map_id)
+	_after_event.call_deferred()
+
+## After a story battle: its "after" dialogue, once.
+func _after_event() -> void:
+	var event := Game.pending_event
+	Game.pending_event = {}
+	var key := str(event.get("after", ""))
+	if key != "" and Data.dialogue.has(key):
+		await dialogue.say(Data.dialogue[key])
+
+func npc_visible(npc: Dictionary) -> bool:
+	if npc.has("only_if") and not Game.has(str(npc["only_if"])):
+		return false
+	if npc.has("hide_if") and Game.has(str(npc["hide_if"])):
+		return false
+	if npc.get("role", "") == "battle" and not bool(npc.get("stay", false)) and Game.has(battle_flag(npc)):
+		return false
+	return true
+
+func battle_flag(npc: Dictionary) -> String:
+	return str(npc.get("flag", "beat_%s" % npc.get("id", "")))
+
+func chest_flag(npc: Dictionary) -> String:
+	return str(npc.get("flag", "chest_%s_%s" % [Game.map_id, npc.get("id", "")]))
 
 func _load_map(map_id: String) -> void:
 	for child in get_children():
@@ -44,12 +71,17 @@ func _load_map(map_id: String) -> void:
 			var info: Dictionary = Data.legend.get(rows[y][x], Data.legend.get(".", {}))
 			tiles.set_cell(Vector2i(x, y), 0, Vector2i(int(info.get("tile", 0)), 0))
 	for npc in map_info.get("npcs", []):
+		if not npc_visible(npc):
+			continue
 		var at := Vector2i(int(npc["x"]), int(npc["y"]))
 		npcs[at] = npc
 		var sprite := Sprite2D.new()
 		sprite.texture = Data.texture(Data.game.get("npc_sprites", "res://art/npcs.png"))
 		sprite.hframes = int(Data.game.get("npc_frames", 4))
-		sprite.frame = int(npc.get("frame", 0))
+		var frame := int(npc.get("frame", 0))
+		if npc.get("role", "") == "chest" and Game.has(chest_flag(npc)):
+			frame = int(npc.get("open_frame", frame))
+		sprite.frame = frame
 		sprite.centered = false
 		sprite.position = Vector2(at * tile_size)
 		add_child(sprite)
@@ -149,7 +181,11 @@ func step(direction: Vector2i) -> void:
 func _after_step() -> void:
 	for warp in map_info.get("warps", []):
 		if Vector2i(int(warp["x"]), int(warp["y"])) == Game.position:
+			if warp.has("requires") and not Game.has(str(warp["requires"])):
+				await dialogue.say(Data.dialogue.get(str(warp.get("locked", "")), ["The way is shut."]))
+				return
 			Game.position = Vector2i(int(warp["to_x"]), int(warp["to_y"]))
+			Sound.play("door")
 			_load_map(warp["to"])
 			return
 	var info := tile_info(Game.position)
@@ -161,6 +197,7 @@ func _after_step() -> void:
 			var groups: Array = table.get("groups", [])
 			if not groups.is_empty():
 				Game.steps_since_battle = 0
+				Sound.play("encounter")
 				Router.battle(groups[randi() % groups.size()])
 
 func interact() -> void:
@@ -168,8 +205,12 @@ func interact() -> void:
 	if not npcs.has(at):
 		return
 	var npc: Dictionary = npcs[at]
-	var lines: Array = Data.dialogue.get(npc.get("dialogue", ""), ["..."])
+	if npc.get("role", "") == "chest":
+		await _chest(npc)
+		return
+	var lines: Array = Data.dialogue.get(dialogue_key(npc), ["..."])
 	await dialogue.say(lines)
+	Game.set_flag(str(npc.get("sets", "")))
 	match npc.get("role", ""):
 		"inn":
 			Game.heal_all()
@@ -177,17 +218,59 @@ func interact() -> void:
 			await dialogue.say(["Your party is fully rested."])
 		"shop":
 			await _shop(npc.get("stock", []))
+		"battle":
+			Game.pending_event = {"flag": battle_flag(npc), "after": npc.get("after", ""), "ending": bool(npc.get("ending", false)), "no_run": bool(npc.get("no_run", true))}
+			Sound.play("encounter")
+			Router.battle(npc.get("enemies", []))
 
+## The dialogue an NPC uses now: the last "dialogue_after" entry whose flag is set, else "dialogue".
+func dialogue_key(npc: Dictionary) -> String:
+	var key := str(npc.get("dialogue", ""))
+	var after: Dictionary = npc.get("dialogue_after", {})
+	for flag in after:
+		if Game.has(str(flag)):
+			key = str(after[flag])
+	return key
+
+func _chest(npc: Dictionary) -> void:
+	var flag := chest_flag(npc)
+	if Game.has(flag):
+		await dialogue.say(["It's empty."])
+		return
+	Game.set_flag(flag)
+	var found: Array = []
+	if npc.has("item"):
+		Game.add_item(str(npc["item"]), int(npc.get("count", 1)))
+		found.append("%s x%d" % [Data.items.get(str(npc["item"]), {}).get("name", npc["item"]), int(npc.get("count", 1))])
+	if int(npc.get("gold", 0)) > 0:
+		Game.gold += int(npc["gold"])
+		found.append("%d gold" % int(npc["gold"]))
+	Sound.play("item")
+	await dialogue.say(["Found %s!" % " and ".join(found) if not found.is_empty() else "Found nothing."])
+	_load_map(Game.map_id)
+
+## A shop: pick an item to buy, as many times as you like; Esc or Leave closes it.
 func _shop(stock: Array) -> void:
-	for id in stock:
+	while true:
+		var options: Array = []
+		for id in stock:
+			var item: Dictionary = Data.items.get(id, {})
+			options.append("%s  %dG" % [item.get("name", id), int(item.get("price", 10))])
+		options.append("Leave")
+		var index: int = await dialogue.choose("Gold: %d. What would you like?" % Game.gold, options)
+		if index < 0 or index >= stock.size():
+			return
+		var id: String = stock[index]
 		var item: Dictionary = Data.items.get(id, {})
 		var price := int(item.get("price", 10))
-		if Game.gold >= price:
-			Game.gold -= price
-			Game.add_item(id)
-			await dialogue.say(["Bought %s for %d gold. (%d left)" % [item.get("name", id), price, Game.gold]])
-		else:
+		if Game.gold < price:
+			Sound.play("cancel")
 			await dialogue.say(["You need %d gold for %s." % [price, item.get("name", id)]])
+			continue
+		Game.gold -= price
+		Game.add_item(id)
+		Sound.play("coin")
+		await dialogue.say(["Bought %s. (%d gold left)" % [item.get("name", id), Game.gold]])
 
 ## For headless tests: walks to a map with encounters (through its warps), then through encounter tiles until a battle
 ## starts. The battle scene, also in autotest mode, fights it out and quits. Gives up after 300 steps.

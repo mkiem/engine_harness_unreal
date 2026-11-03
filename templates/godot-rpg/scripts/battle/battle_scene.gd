@@ -53,13 +53,11 @@ func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	_log = Label.new()
-	_log.add_theme_font_size_override("font_size", 8)
 	_log.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_log.position = Vector2(4, _screen.y * 0.48)
 	_log.size = Vector2(_screen.x - 8, 30)
 	layer.add_child(_log)
 	_status = Label.new()
-	_status.add_theme_font_size_override("font_size", 8)
 	_status.position = Vector2(_screen.x * 0.45, _screen.y * 0.66)
 	layer.add_child(_status)
 	_menu = VBoxContainer.new()
@@ -105,7 +103,10 @@ func _run() -> void:
 func _player_turn(actor: Dictionary) -> void:
 	while true:
 		_say("%s's turn." % actor["name"])
-		var command = await _choose(["Attack", "Skill", "Item", "Defend", "Run"])
+		var commands := ["Attack", "Skill", "Item", "Defend", "Run"]
+		if bool(Game.pending_event.get("no_run", false)):
+			commands.erase("Run")
+		var command = await _choose(commands)
 		match command:
 			"Attack":
 				var target = await _choose_target(logic.alive(logic.enemies))
@@ -131,7 +132,7 @@ func _player_turn(actor: Dictionary) -> void:
 				var target = await _choose_target(pool)
 				if target != null:
 					logic.act(actor, "skill", target, skill_id)
-					Sound.play("heal" if skill.get("type") == "heal" else "hit")
+					Sound.play(skill_id, "heal" if skill.get("type") == "heal" else ("magic" if skill.get("type") == "magic" else "hit"))
 					return
 			"Item":
 				var ids: Array = Game.inventory.keys()
@@ -173,7 +174,6 @@ func _choose(options: Array, can_cancel := false):
 	for option in options:
 		var button := Button.new()
 		button.text = str(option)
-		button.add_theme_font_size_override("font_size", 8)
 		button.pressed.connect(func(): chosen.emit(option))
 		_menu.add_child(button)
 	await get_tree().process_frame
@@ -203,14 +203,20 @@ func _finish() -> void:
 			_say("Victory! %d XP, %d gold." % [int(rewards.get("xp", 0)), int(rewards.get("gold", 0))])
 			await _pause()
 			for name in raised:
+				Sound.play("levelup")
 				_say("%s reached a new level!" % name)
 				await _pause()
+			Game.set_flag(str(Game.pending_event.get("flag", "")))
 		"fled":
 			await _pause()
 		_:
+			Sound.play("defeat")
 			_say("The party has fallen...")
 			await _pause()
 	Game.pending_battle = []
+	var event := Game.pending_event
+	if logic.outcome != "won":
+		Game.pending_event = {}
 	if autoplay:
 		print("AUTOTEST battle: %s" % logic.outcome)
 		get_tree().quit(0)
@@ -218,5 +224,8 @@ func _finish() -> void:
 	if logic.outcome == "lost":
 		Game.heal_all()
 		Router.title()
+	elif logic.outcome == "won" and bool(event.get("ending", false)):
+		Game.pending_event = {}
+		Router.go("res://scenes/ending.tscn")
 	else:
 		Router.overworld()

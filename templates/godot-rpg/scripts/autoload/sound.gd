@@ -37,8 +37,11 @@ func music(path: String) -> void:
 	_music.stream = stream
 	_music.play()
 
-func play(name: String) -> void:
+## Plays the first of the names whose sound exists, so a game can add specific sounds ("fire") over general ones ("hit").
+func play(name: String, fallback: String = "") -> void:
 	var stream := _load("res://audio/%s.wav" % name)
+	if stream == null and fallback != "":
+		stream = _load("res://audio/%s.wav" % fallback)
 	if stream == null:
 		return
 	for player in _sfx:

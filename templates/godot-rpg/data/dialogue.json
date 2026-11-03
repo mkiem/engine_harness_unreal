@@ -1,6 +1,31 @@
 {
-  "elder": ["Welcome to Fernvale, traveler.", "Monsters have been seen in the meadow south of town.", "Rest at the inn before you go."],
-  "innkeeper": ["Welcome to the Sleepy Fern!", "A night's rest is on the house."],
-  "merchant": ["Potions! Fresh potions!", "8 gold each."],
-  "kid": ["My dad says the forest past the meadow is dangerous.", "I'm not scared though!"]
+  "elder": [
+    "Welcome to Fernvale, traveler.",
+    "A great wolf leads the monsters in the meadow south of town.",
+    "Rest at the inn, then drive it off!"
+  ],
+  "innkeeper": [
+    "Welcome to the Sleepy Fern!",
+    "A night's rest is on the house."
+  ],
+  "merchant": [
+    "Potions and ethers! Fresh today!"
+  ],
+  "kid": [
+    "My dad says the forest past the meadow is dangerous.",
+    "I'm not scared though!"
+  ],
+  "elder_after": [
+    "You drove off the great wolf!",
+    "Fernvale is safe, thanks to you."
+  ],
+  "alpha": [
+    "A huge wolf blocks the way, growling.",
+    "It will not let you pass!"
+  ],
+  "ending": [
+    "The great wolf flees into the forest.",
+    "Back in Fernvale, the villagers cheer.",
+    "Peace returns to the meadow... for now."
+  ]
 }

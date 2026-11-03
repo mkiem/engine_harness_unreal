@@ -20,6 +20,19 @@ export function balanceResults(project: string): Record<string, { win_rate: numb
   try { return JSON.parse(readFileSync(path, 'utf8')).results ?? {} } catch { return {} }
 }
 
+/** Every distinct enemy group the player can meet: the encounter zones' groups, then story battles (bosses). */
+export function battleGroups(project: string): string[][] {
+  let groups: string[][] = []
+  try {
+    const data = readProjectData(project)
+    groups = [
+      ...Object.values(data.encounters).flatMap((zone: any) => zone.groups ?? []),
+      ...Object.values(data.maps).flatMap((m: any) => m.npcs ?? []).filter((n: any) => n.role === 'battle' && n.enemies?.length).map((n: any) => n.enemies),
+    ]
+  } catch { /* reported by the data checks */ }
+  return [...new Map(groups.map(group => [group.join('+'), group] as const)).values()]
+}
+
 const PHASES: Record<PhaseId, Phase> = {
   concept: {
     goal: 'Decide what the game is: the kind of game, the feeling, the core loop, the setting, and a first playable goal small enough to finish.',
@@ -118,11 +131,16 @@ const PHASES: Record<PhaseId, Phase> = {
     goal: 'The story from start to end, and what everyone says along the way.',
     skill: 'story-and-dialogue',
     next: 'Write the premise and the story beats with the developer, then the dialogue for every NPC in data/dialogue.json, and play through to read it in the game.',
-    checks: (_p, d) => [
-      check(!!d.concept.story.premise.trim(), 'A story premise'),
-      check(d.concept.story.beats.length >= 3, 'At least three story beats'),
-      check(!!d.concept.story.ending.trim(), 'An ending for the first playable'),
-    ],
+    checks: (p, d) => {
+      let npcs: any[] = []
+      try { npcs = Object.values(readProjectData(p).maps).flatMap((m: any) => m.npcs ?? []) } catch { /* reported elsewhere */ }
+      return [
+        check(!!d.concept.story.premise.trim(), 'A story premise'),
+        check(d.concept.story.beats.length >= 3, 'At least three story beats'),
+        check(!!d.concept.story.ending.trim(), 'An ending for the first playable'),
+        check(npcs.some(n => n.role === 'battle' && n.ending), 'The game can be finished (a battle NPC with "ending": true)'),
+      ]
+    },
   },
   ui: {
     goal: 'The title screen, menus and battle screen look like this game and are easy to use.',
@@ -139,8 +157,9 @@ const PHASES: Record<PhaseId, Phase> = {
     skill: 'audio-and-music',
     next: 'Agree the musical mood, then replace the placeholder music and sounds in audio/ (made with reproducible scripts or openly licensed packs), checking each in the game.',
     checks: (p, d) => {
-      const left = placeholdersLeft(p).filter(file => file.startsWith('audio/'))
-      return [check(!!d.audio.mood.trim(), 'A musical mood in the design'), check(left.length <= 2, left.length ? `Placeholder audio still in use: ${left.join(', ')}` : 'All placeholder audio replaced')]
+      const music = ['title', 'town', 'field', 'battle'].map(name => `audio/${name}.wav`)
+      const left = placeholdersLeft(p).filter(file => music.includes(file))
+      return [check(!!d.audio.mood.trim(), 'A musical mood in the design'), check(left.length === 0, left.length ? `Placeholder music still in use: ${left.join(', ')}` : 'All placeholder music replaced')]
     },
   },
   balance: {
@@ -148,12 +167,11 @@ const PHASES: Record<PhaseId, Phase> = {
     skill: 'playtest-and-balance',
     next: 'Simulate every encounter group at the level the player will be there, fix anything outside the intended range, then have the developer play the first playable start to finish and note what felt wrong.',
     checks: (p) => {
-      let groups: string[] = []
-      try { groups = Object.values(readProjectData(p).encounters).flatMap((zone: any) => (zone.groups ?? []).map((g: string[]) => g.join('+'))) } catch { /* reported elsewhere */ }
+      const groups = battleGroups(p).map(g => g.join('+'))
       const results = balanceResults(p)
       const tested = new Set(Object.values(results).map(r => r.enemies.join('+')))
       const untested = [...new Set(groups)].filter(g => !tested.has(g))
-      return [check(groups.length > 0 && untested.length === 0, untested.length ? `Not yet simulated: ${untested.join(', ')}` : 'Every encounter group simulated')]
+      return [check(groups.length > 0 && untested.length === 0, untested.length ? `Not yet simulated: ${untested.join(', ')}` : 'Every encounter group and boss simulated')]
     },
   },
   build: {

@@ -12,6 +12,8 @@ var map_id := ""
 var position := Vector2i.ZERO
 var facing := Vector2i.DOWN
 var pending_battle: Array = [] # enemy ids for the next battle
+## A story battle in progress (a boss): {"flag", "after", "ending", "no_run"}; empty for random encounters.
+var pending_event: Dictionary = {}
 var steps_since_battle := 0
 
 func new_game() -> void:
@@ -22,6 +24,7 @@ func new_game() -> void:
 	inventory = start.get("items", {}).duplicate()
 	gold = int(start.get("gold", 0))
 	flags = {}
+	pending_event = {}
 	map_id = start.get("map", "town")
 	var pos: Array = start.get("position", [2, 2])
 	position = Vector2i(int(pos[0]), int(pos[1]))
@@ -72,6 +75,14 @@ func add_item(id: String, count := 1) -> void:
 	inventory[id] = int(inventory.get(id, 0)) + count
 	if int(inventory[id]) <= 0:
 		inventory.erase(id)
+
+## Story flags: has("met_elder"), set_flag("met_elder"). Flags are saved with the game.
+func has(flag: String) -> bool:
+	return flag != "" and bool(flags.get(flag, false))
+
+func set_flag(flag: String, value := true) -> void:
+	if flag != "":
+		flags[flag] = value
 
 func heal_all() -> void:
 	for member in party:

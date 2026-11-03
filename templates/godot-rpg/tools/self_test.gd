@@ -59,13 +59,18 @@ func _check_data() -> void:
 		if zone != "" and not Data.encounters.has(zone):
 			fail("map %s uses encounter zone %s, which is not in encounters.json" % [map_id, zone])
 		for npc in info.get("npcs", []):
-			if not Data.dialogue.has(npc.get("dialogue", "")):
+			if npc.get("role", "") != "chest" and not Data.dialogue.has(npc.get("dialogue", "")):
 				fail("NPC %s on %s says %s, which is not in dialogue.json" % [npc.get("id", "?"), map_id, npc.get("dialogue", "")])
 			if _solid(rows, int(npc["x"]), int(npc["y"])):
 				fail("NPC %s on %s stands on a solid tile at %d,%d" % [npc.get("id", "?"), map_id, int(npc["x"]), int(npc["y"])])
 			for item in npc.get("stock", []):
 				if not Data.items.has(item):
 					fail("shop %s on %s sells %s, which is not in items.json" % [npc.get("id", "?"), map_id, item])
+			for enemy in npc.get("enemies", []):
+				if not Data.enemies.has(enemy):
+					fail("NPC %s on %s fights %s, which is not in enemies.json" % [npc.get("id", "?"), map_id, enemy])
+			if npc.has("item") and not Data.items.has(npc["item"]):
+				fail("chest %s on %s holds %s, which is not in items.json" % [npc.get("id", "?"), map_id, npc["item"]])
 		for warp in info.get("warps", []):
 			if not Data.maps.has(warp.get("to", "")):
 				fail("a warp on %s leads to map %s, which is not in maps.json" % [map_id, warp.get("to", "")])

@@ -5,6 +5,7 @@
  */
 import { writePngRgba } from '../contracts/png.ts'
 import { writeWav16 } from '../contracts/wav.ts'
+import { sound } from './make.ts'
 
 type RGB = readonly [number, number, number]
 
@@ -96,11 +97,25 @@ export function heroPng(cloth: RGB = P.blue, hair: RGB = P.orange): Buffer {
   return c.png()
 }
 
-/** Four townspeople facing down, one per frame. */
+/** Map figures, one per 16x16 frame: four townspeople facing down, a closed and an open chest, and the great wolf. */
 export function npcsPng(): Buffer {
-  const c = new Canvas(64, 16)
+  const c = new Canvas(112, 16)
   const looks: [RGB, RGB][] = [[P.plum, P.light], [P.moss, P.brown], [P.red, P.ink], [P.yellow, P.orange]]
   looks.forEach(([cloth, hair], i) => person(c, i * 16, 0, 'down', 0, cloth, hair))
+  // chest, closed (frame 4) and open (frame 5)
+  for (const [ox, open] of [[64, false], [80, true]] as const) {
+    c.rect(ox + 2, 6, 12, 9, P.ink)
+    c.rect(ox + 3, 7, 10, 7, P.brown)
+    c.rect(ox + 3, 10, 10, 1, P.bark)
+    if (open) { c.rect(ox + 3, 7, 10, 3, P.ink); c.rect(ox + 4, 8, 8, 1, P.yellow) } else c.rect(ox + 7, 9, 2, 3, P.yellow)
+    c.rect(ox + 2, 3, 12, open ? 2 : 4, P.ink); c.rect(ox + 3, 4, 10, open ? 1 : 2, P.brown)
+  }
+  // the great wolf (frame 6)
+  const wx = 96
+  c.rect(wx + 2, 6, 11, 7, P.stone); c.rect(wx + 9, 3, 6, 6, P.stone); c.rect(wx + 9, 1, 2, 2, P.stone); c.rect(wx + 13, 1, 2, 2, P.stone)
+  c.set(wx + 12, 5, P.red); c.rect(wx + 14, 7, 2, 1, P.light)
+  for (const x of [3, 6, 9, 11]) c.rect(wx + x, 13, 2, 3, P.ink)
+  c.rect(wx, 6, 2, 2, P.stone)
   return c.png()
 }
 
@@ -178,5 +193,6 @@ export function starterArt(options: { heroColors?: [RGB, RGB] } = {}): Record<st
     'art/enemies.png': enemiesPng(),
   }
   for (const [name, buffer] of Object.entries(soundFiles())) files[`audio/${name}`] = buffer
+  for (const name of ['magic', 'levelup', 'defeat', 'coin', 'cancel', 'item', 'door', 'encounter']) files[`audio/${name}.wav`] = sound(name)
   return files
 }

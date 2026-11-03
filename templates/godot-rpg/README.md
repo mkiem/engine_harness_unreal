@@ -24,8 +24,10 @@ Space talks and confirms, Esc opens the menu and goes back.
 | What people say | `data/dialogue.json` | Lines for each NPC |
 | Maps | `maps/*.txt` | One character per tile; `maps/legend.json` says what each character is |
 | NPCs, doors and exits | `maps/maps.json` | Who stands where, shops and inns, warps between maps, music |
+| Story events | `maps/maps.json` | Chests, boss battles, the ending, flags that change dialogue or open doors |
+| Menus and text boxes | `data/game.json` `ui` | Colours, corners, font and text size |
 | Pictures | `art/` | `tiles.png` (16x16 tiles in one row), `hero.png`, `npcs.png`, `enemies.png` |
-| Music and sounds | `audio/` | `title`, `town`, `field`, `battle` music; `select`, `hit`, `heal`, `victory` sounds |
+| Music and sounds | `audio/` | `title`, `town`, `field`, `battle` music; `select`, `hit`, `heal`, `victory` and other sounds |
 | The game's design | `design/GAME_DESIGN.md` | What the game is, decided with Engine Harness |
 
 The code is in `scripts/`: `autoload/` for data, game state and saving, `world/overworld.gd` for the map,
@@ -35,5 +37,6 @@ The code is in `scripts/`: `autoload/` for data, game state and saving, `world/o
 
 - `tools/self_test.tscn`: checks every reference between data files, the formulas, levelling and saving.
 - `tools/sim_battle.tscn`: fights a battle many times and reports how hard it is.
+- `scenes/ending.tscn`: the ending, shown after the battle marked `"ending": true` (the Great Wolf in the meadow).
 
 Engine Harness runs both for you ("check my game", "is the wolf too hard?").

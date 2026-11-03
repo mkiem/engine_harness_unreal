@@ -193,7 +193,11 @@ export function checkProjectData(project: string): string[] {
     for (const skill of e.skills ?? []) if (!has(d.skills, skill)) problems.push(`enemy ${id} uses skill ${skill}, which is not in skills.json`)
     if (e.drop?.item && !has(d.items, e.drop.item)) problems.push(`enemy ${id} drops ${e.drop.item}, which is not in items.json`)
     for (const stat of ['hp', 'atk', 'def', 'spd']) if (typeof e.stats?.[stat] !== 'number') problems.push(`enemy ${id} has no ${stat}`)
+    const frames = Number(d.game.enemy_frames ?? 0)
+    if (frames && (typeof e.frame !== 'number' || e.frame < 0 || e.frame >= frames)) problems.push(`enemy ${id} uses picture ${e.frame} but art/enemies.png has frames 0 to ${frames - 1} (enemy_frames in game.json)`)
   }
+  for (const [id, skill] of Object.entries(d.skills)) if (!['physical', 'magic', 'heal'].includes(skill.type)) problems.push(`skill ${id} has type ${skill.type}; the battle system knows physical, magic and heal`)
+  for (const [id, item] of Object.entries(d.items)) if (!['heal', 'mp'].includes(item.effect)) problems.push(`item ${id} has effect ${item.effect}; items can heal or mp`)
   for (const [zone, info] of Object.entries(d.encounters)) for (const group of info.groups ?? []) for (const enemy of group) if (!has(d.enemies, enemy)) problems.push(`encounter zone ${zone} has enemy ${enemy}, which is not in enemies.json`)
   for (const item of Object.keys(d.party.items ?? {})) if (!has(d.items, item)) problems.push(`party.json starts with item ${item}, which is not in items.json`)
   for (const name of ['physical', 'magic', 'heal', 'xp_to_next', 'run_chance']) if (typeof d.formulas[name] !== 'string') problems.push(`formulas.json has no ${name} formula`)
@@ -206,17 +210,45 @@ export function checkProjectData(project: string): string[] {
     const unknown = new Set<string>()
     rows.forEach(row => [...row].forEach(ch => { if (!has(d.legend, ch)) unknown.add(ch) }))
     for (const ch of unknown) problems.push(`map ${id} uses '${ch}', which is not in legend.json`)
+    const widths = new Set(rows.map(row => [...row].length))
+    if (widths.size > 1) problems.push(`map ${id} has rows of different lengths (${[...widths].join(', ')}); every row needs the same number of characters`)
+    if (typeof info.music === 'string' && info.music.startsWith('res://') && !existsSync(join(project, info.music.slice(6)))) problems.push(`map ${id} plays ${info.music}, which does not exist`)
     if (info.encounters && !has(d.encounters, info.encounters)) problems.push(`map ${id} uses encounter zone ${info.encounters}, which is not in encounters.json`)
     for (const npc of info.npcs ?? []) {
-      if (!has(d.dialogue, npc.dialogue ?? '')) problems.push(`NPC ${npc.id} on ${id} says ${npc.dialogue}, which is not in dialogue.json`)
+      if (npc.role !== 'chest' && !has(d.dialogue, npc.dialogue ?? '')) problems.push(`NPC ${npc.id} on ${id} says ${npc.dialogue}, which is not in dialogue.json`)
       if (solid(rows, npc.x, npc.y)) problems.push(`NPC ${npc.id} on ${id} stands on a solid tile at ${npc.x},${npc.y}`)
+      const frames = Number(d.game.npc_frames ?? 0)
+      if (frames && (npc.frame ?? 0) >= frames) problems.push(`NPC ${npc.id} on ${id} uses picture ${npc.frame} but art/npcs.png has frames 0 to ${frames - 1} (npc_frames in game.json)`)
       for (const item of npc.stock ?? []) if (!has(d.items, item)) problems.push(`shop ${npc.id} on ${id} sells ${item}, which is not in items.json`)
+      if (npc.role === 'battle') {
+        if (!npc.enemies?.length) problems.push(`NPC ${npc.id} on ${id} starts a battle but lists no enemies`)
+        for (const enemy of npc.enemies ?? []) if (!has(d.enemies, enemy)) problems.push(`NPC ${npc.id} on ${id} fights ${enemy}, which is not in enemies.json`)
+        if (npc.ending && !has(d.dialogue, 'ending')) problems.push(`NPC ${npc.id} on ${id} ends the game, but dialogue.json has no "ending" lines`)
+      }
+      if (npc.role === 'chest' && npc.item && !has(d.items, npc.item)) problems.push(`chest ${npc.id} on ${id} holds ${npc.item}, which is not in items.json`)
+      if (npc.role === 'chest' && !npc.item && !npc.gold) problems.push(`chest ${npc.id} on ${id} holds nothing; give it an item or gold`)
+      for (const key of [npc.after, ...Object.values(npc.dialogue_after ?? {})]) if (key && !has(d.dialogue, key)) problems.push(`NPC ${npc.id} on ${id} uses dialogue ${key}, which is not in dialogue.json`)
     }
     for (const warp of info.warps ?? []) {
+      if (warp.locked && !has(d.dialogue, warp.locked)) problems.push(`a warp on ${id} says ${warp.locked} when shut, which is not in dialogue.json`)
       if (!has(d.maps, warp.to)) problems.push(`a warp on ${id} leads to map ${warp.to}, which is not in maps.json`)
       else if (solid(mapRows(project, d.maps, warp.to), warp.to_x, warp.to_y)) problems.push(`a warp on ${id} lands on a solid tile of ${warp.to}`)
+      else if ((d.maps[warp.to].warps ?? []).some((w: any) => w.x === warp.to_x && w.y === warp.to_y)) problems.push(`a warp on ${id} lands on another warp in ${warp.to} at ${warp.to_x},${warp.to_y}, so the player would bounce; land one step away from it`)
     }
   }
+  // Story flags: every flag something waits for has to be set by something, or that door never opens.
+  const setFlags = new Set<string>()
+  const wanted: [string, string][] = []
+  for (const [id, info] of Object.entries(d.maps)) {
+    for (const npc of info.npcs ?? []) {
+      if (npc.sets) setFlags.add(npc.sets)
+      if (npc.role === 'battle') setFlags.add(npc.flag ?? `beat_${npc.id}`)
+      if (npc.role === 'chest') setFlags.add(npc.flag ?? `chest_${id}_${npc.id}`)
+      for (const flag of [npc.only_if, npc.hide_if, ...Object.keys(npc.dialogue_after ?? {})]) if (flag) wanted.push([flag, `NPC ${npc.id} on ${id}`])
+    }
+    for (const warp of info.warps ?? []) if (warp.requires) wanted.push([warp.requires, `a warp on ${id}`])
+  }
+  for (const [flag, who] of wanted) if (!setFlags.has(flag)) problems.push(`${who} waits for the flag ${flag}, but nothing sets it (an NPC's "sets", a battle's "flag" or a chest's "flag")`)
   for (const [key, path] of Object.entries(d.game)) {
     if (typeof path === 'string' && path.startsWith('res://') && /\.(png|wav|ogg)$/.test(path) && !existsSync(join(project, path.slice(6)))) {
       if (!/\.(wav|ogg)$/.test(path)) problems.push(`game.json ${key} points to ${path}, which does not exist`)

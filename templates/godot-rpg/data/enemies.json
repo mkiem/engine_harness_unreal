@@ -74,5 +74,23 @@
       "item": "ether",
       "chance": 0.2
     }
+  },
+  "alpha_wolf": {
+    "name": "Great Wolf",
+    "frame": 2,
+    "level": 5,
+    "stats": {
+      "hp": 150,
+      "mp": 0,
+      "atk": 17,
+      "def": 7,
+      "mag": 1,
+      "spd": 9
+    },
+    "skills": [
+      "bite"
+    ],
+    "xp": 60,
+    "gold": 50
   }
 }
