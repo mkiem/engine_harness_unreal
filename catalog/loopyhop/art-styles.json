@@ -1,0 +1,1185 @@
+{
+ "source": "https://gameartstyle.loopyhop.com",
+ "imported": "2026-11-03",
+ "styles": [
+  {
+   "id": "16bit-pixel",
+   "family": "Pixel & retro",
+   "name": "16-bit-inspired pixel art",
+   "definition": "Richer color ramps, layered parallax and fuller sprite volumes evoke the 16-bit era. Modern works can adopt that language without historical resolution or color-count limits.",
+   "lookFor": [
+    "Stepped shading builds form",
+    "Layered foregrounds and backgrounds",
+    "Saturated colors and nuanced sprite animation"
+   ],
+   "prompt": "Act as the art director for an original game. Establish 16-bit-inspired pixel art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Define a consistent logical resolution, sprite scale and tile system with richer but controlled stepped color ramps. Shape characters and objects with deliberate clusters, readable volumes and expressive frame animation. Use layered foregrounds and backgrounds, decorative tile variation and carefully separated parallax planes. UI and effects must share the world's pixel scale and palette families. Allow modern presentation without claiming exact historical hardware compliance, while preserving visible pixel craftsmanship. Avoid arbitrary high-resolution overlays, blended photographic textures, inconsistent outline density and visual noise that competes with the playable plane. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Sonic Mania",
+     "studio": "Christian Whitehead, Headcannon, PagodaWest Games",
+     "why": "Layered scenery, colorful dithering and smooth sprite animation extend the visual language of the 16-bit era into a modern frame and level of detail.",
+     "officialPage": "https://store.steampowered.com/app/584400/"
+    },
+    {
+     "game": "Freedom Planet",
+     "studio": "GalaxyTrail",
+     "why": "Bright color ramps, decorative tilework and multiple background planes build the rich side-view scenery associated with 16-bit action games.",
+     "officialPage": "https://store.steampowered.com/app/248310/"
+    },
+    {
+     "game": "Spark the Electric Jester",
+     "studio": "Feperd Games",
+     "why": "Explicitly inspired by 16-bit classics, its art uses saturated shapes, stepped shading and layered scrolling backgrounds.",
+     "officialPage": "https://store.steampowered.com/app/601810/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/16bit-pixel/"
+  },
+  {
+   "id": "8bit-pixel",
+   "family": "Pixel & retro",
+   "name": "8-bit-inspired pixel art",
+   "definition": "Limited color ramps, crisp pixel boundaries and small sprites recall early consoles and home computers. This descriptive grouping does not imply strict compliance with any particular 8-bit machine’s palette or hardware.",
+   "lookFor": [
+    "Limited color ramps and hard contours",
+    "Small sprites and repeated tiles",
+    "Graphic clarity before realistic materials"
+   ],
+   "prompt": "Act as the art director for an original game. Establish 8-bit-inspired pixel art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Choose and document a small logical pixel resolution, tile grid, sprite scale and limited color ramps appropriate to the game. Use deliberate pixel clusters, crisp contours and reusable tile shapes. Keep characters, props, UI icons and effects aligned to the same visual pixel scale, scaling by integer factors wherever practical. Favor clear silhouettes and economical animation frames over fine texture. Use limited stepped shading and a small, controlled accent palette. This is an original visual direction, not a claim to emulate specific hardware exactly. Avoid accidental antialiasing, mixed pixel densities, blurred scaling and modern glossy effects that overwhelm the pixel structure. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Shovel Knight: Treasure Trove",
+     "studio": "Yacht Club Games",
+     "why": "Crisp pixel edges, limited ramps and tiled backgrounds evoke 8-bit games, while animation and parallax exceed the original hardware limits.",
+     "officialPage": "https://store.steampowered.com/app/250760/"
+    },
+    {
+     "game": "VVVVVV",
+     "studio": "Terry Cavanagh",
+     "why": "Small single-color characters and color-coded rooms create readable silhouettes reminiscent of early home-computer graphics.",
+     "officialPage": "https://store.steampowered.com/app/70300/"
+    },
+    {
+     "game": "Axiom Verge",
+     "studio": "Thomas Happ Games LLC",
+     "why": "Compact palettes, repeated tiles and hard contours build its retro environments; inclusion refers to appearance, not 8-bit hardware.",
+     "officialPage": "https://store.steampowered.com/app/332200/"
+    },
+    {
+     "game": "The Messenger",
+     "studio": "Sabotage",
+     "why": "The game changes between 8-bit-inspired and 16-bit-inspired graphics; this entry focuses on the early limited-ramp, hard-edged presentation.",
+     "officialPage": "https://store.steampowered.com/app/764790/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/8bit-pixel/"
+  },
+  {
+   "id": "anime-cel-3d",
+   "family": "3D & rendering",
+   "name": "Anime cel-shaded 3D",
+   "definition": "Three-dimensional models are rendered with the discrete shadow shapes and outlines of 2D animation. Limited shading bands, camera composition and effects reinforce the drawn appearance.",
+   "lookFor": [
+    "Hard-edged shadows in limited tones",
+    "Art-directed outlines",
+    "Animation-like exaggeration and framing"
+   ],
+   "prompt": "Act as the art director for an original game. Establish anime-inspired cel-shaded 3D as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Render three-dimensional characters and environments through deliberately designed, limited shadow bands and controlled contour lines. Shape faces, hair and costumes for readable animated silhouettes, and adjust lighting to preserve authored shadow shapes rather than chasing physical realism. Keep props, UI graphics and effects in the same clean color-block vocabulary. Use strong poses, carefully timed holds and graphic action accents appropriate to the game. Maintain readable silhouettes from the actual gameplay camera. Avoid noisy realistic surface maps, uncontrolled gradients, uniformly thick outlines at all distances and visual imitation of a specific franchise's characters. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "GUILTY GEAR -STRIVE-",
+     "studio": "Arc System Works",
+     "why": "Carefully shaped shadow blocks and lines make 3D fighters read like 2D animation drawings.",
+     "officialPage": "https://store.steampowered.com/app/1384160/"
+    },
+    {
+     "game": "DRAGON BALL FighterZ",
+     "studio": "Arc System Works",
+     "why": "Hard-edged character shadows, black contours and explosive effects reproduce the flat appearance of television animation.",
+     "officialPage": "https://store.steampowered.com/app/678950/"
+    },
+    {
+     "game": "Hi-Fi RUSH",
+     "studio": "Tango Gameworks",
+     "why": "Bright color blocks and animated shadow shapes cover the 3D world, while 2D graphic effects accent rhythm and impact.",
+     "officialPage": "https://store.steampowered.com/app/1817230/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/anime-cel-3d/"
+  },
+  {
+   "id": "black-figure-pottery",
+   "family": "Paint & line",
+   "name": "Black-figure pottery",
+   "definition": "Figures become flat silhouettes with fine internal marks, paired with ochre grounds, meanders and banded compositions. Greek mythology is a secondary setting tag; pottery-like silhouettes and restricted colors define the style.",
+   "lookFor": [
+    "Dark silhouettes with incised-looking details",
+    "Restricted ochre-and-black palette",
+    "Meanders and horizontal visual bands"
+   ],
+   "prompt": "Act as the art director for an original game. Establish black-figure pottery-inspired graphics as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use predominantly dark, flat silhouettes on a restrained ochre or terracotta ground. Describe internal features with fine incised-looking marks rather than modeled shading. Arrange architecture, characters and props into clear horizontal bands with original geometric borders and meander-like ornament. Keep poses distinct and interaction zones unobstructed. Carry the silhouette-and-incision language into icons, UI frames and compact graphic effects; animate through strong readable profiles. Maintain the same limited palette across every asset family. Avoid treating mythology alone as the style, realistic materials, soft gradients and copying identifiable historical compositions without suitable rights. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Apotheon",
+     "studio": "Alientrap",
+     "why": "Dark figure silhouettes, ochre environments, geometric borders and incised-looking details evoke Greek vase painting, beyond simply borrowing mythological subject matter.",
+     "officialPage": "https://store.steampowered.com/app/208750/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/black-figure-pottery/"
+  },
+  {
+   "id": "bold-comic-illustration",
+   "family": "Paint & line",
+   "name": "Bold comic illustration",
+   "definition": "Assertive contours, sharply separated values and saturated accents create immediate visual impact. Characters and environments prioritize readability, recalling carefully colored comic panels.",
+   "lookFor": [
+    "Strong contours and silhouettes",
+    "Hard-edged value grouping",
+    "Saturated accents against deep shadows"
+   ],
+   "prompt": "Act as the art director for an original game. Establish bold, high-contrast comic illustration as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Build characters and props around assertive silhouettes, deliberate contour weights and hard-edged shadow groups. Use a limited family of saturated accents against deep, chromatically controlled shadows. Compose environments like readable colored comic panels, with detail concentrated near narrative and gameplay focal points. Keep UI panels, item icons and action indicators in the same ink-and-flat-color vocabulary. Use graphic slashes, impact shapes and brief held poses for effects and motion. Whether assets are 2D or 3D, prioritize the final illustrated appearance. Avoid airbrushed shading, muddy midtones, photographic textures and excessive black outlines on every small detail. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Hades",
+     "studio": "Supergiant Games",
+     "why": "Sharp lines, deep shadow masses and bright accents organize the portraits and Underworld environments; combat effects extend the same graphic language.",
+     "officialPage": "https://store.steampowered.com/app/1145360/"
+    },
+    {
+     "game": "Pyre",
+     "studio": "Supergiant Games",
+     "why": "Exaggerated exile designs, broad shadows and luminous ritual colors create clear identities. Its illustrated arenas rely on color composition more than realistic lighting.",
+     "officialPage": "https://store.steampowered.com/app/462770/"
+    },
+    {
+     "game": "Battle Chasers: Nightwar",
+     "studio": "Airship Syndicate",
+     "why": "Comic-derived proportions, bold outlines and chunky shading carry through its combat scenes. Three-dimensional characters and illustrated elements work together to preserve the comic look.",
+     "officialPage": "https://store.steampowered.com/app/451020/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/bold-comic-illustration/"
+  },
+  {
+   "id": "cinematic-realism",
+   "family": "3D & rendering",
+   "name": "Cinematic realism",
+   "definition": "Believable materials, human proportions and lighting are organized with cinematic framing, depth and color control. Different periods and settings can share this treatment; science-fiction and western subjects do not automatically become separate styles.",
+   "lookFor": [
+    "Detailed, believable surface materials",
+    "Naturalistic lighting and proportions",
+    "Cinematic framing and controlled color"
+   ],
+   "prompt": "Act as the art director for an original game. Establish cinematic realism as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use believable human proportions, coherent object scale and carefully observed material responses across characters, architecture, props and terrain. Build lighting, exposure, atmospheric depth and color grading around purposeful cinematic composition while keeping gameplay targets readable. Establish material reference standards and detail budgets that match the camera and platform. UI should be restrained and functional, and effects should respect scene exposure and physical context without hiding interactions. Animate with convincing weight, contact and transitions. Keep the setting independent of the style. Avoid indiscriminate photogrammetry density, inconsistent weathering, crushed shadows, excessive blur and spectacle that obscures play. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Red Dead Redemption 2",
+     "studio": "Rockstar Games",
+     "why": "Water, clothing and atmospheric mist create a believable natural space with cinematographic lighting and depth.",
+     "officialPage": "https://store.steampowered.com/app/1174180/"
+    },
+    {
+     "game": "Cyberpunk 2077",
+     "studio": "CD PROJEKT RED",
+     "why": "Urban surfaces, characters and light sources aim for believable physical presence; neon subject matter alone is not the inclusion criterion.",
+     "officialPage": "https://store.steampowered.com/app/1091500/"
+    },
+    {
+     "game": "Hellblade II: Senua’s Saga",
+     "studio": "Ninja Theory",
+     "why": "Faces, clothing and rocky environments pursue detailed realism, with close framing and natural light producing a strong cinematic character.",
+     "officialPage": "https://store.steampowered.com/app/2461850/"
+    },
+    {
+     "game": "Call of Duty: Modern Warfare (2019)",
+     "studio": "Infinity Ward, Beenox, High Moon Studios, Raven Software",
+     "why": "The 2019 reboot combines detailed skin, fabric, metal and brickwork with restrained color and directional light for a cinematic, lifelike image. Its materials and lighting motivate inclusion, rather than the military setting alone.",
+     "officialPage": "https://store.steampowered.com/app/2000950/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/cinematic-realism/"
+  },
+  {
+   "id": "classical-painting-collage",
+   "family": "Paint & line",
+   "name": "Old-master painting collage",
+   "definition": "Figures, landscapes and objects from classical paintings are recomposed into moving scenes. Oil-paint surfaces coexist with collage seams; image sourcing and recombination define the look more than a historical setting.",
+   "lookFor": [
+    "Brushwork and texture from classical paintings",
+    "Cut-and-paste elements from different paintings",
+    "Cutout-style articulated animation"
+   ],
+   "prompt": "Act as the art director for an original game. Establish animated classical-painting collage as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Create original or appropriately licensed painterly fragments with classical brush texture, coherent light and period-inspired fabric and landscape treatment. Assemble them as deliberately cut-out figures, props and layered scenery, allowing visible seams to be part of the language. Unify fragments through scale, palette, edge quality and shadow direction rather than a blanket painting filter. Animate articulated cutouts with carefully placed pivots and expressive held compositions. Use collage-like UI framing while keeping functional text clean. Effects should share the painted-fragment vocabulary. Avoid unauthorized reuse of paintings or game art, photographic cutouts, rubbery mesh distortion and mismatched source lighting. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Four Last Things",
+     "studio": "Joe Richardson",
+     "why": "Characters and environments drawn from classical paintings move as cutout pieces, creating a clear contrast between inherited paint texture and absurd recombination.",
+     "officialPage": "https://store.steampowered.com/app/503400/"
+    },
+    {
+     "game": "The Procession to Calvary",
+     "studio": "Joe Richardson",
+     "why": "Renaissance paintings are cut into scenery, props and performers, using inherited lighting and detail to form new compositions.",
+     "officialPage": "https://store.steampowered.com/app/1071130/"
+    },
+    {
+     "game": "Death of the Reprobate",
+     "studio": "Joe Richardson",
+     "why": "It extends painting collage into villages, landscapes and ensembles of figures. Detail comes from the source paintings, not an oil-paint filter.",
+     "officialPage": "https://store.steampowered.com/app/1739900/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/classical-painting-collage/"
+  },
+  {
+   "id": "coarse-pixel",
+   "family": "Pixel & retro",
+   "name": "Coarse minimal pixel art",
+   "definition": "Characters and objects are reduced to few pixels, omitting faces and fine textures so silhouettes, empty space and key color masses carry expression. It emphasizes deliberate reduction rather than detailed reconstruction of particular hardware.",
+   "lookFor": [
+    "Few pixels define characters",
+    "Deliberately omitted texture and facial detail",
+    "Silhouette, empty space and key color masses"
+   ],
+   "prompt": "Act as the art director for an original game. Establish coarse, minimal pixel art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Reduce characters and objects to a small number of deliberate pixels. Omit fine facial features and surface texture; convey identity through silhouette, pose, spacing and a few meaningful color masses. Lock the logical resolution and shared pixel scale for world assets, icons, UI and effects. Use carefully placed pools of light and simple environmental shapes to carry mood without filling the image with detail. Animate economical, recognizable poses and prioritize legibility at actual size. Avoid noisy dithering, tiny decorative shading, smooth high-resolution overlays and unnecessary detail added merely to make assets look more finished. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "The Last Door — Collector’s Edition",
+     "studio": "The Game Kitchen",
+     "why": "Faces are almost omitted and objects read through coarse silhouettes and large color masses; selective pools of light do narrative work normally carried by fine textures.",
+     "officialPage": "https://store.steampowered.com/app/284390/"
+    },
+    {
+     "game": "Undertale",
+     "studio": "tobyfox",
+     "why": "Characters express poses with few pixels and environments favor simple shapes; combat also switches to outlines on black, so the game does not have a single uniform treatment.",
+     "officialPage": "https://store.steampowered.com/app/391540/"
+    },
+    {
+     "game": "FAITH: The Unholy Trinity",
+     "studio": "Airdorf Games",
+     "why": "A few flat colors, sparse backgrounds and near-symbolic characters create an extremely low-resolution appearance; the interspersed rotoscoped sequences are a separate visual layer.",
+     "officialPage": "https://store.steampowered.com/app/1179080/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/coarse-pixel/"
+  },
+  {
+   "id": "decorative-storybook",
+   "family": "Paint & line",
+   "name": "Decorative storybook illustration",
+   "definition": "Delicate contours, patterned vegetation and gentle color shapes form explorable picture-book worlds. Flat illustration stays readable while overlap and ornamental detail enrich the surroundings.",
+   "lookFor": [
+    "Gentle contours and patterned details",
+    "Decorative plants and objects",
+    "Overlapping planes suggest space"
+   ],
+   "prompt": "Act as the art director for an original game. Establish decorative storybook illustration as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use delicate contours, gentle color shapes, patterned plants and charmingly specific everyday objects. Build space by overlapping illustrated planes and selective value contrast rather than heavy realistic shading. Establish recurring ornamental motifs across characters, clothing, props, environments and UI. Keep small interactive objects individually recognizable within dense scenery. Animate with smooth, expressive drawing and modest secondary motion; effects should feel like illustrated ribbons, leaves or small drawn accents. Use quiet page-like UI areas for readable text. Avoid generic plastic toy rendering, heavy black shadow masses and a different illustration style for portraits and environments. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Wytchwood",
+     "studio": "Alientrap",
+     "why": "Plants, creatures and scenery use patterned detail and delicate lines, placing a wandering character inside a layered storybook-like space.",
+     "officialPage": "https://store.steampowered.com/app/729000/"
+    },
+    {
+     "game": "Cozy Grove",
+     "studio": "Spry Fox",
+     "why": "Trees, tents and small objects retain fine outlines as areas shift from monochrome to gentle color; dense objects remain legible as individual picture-book shapes.",
+     "officialPage": "https://store.steampowered.com/app/1458100/"
+    },
+    {
+     "game": "Spiritfarer",
+     "studio": "Thunder Lotus",
+     "why": "Fluid character lines combine with decorative foliage and houseboats; gentle color layers and subtle texture maintain the coherence of an animated picture book.",
+     "officialPage": "https://store.steampowered.com/app/972660/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/decorative-storybook/"
+  },
+  {
+   "id": "detailed-doodle",
+   "family": "Paint & line",
+   "name": "Fine-line doodle worlds",
+   "definition": "Many tiny people and objects are built from simple, slightly irregular lines, like an enlarged hand-drawn map. It may be monochrome or lightly colored; fine line, density and adjacent miniature scenes define the style.",
+   "lookFor": [
+    "Fine, slightly irregular contours",
+    "Many miniature scenes placed together",
+    "Reduced realistic volume and lighting"
+   ],
+   "prompt": "Act as the art director for an original game. Establish fine-line doodle illustration as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Draw a dense but organized world from thin, slightly irregular contours and many small, individually readable scenes. Choose monochrome or a restrained light-fill palette, and use line shape and spacing as the primary means of differentiation. Keep realistic volume and directional shading minimal. Establish a consistent line-to-object scale across people, foliage, machinery, props and icons. Group details into navigable clusters with breathing room, and use simple line animations for feedback. UI should resemble the same hand-drawn map while reserving clean text areas. Avoid thick cartoon outlines, dense crosshatching and detail so small that targets become indistinguishable. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Hidden Folks",
+     "studio": "Hidden Folks",
+     "why": "Fine black-and-white lines render dense figures, trees and machinery, relying on shape differences rather than color or shading to distinguish objects.",
+     "officialPage": "https://store.steampowered.com/app/435400/"
+    },
+    {
+     "game": "Hidden Through Time",
+     "studio": "Rogueside",
+     "why": "Simple thin outlines surround lightly colored objects, arranging the scene like a map made of individual doodles. Color is the main variation from the monochrome example.",
+     "officialPage": "https://store.steampowered.com/app/524910/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/detailed-doodle/"
+  },
+  {
+   "id": "detailed-pixel",
+   "family": "Pixel & retro",
+   "name": "Densely detailed pixel art",
+   "definition": "Dense pixel clusters, complex color ramps and rich environmental detail bring raster imagery close to illustration. Pixel boundaries remain visible, while texture, lighting and layered detail take precedence over simple symbols.",
+   "lookFor": [
+    "Dense clusters and material detail",
+    "Rich value and hue changes",
+    "Detail across scenery and characters"
+   ],
+   "prompt": "Act as the art director for an original game. Establish densely detailed pixel illustration as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use carefully shaped pixel clusters, nuanced hue shifts and richer stepped ramps to describe cloth, foliage, stone and architecture. Keep a consistent pixel scale and concentrate intricate detail around focal assets, allowing quieter surfaces and distance to preserve hierarchy. Give characters expressive but readable frame animation and materials that match the environment's cluster language. Design UI icons at intentional resolutions rather than downscaling painted images. Effects may use controlled soft light, but must preserve the underlying pixel contours. Avoid random pixel noise, inconsistent sprite density and detail that vanishes or flickers at the target display size. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Owlboy",
+     "studio": "D-Pad Studio",
+     "why": "Clouds, rocks and foliage are shaped with dense pixel clusters; nuanced color ramps and expressive animation give the scenes an illustrative richness.",
+     "officialPage": "https://store.steampowered.com/app/115800/"
+    },
+    {
+     "game": "Blasphemous",
+     "studio": "The Game Kitchen",
+     "why": "Fine pixel work gives statues, cloth and architecture texture and volume. The classification rests on dense detail and layered shading rather than the religious subject matter.",
+     "officialPage": "https://store.steampowered.com/app/774361/"
+    },
+    {
+     "game": "Children of Morta",
+     "studio": "Dead Mage",
+     "why": "Tiny color clusters describe foliage and architecture, while pixel characters and soft lighting give densely detailed environments a painterly sense of depth.",
+     "officialPage": "https://store.steampowered.com/app/330020/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/detailed-pixel/"
+  },
+  {
+   "id": "expressionist-painting",
+   "family": "Paint & line",
+   "name": "Expressionist painting",
+   "definition": "Visible brushwork, clashing color masses and imperfect faces turn painting into an emotional language. This selection focuses on painterly surfaces and expressive portraits, rather than treating every painted background as the same style.",
+   "lookFor": [
+    "Visible brush marks and broken color edges",
+    "Expressive, non-naturalistic color",
+    "Painterly portraits and environments"
+   ],
+   "prompt": "Act as the art director for an original game. Establish expressionist painting as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use visible, directional brushwork, broken paint edges and interlocking opaque color masses. Let expressive, selectively distorted faces and non-naturalistic warm/cool relationships convey mood. Keep focal faces, hands and interaction silhouettes readable while allowing quieter background forms to dissolve. Give characters, architecture and props the same painted surface vocabulary; do not apply a uniform oil-paint filter over realistic assets. Use restrained, painterly UI borders and confident readable type. Effects should resemble energetic painted strokes, and animation should preserve the authored shape of the brush marks. Avoid glossy plastic, mechanically perfect contours and unrelated clean cel shading. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Disco Elysium - The Final Cut",
+     "studio": "ZA/UM",
+     "why": "Rough painted environments and portraits built from expressive strokes and unusual colors create a subjective, fractured look distinct from clean comic-book illustration.",
+     "officialPage": "https://store.steampowered.com/app/632470/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/expressionist-painting/"
+  },
+  {
+   "id": "faceted-low-poly",
+   "family": "3D & rendering",
+   "name": "Faceted low-poly",
+   "definition": "Visible polygonal facets and simplified meshes shape the world, with broad color fields replacing dense textures. The emphasis is on volume, silhouette and color grouping, rather than polygon count alone.",
+   "lookFor": [
+    "Clearly visible geometric facets",
+    "Sparse textures and broad color fields",
+    "Depth built from silhouettes and layers"
+   ],
+   "prompt": "Act as the art director for an original game. Establish faceted low-poly art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use simplified meshes with clearly visible, intentionally shaped polygonal planes. Let broad color fields, silhouette and warm/cool plane relationships carry material and volume, with sparse texture detail. Build environment depth through overlapping landforms and value separation. Characters, props and interactive geometry should share the same facet scale and simplification logic. Give UI icons geometric silhouettes and use restrained faceted particles or planar effects. Animate with clean arcs that preserve volume. Avoid arbitrary polygon reduction, indiscriminate triangulation, dense photographic textures and shiny smooth shading that conceals the facets. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "AER Memories of Old",
+     "studio": "Forgotten Key",
+     "why": "Floating islands and mountains use legible polygonal facets with little reliance on realistic surface textures.",
+     "officialPage": "https://store.steampowered.com/app/331870/"
+    },
+    {
+     "game": "Grow Home",
+     "studio": "Reflections, a Ubisoft Studio",
+     "why": "Plants, rocks and the robot retain angular low-poly forms, with bright solid colors separating climbable shapes.",
+     "officialPage": "https://store.steampowered.com/app/323320/"
+    },
+    {
+     "game": "The First Tree",
+     "studio": "David Wehle",
+     "why": "The fox and distant mountains use simplified planes, framed by soft gradient skies.",
+     "officialPage": "https://store.steampowered.com/app/555150/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/faceted-low-poly/"
+  },
+  {
+   "id": "gothic-contour",
+   "family": "Paint & line",
+   "name": "Gothic ornamental linework",
+   "definition": "Clear ink contours and simple characters sit within intricate, layered environments. Pointed arches, curling forms, shell-like motifs and misty backgrounds create dark yet delicate spaces.",
+   "lookFor": [
+    "Clean silhouettes and simplified faces",
+    "Dense organic curves and architectural motifs",
+    "Layered depth and soft halos"
+   ],
+   "prompt": "Act as the art director for an original game. Establish delicate Gothic ornamental linework as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Pair clean, compact character silhouettes and simple faces with intricate arches, curling vegetation, shell-like forms and layered cavern or architectural motifs. Use controlled ink contours and subdued atmospheric background planes. Reserve bright halos and stronger value contrast for navigation, threats and important characters. Give props, interface borders and icons a shared ornamental rhythm, with enough empty space to remain readable. Animate characters through clear flowing arcs and use fine filaments or soft halos for effects. Darkness should retain visual hierarchy and navigational clarity. Avoid uniformly dense detail, gratuitous gore as a style substitute, noisy crosshatching and photorealistic surfaces. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Hollow Knight",
+     "studio": "Team Cherry",
+     "why": "Simple insect silhouettes contrast with intricate arches, vines and cavern outlines; subdued backgrounds preserve character readability.",
+     "officialPage": "https://store.steampowered.com/app/367520/"
+    },
+    {
+     "game": "Hollow Knight: Silksong",
+     "studio": "Team Cherry",
+     "why": "It extends the clean contour language with silk, plants and architectural patterns, adding stronger regional palettes to densely ornamented spaces.",
+     "officialPage": "https://store.steampowered.com/app/1030300/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/gothic-contour/"
+  },
+  {
+   "id": "heavy-ink-shadows",
+   "family": "Paint & line",
+   "name": "Heavy ink and shadow",
+   "definition": "Heavy black shadows, rough hatching and muted color organize the image, often with distorted proportions. Compared with bright comic illustration, ink marks and dark masses carry more of the mood.",
+   "lookFor": [
+    "Heavy solid black shapes",
+    "Rough hatching and irregular contours",
+    "Restricted highlights emphasize figures or danger"
+   ],
+   "prompt": "Act as the art director for an original game. Establish heavy ink and expressive shadow as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Design angular or deliberately distorted silhouettes with large solid black shadow shapes, rough hatching and selective irregular contour marks. Use a restrained, muted palette with scarce highlights that reveal faces, interaction targets and danger. Preserve the same ink vocabulary on characters, scenery, props and interfaces, whether the assets are drawn or rendered in 3D. Effects should use sharp ink bursts, scratch marks and brief high-contrast accents rather than colorful particle fog. Keep animation weighty and poses readable. Avoid filling every surface with scratches, losing important shapes in black, polished photorealism and cheerful saturated comic coloring. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Darkest Dungeon",
+     "studio": "Red Hook Studios",
+     "why": "Angular black shadows and rough strokes divide faces and clothing, leaving only selective highlights in dark environments and creating a forceful print-like appearance.",
+     "officialPage": "https://store.steampowered.com/app/262060/"
+    },
+    {
+     "game": "Darkest Dungeon II",
+     "studio": "Red Hook Studios",
+     "why": "Three-dimensional characters and scenes retain rough ink marks, hard shadows and restricted color, showing that a visual language need not be limited to a 2D production method.",
+     "officialPage": "https://store.steampowered.com/app/1940340/"
+    },
+    {
+     "game": "Don't Starve",
+     "studio": "Klei Entertainment",
+     "why": "Crooked ink lines, spindly figures and scratch-like textures shape the world. It is more doodle-like than Darkest Dungeon, but shares irregular black strokes and subdued flat color.",
+     "officialPage": "https://store.steampowered.com/app/219740/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/heavy-ink-shadows/"
+  },
+  {
+   "id": "illuminated-manuscript",
+   "family": "Paint & line",
+   "name": "Illuminated manuscript illustration",
+   "definition": "Flat figures, handwritten text, ornamental borders and paper surfaces create a manuscript-like image. The category describes page construction and illustration, not all games with medieval settings.",
+   "lookFor": [
+    "Page-like flat compositions",
+    "Ink lines, flat colors and ornament",
+    "Lettering integrated into the image"
+   ],
+   "prompt": "Act as the art director for an original game. Establish illuminated manuscript illustration as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Organize scenes like carefully illustrated pages: flat figures, limited pictorial depth, confident ink contours, opaque color fills and ornamental borders. Develop an original vocabulary of foliage, marginal creatures, patterned fabrics and letterforms; avoid borrowing recognizable historical pages wholesale. Keep important actors larger or clearer through composition rather than realistic depth of field. Integrate UI frames and chapter transitions with page architecture, but keep functional text in highly legible forms. Motion should suggest articulated drawings or lively marginalia without breaking their flat construction. Avoid photorealistic perspective, modern glossy widgets and decoration that competes with interactive objects. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Pentiment",
+     "studio": "Obsidian Entertainment",
+     "why": "Figure proportions, outlined buildings and lettering draw on illuminated manuscripts and early printed books, favoring a flat pictorial space over realistic perspective.",
+     "officialPage": "https://store.steampowered.com/app/1205520/"
+    },
+    {
+     "game": "Inkulinati",
+     "studio": "Yaza Games",
+     "why": "Battles unfold directly on paper, with animal soldiers, ink marks and marginal ornament extending the visual language of manuscript marginalia.",
+     "officialPage": "https://store.steampowered.com/app/957960/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/illuminated-manuscript/"
+  },
+  {
+   "id": "inked-comic-3d",
+   "family": "3D & rendering",
+   "name": "Inked comic-book 3D",
+   "definition": "Volumetric 3D models retain bold outlines, drawn surface marks and exaggerated color. Compared with cleaner anime cel shading, these images emphasize ink-like texture and graphic surface detail.",
+   "lookFor": [
+    "Black contours and internal ink marks",
+    "Exaggerated model proportions",
+    "Volumetric comic-book surfaces"
+   ],
+   "prompt": "Act as the art director for an original game. Establish inked comic-book 3D as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Combine volumetric models with bold silhouettes, controlled black contours and deliberately drawn internal surface marks. Use exaggerated but consistent proportions and group wear, seams and material detail into purposeful ink shapes. Retain enough lighting to express depth while keeping a coherent graphic palette. Carry that same drawing density into weapons, architecture, UI icons and effects. Use comic-like bursts and confident pose changes for feedback. Distinguish this from clean anime cel shading through selective surface inking. Avoid procedural scratches everywhere, photorealistic materials beneath unrelated outlines and small lines that shimmer during motion. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Borderlands 2",
+     "studio": "Gearbox Software, Aspyr (Mac), Aspyr (Linux)",
+     "why": "Weapon and building edges, wear and drawn marks produce an ink-heavy appearance while preserving 3D lighting.",
+     "officialPage": "https://store.steampowered.com/app/49520/"
+    },
+    {
+     "game": "Borderlands 3",
+     "studio": "Gearbox Software",
+     "why": "Richer lighting sits over pronounced contours and drawn surface detail, retaining the comic-book character.",
+     "officialPage": "https://store.steampowered.com/app/397540/"
+    },
+    {
+     "game": "Roboquest",
+     "studio": "RyseUp Studios",
+     "why": "Thick outlines, mechanical shapes and simplified color blocks keep fast combat readable in a cleaner comic-book variant.",
+     "officialPage": "https://store.steampowered.com/app/692890/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/inked-comic-3d/"
+  },
+  {
+   "id": "layered-silhouette",
+   "family": "Shape & material",
+   "name": "Layered silhouettes",
+   "definition": "Characters and foregrounds appear primarily as solid contours, while lighter or hazier background layers establish depth. Backgrounds may be monochrome or colored; shape matters more than surface detail.",
+   "lookFor": [
+    "Solid foreground silhouettes",
+    "Separated depth layers",
+    "Background value reveals shape"
+   ],
+   "prompt": "Act as the art director for an original game. Establish layered silhouette art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Represent characters and foreground obstacles mainly as solid, clearly designed silhouettes. Establish depth with separated background value layers, haze and controlled overlap; choose either monochrome or a coherent colored-background palette. Reserve internal details for essential readable features. Keep props, hazards, icons and effects consistent with the silhouette language, using contrast and motion to distinguish their roles. Document which layer is playable and preserve collision readability. Animate expressive profiles rather than relying on surface detail. Avoid merging active targets into the background, realistic texture overlays and adding outlines or highlights that erase the silhouette hierarchy. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "LIMBO",
+     "studio": "Playdead",
+     "why": "Black figures and obstacles sit before misty gray backgrounds, with white eyes providing one of the few interior details.",
+     "officialPage": "https://store.steampowered.com/app/48000/"
+    },
+    {
+     "game": "BADLAND: Game of the Year Edition",
+     "studio": "Frogmind",
+     "why": "Black creatures and mechanical silhouettes stand against saturated forests, demonstrating a colorful variation on silhouette design.",
+     "officialPage": "https://store.steampowered.com/app/269670/"
+    },
+    {
+     "game": "NightSky",
+     "studio": "Nicalis, Inc.",
+     "why": "Dark terrain, machinery and the ball separate from gradient skies, with overlapping shapes defining most of the space.",
+     "officialPage": "https://store.steampowered.com/app/99700/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/layered-silhouette/"
+  },
+  {
+   "id": "low-resolution-3d",
+   "family": "3D & rendering",
+   "name": "Low-resolution retro 3D",
+   "definition": "Simplified models, low-resolution textures or pixelated output recall early 3D games. These are not purely 2D pixel works and need not reproduce the exact technical artifacts of a single old console.",
+   "lookFor": [
+    "Visible simplified geometry",
+    "Low-resolution textures or output",
+    "Modern lighting alongside retro grain"
+   ],
+   "prompt": "Act as the art director for an original game. Establish low-resolution retro 3D as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use intentionally simplified three-dimensional models, clear polygon silhouettes and compact, low-resolution texture sheets. Choose a stable output treatment and texture filtering policy so geometry and grain remain coherent across camera movement. Build color and atmospheric depth with controlled fog and lighting rather than dense physical surface detail. Match props, character proportions, UI and effects to the same retro visual density. Decide explicitly which modern lighting conveniences remain, without claiming exact emulation of an old console. Avoid calling the result pure 2D pixel art, mixing sharp photographic textures with coarse models, or adding unstable distortion that harms readability. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "SIGNALIS",
+     "studio": "rose-engine",
+     "why": "Low-resolution output and simplified 3D characters recall early consoles while retaining dynamic lighting; 2D animated sequences mean the whole game should not be labeled pure pixel art.",
+     "officialPage": "https://store.steampowered.com/app/1262350/"
+    },
+    {
+     "game": "Crow Country",
+     "studio": "SFB Games",
+     "why": "Simplified models, grainy presentation and compact sets create a retro 3D look. Rounded characters are a deliberate design choice rather than an attempt at low-poly realism.",
+     "officialPage": "https://store.steampowered.com/app/1996010/"
+    },
+    {
+     "game": "Dread Delusion",
+     "studio": "Lovely Hellplace",
+     "why": "Visible polygon contours, low-resolution textures and strong colored fog shape the world; geometry and material treatment, not the fantasy setting, motivate its inclusion.",
+     "officialPage": "https://store.steampowered.com/app/1574240/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/low-resolution-3d/"
+  },
+  {
+   "id": "luminous-layered-painting",
+   "family": "3D & rendering",
+   "name": "Luminous layered environments",
+   "definition": "Painterly scenery, rich foreground/background layers and strong luminous effects create deep side-on spaces. Games may mix 2D scenery and 3D models; the shared criterion is their final treatment of light, color and layering.",
+   "lookFor": [
+    "Multiple foreground and background layers",
+    "Luminous focal points against dark masses",
+    "Illustrative detail and atmospheric perspective"
+   ],
+   "prompt": "Act as the art director for an original game. Establish luminous, layered environmental illustration as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Create deep, readable side-on spaces from painterly scenery and multiple foreground, playable and background planes. Use luminous focal points against dark color masses, rich but controlled vegetation detail and atmospheric perspective. Keep characters and interactive objects distinct from decorative layers through value, edge clarity and motion. 2D and 3D assets may coexist if they share palette, light direction and illustrated surface treatment. Give UI and effects restrained organic shapes and light accents; animate particles and scenery without obscuring hazards. Avoid indiscriminate glow, equally sharp details on every plane and foreground decoration that blocks the playable route. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Ori and the Blind Forest: Definitive Edition",
+     "studio": "Moon Studios GmbH",
+     "why": "The luminous character contrasts with dark woodland, while layered vegetation establishes depth.",
+     "officialPage": "https://store.steampowered.com/app/387290/"
+    },
+    {
+     "game": "Ori and the Will of the Wisps",
+     "studio": "Moon Studios GmbH",
+     "why": "Light shafts, particles and dense environmental layers let dimensional forms retain a richly illustrated appearance.",
+     "officialPage": "https://store.steampowered.com/app/1057090/"
+    },
+    {
+     "game": "Trine 4: The Nightmare Prince",
+     "studio": "Frozenbyte",
+     "why": "Dense vegetation, colored light and layered distance turn its 3D stages into storybook-like spaces.",
+     "officialPage": "https://store.steampowered.com/app/690640/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/luminous-layered-painting/"
+  },
+  {
+   "id": "luminous-pixel",
+   "family": "Pixel & retro",
+   "name": "Luminous high-contrast pixel art",
+   "definition": "Saturated bright colors, dark foundations and luminous effects organize the pixel image. This category concerns color and light; science fiction and cities are only possible subjects.",
+   "lookFor": [
+    "Strong bright-dark contrast",
+    "Luminous edges and local glow",
+    "Color masses guide attention and depth"
+   ],
+   "prompt": "Act as the art director for an original game. Establish luminous, high-contrast pixel art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Build readable pixel silhouettes and broad color masses on dark foundations, using a small family of saturated luminous accents. Give each light color a role in navigation, interaction or atmosphere. Keep pixel edges deliberate and use glow as a controlled secondary layer, not a replacement for form. Match characters, architecture, UI and particles to the same pixel density and chromatic hierarchy. Animate light pulses and impacts with concise timing and preserve hazard readability when effects overlap. The setting need not be futuristic. Avoid unrestricted neon colors, washed-out bloom, blurred base sprites and dark regions with no navigational information. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Hyper Light Drifter",
+     "studio": "Heart Machine",
+     "why": "Bold cyan, green and magenta shapes cut across dark shadows; glowing accents and broad silhouettes establish depth without realistic textures.",
+     "officialPage": "https://store.steampowered.com/app/257850/"
+    },
+    {
+     "game": "Narita Boy",
+     "studio": "Studio Koba",
+     "why": "Highly saturated glow, dark foundations and pixelated silhouettes combine with screen-like post-processing to build atmosphere.",
+     "officialPage": "https://store.steampowered.com/app/1069530/"
+    },
+    {
+     "game": "Katana ZERO",
+     "studio": "Askiisoft",
+     "why": "Side-view pixel scenes organize attention through clashing purple, cyan and warm lights; strong chromatic contrast matters more here than the setting.",
+     "officialPage": "https://store.steampowered.com/app/460950/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/luminous-pixel/"
+  },
+  {
+   "id": "lush-painted-worlds",
+   "family": "Paint & line",
+   "name": "Lush painted worlds",
+   "definition": "Opaque color masses, rich values and selective brush texture build substantial environments. Compared with transparent watercolor, these images emphasize weight, material and densely painted environmental detail.",
+   "lookFor": [
+    "Opaque layers and selective brushwork",
+    "Rich warm–cool contrast and volume",
+    "Dense but layered environmental detail"
+   ],
+   "prompt": "Act as the art director for an original game. Establish lush, opaque environmental painting as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Build scenery from substantial opaque color masses, rich warm/cool relationships and selectively visible brush texture. Model foliage, stone, wood and architecture with purposeful painted shading, keeping foreground, playable plane and distance clearly separated. Characters and props must share the scene's palette and edge treatment even when animated with cleaner shapes. Make UI illustrations and icons feel hand-painted but keep labels crisp. Use localized painted light, controlled particles and animation that preserves the environment's crafted composition. Avoid transparent watercolor everywhere, photographic texture overlays, indiscriminate microdetail and lighting that destroys the painted color design. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Bastion",
+     "studio": "Supergiant Games",
+     "why": "Floating paths, stone walls and vegetation use substantial color masses and painted shading, turning environments into carefully illustrated stage pieces.",
+     "officialPage": "https://store.steampowered.com/app/107100/"
+    },
+    {
+     "game": "Transistor",
+     "studio": "Supergiant Games",
+     "why": "Architecture, foliage and reflective surfaces have layered painted detail, unified by greens and golds. Science fiction is a setting tag rather than the defining style.",
+     "officialPage": "https://store.steampowered.com/app/237930/"
+    },
+    {
+     "game": "Dust: An Elysian Tail",
+     "studio": "Humble Hearts LLC",
+     "why": "Lushly painted forest and mountain backgrounds model vegetation and light. Characters are closer to cel-style animation; the environment painting is the reason for inclusion.",
+     "officialPage": "https://store.steampowered.com/app/236090/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/lush-painted-worlds/"
+  },
+  {
+   "id": "miniature-diorama",
+   "family": "3D & rendering",
+   "name": "Miniature dioramas",
+   "definition": "Elevated framing, small rounded architecture and soft shadows make worlds resemble models arranged on a tabletop. This is a visual treatment of scale and material, not a requirement that the game literally depict toys.",
+   "lookFor": [
+    "Elevated or isometric framing",
+    "Simplified but carefully shaped small details",
+    "Soft occlusion and a model-like appearance"
+   ],
+   "prompt": "Act as the art director for an original game. Establish miniature diorama environments as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Make the world feel like a carefully arranged tabletop model through elevated or isometric framing, compact architecture, deliberate small details and soft contact shadows. Establish a coherent miniature material scale and gently rounded, simplified shapes. Keep characters and props compatible with the model's proportions, with interaction targets separated by value and placement. Use restrained atmospheric or depth-of-field effects that never blur the playable area. UI icons should feel like small model pieces while labels stay crisp. Animate with controlled, charming secondary motion. Avoid indiscriminate toy gloss, excessive tiny clutter and forcing literal toy subject matter onto the game. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Tiny Glade",
+     "studio": "Pounce Light",
+     "why": "Rounded stone walls, tiny vegetation and soft light turn architecture into an intimate, inspectable miniature.",
+     "officialPage": "https://store.steampowered.com/app/2198150/"
+    },
+    {
+     "game": "Dorfromantik",
+     "studio": "Toukana Interactive",
+     "why": "Miniature villages and forests on hexagonal tiles form tabletop-like landscapes, with detail subordinate to broad color composition.",
+     "officialPage": "https://store.steampowered.com/app/1455840/"
+    },
+    {
+     "game": "Townscaper",
+     "studio": "Oskar Stålberg",
+     "why": "Candy-colored houses, rounded edges and tiny everyday details make buildings resemble a set of carefully crafted models.",
+     "officialPage": "https://store.steampowered.com/app/1291340/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/miniature-diorama/"
+  },
+  {
+   "id": "minimal-geometric",
+   "family": "Shape & material",
+   "name": "Minimal geometric color",
+   "definition": "Characters and environments reduce to rectangles, circles, triangles and a small set of colors. Proportion, negative space, arrangement and movement carry the image while decorative texture recedes.",
+   "lookFor": [
+    "Basic geometric shapes",
+    "Restrained color count",
+    "Order through proportion and negative space"
+   ],
+   "prompt": "Act as the art director for an original game. Establish minimal geometric color design as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Reduce characters, props and environments to a disciplined vocabulary of rectangles, circles, triangles and a few related geometric forms. Lock a small palette and give proportion, spacing, orientation and movement clear roles in identity and gameplay. Use negative space as an active compositional element, with little or no decorative texture. UI, icons and effects should use the same shape grammar and controlled color relationships. Animate through precise, expressive timing and transformations that preserve recognizable roles. Do not rely on color alone for critical distinctions. Avoid ornamental clutter, inconsistent corner treatments, arbitrary extra colors and realistic shading that weakens the abstraction. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Thomas Was Alone",
+     "studio": "Bithell Games",
+     "why": "Characters differ mainly through rectangle proportions and colors, with platforms and empty space forming clear visual relationships.",
+     "officialPage": "https://store.steampowered.com/app/220780/"
+    },
+    {
+     "game": "140",
+     "studio": "Carlsen Games",
+     "why": "Circles, squares and triangles move through flat color fields, with geometry and rhythmic changes organizing the image.",
+     "officialPage": "https://store.steampowered.com/app/242820/"
+    },
+    {
+     "game": "Super Hexagon",
+     "studio": "Terry Cavanagh",
+     "why": "Concentric geometric walls and a few contrasting colors build a strong central composition without characters or representational scenery.",
+     "officialPage": "https://store.steampowered.com/app/221640/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/minimal-geometric/"
+  },
+  {
+   "id": "monochrome-dither-3d",
+   "family": "3D & rendering",
+   "name": "Monochrome dithered 3D",
+   "definition": "Three-dimensional scenes and models convert continuous tones into limited-color dot patterns. Unlike pixel-drawn 2D characters, perspective and volume come from 3D space while stippled patterns carry tonal transitions.",
+   "lookFor": [
+    "Very limited color or near-monochrome images",
+    "Dither patterns replace smooth gradients",
+    "Recognizable 3D perspective"
+   ],
+   "prompt": "Act as the art director for an original game. Establish monochrome-led dithered 3D as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Construct coherent three-dimensional scenes, then express tonal transitions through deliberate dot patterns and a very limited palette. Lock the output resolution, dither scale and palette relationships before creating assets. Preserve perspective and volume through composition, silhouette and consistent pattern density. Keep face cues, interactable objects and UI text readable by reducing texture where clarity matters. Stabilize the pattern during camera movement to avoid distracting shimmer, and use effects sparingly within the same tonal system. Avoid confusing this with hand-drawn 2D sprites, smooth gradients mixed arbitrarily with dithering and noisy patterns that hide gameplay information. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Return of the Obra Dinn",
+     "studio": "Lucas Pope",
+     "why": "3D cabins and figures resolve into two-color stipple and outlines, with dot density conveying shadows and surfaces.",
+     "officialPage": "https://store.steampowered.com/app/653530/"
+    },
+    {
+     "game": "Who's Lila?",
+     "studio": "Garage Heathen",
+     "why": "Low-resolution 3D scenes and near-monochrome dithering create a coarse texture, echoed in the facial-expression interface.",
+     "officialPage": "https://store.steampowered.com/app/1697700/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/monochrome-dither-3d/"
+  },
+  {
+   "id": "monochrome-pixel",
+   "family": "Pixel & retro",
+   "name": "Monochrome-led pixel art",
+   "definition": "Black and white or binary values structure the image through lines, blocks and negative space. Some examples add small accent colors, so this collection does not label every game strictly one-bit.",
+   "lookFor": [
+    "Dominant black-and-white values",
+    "Negative space and readable silhouettes",
+    "Occasional accents carry signals"
+   ],
+   "prompt": "Act as the art director for an original game. Establish monochrome-led pixel art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Make black and white or a carefully chosen near-binary pair carry most of the image through solid clusters, thin pixel lines and negative space. Set one logical pixel grid and distinguish characters, obstacles and background through shape and spacing before adding color. If accent colors are used, assign them stable gameplay meanings and keep them scarce; do not describe the result as strict one-bit art unless it actually is. Give UI, icons, particles and animation the same crisp pixel construction. Avoid smooth gradients, ambiguous overlapping silhouettes and effects that erase the binary value structure. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Gato Roboto",
+     "studio": "doinksoft",
+     "why": "The default black-and-white palette separates the mech, corridors and enemies through solid blocks, fine lines and negative space; palette swaps preserve that binary structure.",
+     "officialPage": "https://store.steampowered.com/app/916730/"
+    },
+    {
+     "game": "Minit",
+     "studio": "JW, Kitty, Jukio, Dom",
+     "why": "Minimal black-and-white contours turn characters, buildings and props into readable symbols with almost no reliance on gradients.",
+     "officialPage": "https://store.steampowered.com/app/609490/"
+    },
+    {
+     "game": "Downwell",
+     "studio": "Moppin",
+     "why": "A black-and-white base keeps tiny characters legible, while red and other palette accents signal danger and feedback; this is monochrome-led rather than strictly one-bit art.",
+     "officialPage": "https://store.steampowered.com/app/360740/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/monochrome-pixel/"
+  },
+  {
+   "id": "muted-cinematic-3d",
+   "family": "3D & rendering",
+   "name": "Muted theatrical lighting",
+   "definition": "Simplified 3D forms, restrained color and localized light create stage-like spaces. Unlike pure silhouettes, objects retain visible volume and material, while tonal layers carry much of the visual storytelling.",
+   "lookFor": [
+    "Muted palettes with sparse accents",
+    "Localized beams and atmospheric depth",
+    "Simplified forms retain 3D volume"
+   ],
+   "prompt": "Act as the art director for an original game. Establish muted, theatrical three-dimensional lighting as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Simplify characters and architecture into strong volumes, using a restrained low-saturation palette and a small number of meaningful color accents. Compose broad spaces with localized beams, soft atmospheric depth and carefully staged light-dark separation. Retain enough material and volume to distinguish this from pure silhouette art. Make the player and important interactions legible through lighting and placement, not constant glowing outlines. Keep UI sparse, icons simple and effects limited to the established light vocabulary. Animate with readable weight and deliberate pacing. Avoid flat black unreadability, uncontrolled bloom, noisy realistic textures and unrelated bright UI colors. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "INSIDE",
+     "studio": "Playdead",
+     "why": "Window light divides large muted spaces, with simplified characters and the red shirt acting as a rare color focus.",
+     "officialPage": "https://store.steampowered.com/app/304430/"
+    },
+    {
+     "game": "Little Nightmares",
+     "studio": "Tarsier Studios",
+     "why": "Damp materials and localized light reinforce exaggerated scale, with the yellow raincoat standing out against subdued surroundings.",
+     "officialPage": "https://store.steampowered.com/app/424840/"
+    },
+    {
+     "game": "Somerville",
+     "studio": "Jumpship",
+     "why": "Simplified figures and buildings occupy wide muted scenes, where isolated colored light establishes the focal point.",
+     "officialPage": "https://store.steampowered.com/app/1671410/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/muted-cinematic-3d/"
+  },
+  {
+   "id": "neon-vector",
+   "family": "Shape & material",
+   "name": "Neon vector-like graphics",
+   "definition": "Glowing fine lines, geometric grids and bright particles form images against dark backgrounds, echoing vector displays. “Vector-like” describes the appearance rather than claiming a particular underlying display technology.",
+   "lookFor": [
+    "Luminous lines on dark fields",
+    "Abstract grids and geometric objects",
+    "High-contrast particles and bloom"
+   ],
+   "prompt": "Act as the art director for an original game. Establish neon, vector-like graphic art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use luminous fine lines, clean geometric outlines, abstract grids and concise particle trails against dark fields. Set a clear hierarchy of line brightness, thickness and accent colors for players, enemies, hazards and backgrounds. Keep glow controlled so the underlying geometry remains readable during dense action. Build UI and icons from the same luminous stroke vocabulary with solid, legible text where needed. Animate through crisp trajectories and brief impact flashes while offering reduced-flash treatment. This describes a vector-like appearance, not a required display technology. Avoid full-screen bloom, indistinguishable trails, random color cycling and conventional textured realism. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Geometry Wars 3: Dimensions Evolved",
+     "studio": "Lucid Games, Aspyr (Linux)",
+     "why": "Grids over curved 3D surfaces, outlined enemies and explosive particles extend the neon vector-like appearance.",
+     "officialPage": "https://store.steampowered.com/app/310790/"
+    },
+    {
+     "game": "Geometry Wars: Retro Evolved",
+     "studio": "Bizarre Creations",
+     "why": "Outlined geometric enemies and projectiles weave across a dark grid arena with little conventional surface texture.",
+     "officialPage": "https://store.steampowered.com/app/8400/"
+    },
+    {
+     "game": "Waves",
+     "studio": "Squid In A Box Ltd",
+     "why": "Glowing spheres, fine trajectories and bright explosions create abstract light compositions in a dark arena.",
+     "officialPage": "https://store.steampowered.com/app/107600/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/neon-vector/"
+  },
+  {
+   "id": "painterly-3d",
+   "family": "3D & rendering",
+   "name": "Painterly 3D",
+   "definition": "Within three-dimensional spaces, simplified materials, deliberately shaped forms and painterly color weaken the photographic impression. The label describes the final image without claiming that every game uses hand-painted textures or the same renderer.",
+   "lookFor": [
+    "Materials emphasize broad visual structure",
+    "Deliberately stylized 3D forms",
+    "Cohesive painterly color relationships"
+   ],
+   "prompt": "Act as the art director for an original game. Establish painterly three-dimensional art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Shape characters, architecture and props with purposeful simplification and expressive proportions. Use coherent warm/cool color relationships, broad material structures and selectively visible painterly surface variation to reduce photographic appearance. Light the scene to support the designed palette and value groups, preserving depth without overly glossy physical detail. Give portraits, UI illustrations, icons and effects the same edge and color vocabulary. Animation should reinforce sculpted silhouettes and character attitude. Choose an implementation suited to the project rather than asserting a universal hand-painted-texture pipeline. Avoid applying a painting filter to otherwise realistic assets, random brush noise and mixed realism levels. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Dishonored",
+     "studio": "Arkane Studios",
+     "why": "Architecture, proportions and surfaces are visibly simplified and exaggerated, keeping an oil-painting-like palette within a 3D streetscape.",
+     "officialPage": "https://store.steampowered.com/app/205100/"
+    },
+    {
+     "game": "Dishonored 2",
+     "studio": "Arkane Studios",
+     "why": "Angular characters and architectural detail are strongly art-directed, with richer lighting supporting a unified painterly treatment.",
+     "officialPage": "https://store.steampowered.com/app/403640/"
+    },
+    {
+     "game": "Eastshade",
+     "studio": "Eastshade Studios",
+     "why": "Warm color, atmospheric haze and landscape-painting composition motivate its inclusion. It sits closer to natural realism than its companions and is a boundary example.",
+     "officialPage": "https://store.steampowered.com/app/715560/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/painterly-3d/"
+  },
+  {
+   "id": "paper-craft",
+   "family": "Shape & material",
+   "name": "Folded paper & papercraft",
+   "definition": "Paper planes, folds, thickness and overlapping layers become visible design elements. This includes digital pop-up worlds and environments built from physical paper models; subject matter is not the defining factor.",
+   "lookFor": [
+    "Visible paper planes and folds",
+    "Layered sheets create depth",
+    "Paper texture or handmade edges"
+   ],
+   "prompt": "Act as the art director for an original game. Establish folded paper and papercraft as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Construct scenes from visible sheets, folds, cut edges, tabs and layered paper planes with consistent thickness. Use a restrained paper palette, subtle fiber texture and contact shadows that explain how pieces overlap. Characters and props should share a credible folded or cut-paper construction, while important interactions remain obvious. Let animation hinge, unfold or slide along plausible paper joints. Build UI panels and icons from the same layered sheets, keeping text clean. The result may be digital or model-based. Avoid pretending every curved surface can fold without seams, unrelated clay materials, glossy plastic and shadows that contradict the paper layers. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Tengami",
+     "studio": "Nyamyam",
+     "why": "Scenes unfold like a pop-up book, with folds, paper planes and cast shadows defining buildings and landscapes.",
+     "officialPage": "https://store.steampowered.com/app/299680/"
+    },
+    {
+     "game": "Paper Trail",
+     "studio": "Newfangled Games",
+     "why": "Flat illustrations behave as foldable sheets, combining paper texture with depth created by folded layers.",
+     "officialPage": "https://store.steampowered.com/app/1889740/"
+    },
+    {
+     "game": "Lumino City",
+     "studio": "State of Play",
+     "why": "Cardboard architecture and real miniature sets create soft physical shadows and the appearance of photographed handmade models.",
+     "officialPage": "https://store.steampowered.com/app/205020/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/paper-craft/"
+  },
+  {
+   "id": "pencil-hatching",
+   "family": "Paint & line",
+   "name": "Pencil and hatched drawing",
+   "definition": "Line density, hatch direction and paper-like gray values build volume without smooth digital gradients. This surface treatment can appear in flat drawings or wrap three-dimensional models.",
+   "lookFor": [
+    "Dense hatching builds shadow",
+    "Paper grain and irregular marks",
+    "Restricted grayscale or sepia values"
+   ],
+   "prompt": "Act as the art director for an original game. Establish pencil drawing with directional hatching as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Build light and volume from deliberate line density, hatch direction and crosshatching rather than smooth digital gradients. Use restrained graphite grays or a coherent sepia range on lightly textured paper. Allow small irregularities in the marks while maintaining decisive character and object silhouettes. If using 3D, stabilize the drawing texture against distracting shimmer and make the scene feel drawn rather than merely desaturated. Give UI frames and icons the same pencil vocabulary, reserving clean regions for text. Effects may use rubbed marks, dust or brisk sketch lines. Avoid glossy surfaces, indiscriminate scribble noise and a simple grayscale filter standing in for drawing. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Mundaun",
+     "studio": "Hidden Fields",
+     "why": "Hand-penciled textures cover the valley, buildings and objects, making a 3D environment feel like a walkable drawing rather than a simple monochrome filter.",
+     "officialPage": "https://store.steampowered.com/app/720350/"
+    },
+    {
+     "game": "The Bridge",
+     "studio": "Ty Taylor, Vega Castañeda",
+     "why": "Hand-drawn grayscale architecture uses dense hatching and print-like texture to build volume, while impossible spaces heighten its graphic paradoxes.",
+     "officialPage": "https://store.steampowered.com/app/204240/"
+    },
+    {
+     "game": "Neverending Nightmares",
+     "studio": "Infinitap Games",
+     "why": "Fine black lines and crosshatching define figures and walls; sparse red accents become unusually forceful visual signals.",
+     "officialPage": "https://store.steampowered.com/app/253330/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/pencil-hatching/"
+  },
+  {
+   "id": "pixel-3d-hybrid",
+   "family": "Pixel & retro",
+   "name": "Pixel sprites in 3D worlds",
+   "definition": "Pixel characters occupy three-dimensional sets, unified by modern lighting and depth of field. The three examples here are officially described as HD-2D; that branded term should not replace a general description of all hybrid styles.",
+   "lookFor": [
+    "2D sprites with three-dimensional sets",
+    "Depth of field, shadows and reflections",
+    "Spatial lighting that preserves pixel contours"
+   ],
+   "prompt": "Act as the art director for an original game. Establish pixel sprites integrated into three-dimensional worlds as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Place deliberately crafted 2D pixel characters and selected props inside coherent 3D sets. Define sprite pixel density, world scale, camera angle and billboard behavior before producing assets. Use controlled shadows, reflections, local lighting and restrained depth of field to bind both layers without smearing sprite contours. Give UI and effects compatible pixel shapes and selective dimensional depth. Ensure camera movement, animation and occlusion preserve scale and footing. Describe the approach generically rather than claiming a proprietary HD-2D pipeline. Avoid excessively blurred backgrounds, realistic models that clash with sprites, and inconsistent pixel scale across distances. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "OCTOPATH TRAVELER II",
+     "studio": "Square Enix, ACQUIRE Corp.",
+     "why": "Officially described as HD-2D, pixel characters occupy 3D environments with depth of field, reflections and local lighting, retaining sprite contours while strengthening spatial depth.",
+     "officialPage": "https://store.steampowered.com/app/1971650/"
+    },
+    {
+     "game": "TRIANGLE STRATEGY",
+     "studio": "Square Enix, ARTDINK",
+     "why": "Pixel characters inhabit 3D battlefields with height variation; shadows, depth of field and camera angles give the terrain a miniature-stage quality.",
+     "officialPage": "https://store.steampowered.com/app/1850510/"
+    },
+    {
+     "game": "LIVE A LIVE",
+     "studio": "Square Enix, historia Inc.",
+     "why": "This is the 2023 PC remake, officially combining pixel art with 3DCG; sprite characters share the frame with three-dimensional sets and modern lighting.",
+     "officialPage": "https://store.steampowered.com/app/2014380/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/pixel-3d-hybrid/"
+  },
+  {
+   "id": "rubber-hose-animation",
+   "family": "Paint & line",
+   "name": "Rubber-hose animation",
+   "definition": "Rounded forms, flexible limbs and exaggerated faces recall early theatrical animation. The palette may be colorful or monochrome: character construction and motion, rather than a period setting, define this look.",
+   "lookFor": [
+    "Rounded heads and flexible tube-like limbs",
+    "Exaggerated squash, stretch and flowing curves",
+    "Vintage contours with broad flat fills"
+   ],
+   "prompt": "Act as the art director for an original game. Establish rubber-hose cartoon animation as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Construct characters from rounded heads, simple expressive faces and flexible tube-like limbs. Establish one consistent contour weight, flat-fill palette and vintage shape vocabulary; choose monochrome or a restrained color scheme and keep that choice stable. Animate with clear anticipation, squash and stretch, elastic arcs and strongly readable poses. Use painted stage-like backgrounds with lower contrast than the action, plus rounded props and cartoon impact effects. UI and icons should echo the period's playful lettering and shapes while remaining easy to read. Avoid rigid realistic anatomy, detailed modern materials, inconsistent frame pacing and grain that obscures gameplay. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Cuphead",
+     "studio": "Studio MDHR Entertainment Inc.",
+     "why": "Rubber-hose limbs, exaggerated faces and frame-by-frame characters pair with watercolor backgrounds to recreate the visual grammar of 1930s cartoons.",
+     "officialPage": "https://store.steampowered.com/app/268910/"
+    },
+    {
+     "game": "MOUSE: P.I. For Hire",
+     "studio": "Fumi Games",
+     "why": "Monochrome drawn characters retain flexible limbs and vintage cartoon faces inside a first-person 3D world. Character treatment, rather than the detective setting, motivates inclusion.",
+     "officialPage": "https://store.steampowered.com/app/2416450/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/rubber-hose-animation/"
+  },
+  {
+   "id": "sculpted-clay",
+   "family": "3D & rendering",
+   "name": "Sculpted clay & stop-motion",
+   "definition": "Tactile sculpting, blunt edges and irregular surfaces retain a handmade character; some games photograph physical models. This grouping describes their visible sculptural and stop-motion qualities, not a shared production pipeline.",
+   "lookFor": [
+    "Tactile sculpted surfaces",
+    "Irregular handmade contours",
+    "Stop-motion or frame-by-frame character"
+   ],
+   "prompt": "Act as the art director for an original game. Establish tactile clay sculpture and stop-motion imagery as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Give characters, props and environments sculpted volumes, blunt edges and subtle handmade irregularities. Establish a consistent material scale for fingerprints, seams and surface dents; use these selectively so the scene remains readable. Choose lighting that reveals tactile forms and a coherent miniature sense of space. Decide and document an intentional stepped-motion cadence or stop-motion-like pose system, without claiming that assets were physically photographed. Adapt UI and icons through sculpted shapes with crisp labels. Avoid slick plastic surfaces, exaggerated procedural fingerprints on every object, inconsistent model scale and accidental animation judder. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Hylics 2",
+     "studio": "Mason Lindroth",
+     "why": "Hand-sculpted characters meet exaggerated color and digital collage; selection rests on sculpture and stop-motion texture rather than purely real-time 3D.",
+     "officialPage": "https://store.steampowered.com/app/1286710/"
+    },
+    {
+     "game": "The Dream Machine: Chapter 1 & 2",
+     "studio": "Cockroach Inc.",
+     "why": "Rooms and characters retain the tactile quality of clay and cardboard miniatures, especially in everyday objects.",
+     "officialPage": "https://store.steampowered.com/app/94300/"
+    },
+    {
+     "game": "Armikrog",
+     "studio": "Pencil Test Studios",
+     "why": "Rounded yet irregular characters and architecture show pronounced clay texture and the lighting of physical models.",
+     "officialPage": "https://store.steampowered.com/app/334120/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/sculpted-clay/"
+  },
+  {
+   "id": "topdown-tile-pixel",
+   "family": "Pixel & retro",
+   "name": "Top-down tile-based pixel art",
+   "definition": "Top-down floors, visible elevations and upright sprites combine into a 2D space where paths and height remain readable. Spatial organization is the focus; pixel density, lighting and subject matter still vary.",
+   "lookFor": [
+    "Top-down floors and upright characters",
+    "Occlusion and steps express height",
+    "Layered tiles, facades and props"
+   ],
+   "prompt": "Act as the art director for an original game. Establish top-down tile-based pixel art as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Establish a consistent oblique top-down spatial grammar: visible floor planes, readable front-facing elevations and upright characters. Lock tile dimensions, character scale, wall thickness, occlusion rules and height cues across every environment and prop. Use steps, shadows and overlap to communicate traversable surfaces and elevation without contradictory perspectives. Keep pixel density and color ramps consistent in the world, UI, icons and effects. Animate characters clearly within the chosen grid while allowing the game's movement rules to remain unchanged. Avoid mixing incompatible viewing angles, ambiguous collision boundaries and using the farming or fantasy setting as a substitute for visual rules. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "CrossCode",
+     "studio": "Radical Fish Games",
+     "why": "Top-down floors and upright characters use occlusion, steps and wall thickness to convey height: a clear example of spatial depth built from 2D tiles.",
+     "officialPage": "https://store.steampowered.com/app/368340/"
+    },
+    {
+     "game": "Eastward",
+     "studio": "Pixpil",
+     "why": "Oblique top-down scenes layer characters, streets and interiors; facades, occlusion and local lighting give flat pixel art a sense of depth.",
+     "officialPage": "https://store.steampowered.com/app/977880/"
+    },
+    {
+     "game": "Stardew Valley",
+     "studio": "ConcernedApe",
+     "why": "Grid-based floors, front-facing elevations and consistent character scale create a readable oblique world; the spatial rules are the reference, not the farming theme.",
+     "officialPage": "https://store.steampowered.com/app/413150/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/topdown-tile-pixel/"
+  },
+  {
+   "id": "voxel-worlds",
+   "family": "3D & rendering",
+   "name": "Voxel worlds",
+   "definition": "Cubic units build characters, architecture and terrain, remaining visible in silhouettes and broken edges. Lighting may be realistic or cartoon-like; the shared feature is block structure in 3D space rather than 2D pixel art.",
+   "lookFor": [
+    "Cubic units and stepped silhouettes",
+    "Block structure continues into small details",
+    "Volumetric lighting over block surfaces"
+   ],
+   "prompt": "Act as the art director for an original game. Establish voxel-based worldbuilding as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Build characters, props, architecture and terrain from visible cubic units, using a consistent base voxel scale or a clearly documented family of scales. Preserve stepped silhouettes and block structure even in smaller details. Choose a restrained material palette and lighting treatment that clarifies cubic volume without smoothing away the construction. If objects break, expose coherent block interiors and keep destruction readability separate from decorative noise. Design UI icons and effects with compatible cubic or stepped forms. Avoid treating voxels as flat pixel art, arbitrary scale changes, smooth meshes that clash with blocks and excessive microvoxels that obscure silhouettes. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "Teardown",
+     "studio": "Tuxedo Labs",
+     "why": "Block-built architecture and vegetation combine with detailed lighting, while damaged edges expose individual voxels.",
+     "officialPage": "https://store.steampowered.com/app/1167630/"
+    },
+    {
+     "game": "Cloudpunk",
+     "studio": "ION LANDS",
+     "why": "Characters and cityscapes retain dense voxel outlines softened by light and fog; inclusion is based on voxels, not the cyberpunk setting.",
+     "officialPage": "https://store.steampowered.com/app/746850/"
+    },
+    {
+     "game": "Riverbond",
+     "studio": "Cococucumber",
+     "why": "Bright colors and larger cubic units give characters and terrain a toy-like character, illustrating a cartoon voxel variant.",
+     "officialPage": "https://store.steampowered.com/app/459370/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/voxel-worlds/"
+  },
+  {
+   "id": "watercolor-wash",
+   "family": "Paint & line",
+   "name": "Watercolor washes",
+   "definition": "Transparent layers, pooled pigment edges and open paper-like space give environments a fluid, breathable quality. Watercolor can shape flat illustration or be carried into a three-dimensional scene.",
+   "lookFor": [
+    "Translucent layers and soft transitions",
+    "Pigment blooms, paper grain or uneven washes",
+    "Negative space as part of the composition"
+   ],
+   "prompt": "Act as the art director for an original game. Establish transparent watercolor illustration as the global visual language for the entire project. Apply this direction consistently to characters, environments, props, items, UI, icons, visual effects, animation, loading screens and promotional art. Keep the project's existing genre, mechanics, camera and target platform; when one is unspecified, state an assumption before proposing assets. Use translucent color layers, softly pooled pigment edges, selective blooms and subtle paper grain. Reserve generous light paper-like negative space; separate depth with overlapping washes and atmospheric softness rather than heavy outlines. Keep playable characters and interactive props more clearly defined than distant scenery, without making them look pasted in. Use light, legible UI cards with minimal watercolor accents, not noisy painted text. Effects should diffuse, bloom or flow, with gentle transitions that preserve action timing. Use watercolor treatment coherently even if the scene is built in 3D. Avoid opaque oil-paint buildup, plastic gloss, uniformly blurred edges and heavy comic inking. Create a compact art bible with a locked palette, silhouette and proportion rules, material examples, lighting hierarchy, UI/icon rules, motion guidelines and a short list of visual mistakes to avoid. Define measurable asset specifications appropriate to the chosen platform and camera, then keep them consistent across every batch. Preserve gameplay readability, accessible text and clear interactive targets at the actual display size. Use original designs and compositions rather than copying a particular game's characters, logos or artwork. When asked for one asset, deliver that asset within this art direction; do not redesign the style for each request.",
+   "references": [
+    {
+     "game": "GRIS",
+     "studio": "Nomada Studio",
+     "why": "Transparent washes, diffused distance and generous negative space frame a tiny protagonist, while changing color palettes carry the emotional progression.",
+     "officialPage": "https://store.steampowered.com/app/683320/"
+    },
+    {
+     "game": "Dordogne",
+     "studio": "UN JE NE SAIS QUOI, UMANIMATION",
+     "why": "Buildings, trees and rivers retain watery pigment and paper-like surfaces, arranged spatially like an illustrated travel journal that can be entered.",
+     "officialPage": "https://store.steampowered.com/app/1272840/"
+    },
+    {
+     "game": "Child of Light",
+     "studio": "Ubisoft Montréal",
+     "why": "Soft watercolor-like edges and transparent layers form a fairy-tale world, keeping characters and layered scenery within a coherent illustrated surface.",
+     "officialPage": "https://store.steampowered.com/app/256290/"
+    }
+   ],
+   "url": "https://gameartstyle.loopyhop.com/styles/watercolor-wash/"
+  }
+ ]
+}

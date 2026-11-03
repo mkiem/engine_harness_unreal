@@ -39,7 +39,7 @@ const PHASES: Record<PhaseId, Phase> = {
   concept: {
     goal: 'Decide what the game is: the kind of game, the feeling, the core loop, the setting, and a first playable goal small enough to finish.',
     skill: 'game-concept',
-    next: 'Interview the developer one question at a time (kind of game, games it should feel like, setting, tone, core loop), then propose a pitch, three pillars and a first playable goal, and record them with studio_design_update.',
+    next: 'Interview the developer one question at a time (kind of game, games it should feel like, setting, tone, core loop), then propose a pitch, three pillars and a first playable goal, and record them with studio_design_update. Turn the twist that makes the game special into a mechanic card (studio_find_mechanic, then studio_mechanic with add: true).',
     checks: (_p, d) => [
       check(!!d.pitch.trim(), 'A one-sentence pitch'),
       check(d.inspirations.length > 0, 'Games it should feel like'),
@@ -47,6 +47,7 @@ const PHASES: Record<PhaseId, Phase> = {
       check(!!d.concept.coreLoop.trim(), 'The core loop (what the player does over and over)'),
       check(!!d.concept.setting.trim() && !!d.concept.tone.trim(), 'Setting and tone'),
       check(!!d.scope.firstPlayable.trim(), 'A first playable goal'),
+      check(d.mechanics.length >= 1, 'What makes it special, as a mechanic card (studio_mechanic)'),
     ],
   },
   project: {
@@ -61,12 +62,13 @@ const PHASES: Record<PhaseId, Phase> = {
   art: {
     goal: 'A look for the game: resolution, palette and style, then the hero, tiles and monsters drawn in it.',
     skill: 'art-direction',
-    next: 'Agree the palette and style with the developer and record them; then replace the placeholder art one file at a time (tiles, hero, NPCs, enemies), checking each in the running game.',
+    next: 'Choose a style with the developer from studio_art_styles and apply it (studio_art_style with apply: true), agree and lock a palette, then replace the placeholder art one file at a time (tiles, hero, NPCs, enemies) following design/ART_DIRECTION.md, checking each in the running game.',
     checks: (p, d) => {
       const left = placeholdersLeft(p).filter(file => file.startsWith('art/'))
       return [
         check(!!d.art.style.trim(), 'An art style in words'),
-        check(d.art.palette.length >= 4, 'A palette of at least four colours'),
+        check(d.art.lookFor.length >= 2, 'What every picture should show (studio_art_style, or art.lookFor)'),
+        check(d.art.palette.length >= 4 && d.art.paletteLocked, 'A palette of at least four colours, locked'),
         check(left.length === 0, left.length ? `Placeholder art still in use: ${left.join(', ')}` : 'All placeholder art replaced'),
       ]
     },
@@ -174,12 +176,16 @@ const PHASES: Record<PhaseId, Phase> = {
     goal: 'Every area is as hard as intended, from the first slime to the last boss, and the first playable is fun from start to end.',
     skill: 'playtest-and-balance',
     next: 'Simulate every encounter group at the level the player will be there, fix anything outside the intended range, then have the developer play the first playable start to finish and note what felt wrong.',
-    checks: (p) => {
+    checks: (p, d) => {
       const groups = battleGroups(p).map(g => g.join('+'))
       const results = balanceResults(p)
       const tested = new Set(Object.values(results).map(r => r.enemies.join('+')))
       const untested = [...new Set(groups)].filter(g => !tested.has(g))
-      return [check(groups.length > 0 && untested.length === 0, untested.length ? `Not yet simulated: ${untested.join(', ')}` : 'Every encounter group and boss simulated')]
+      const open = d.mechanics.filter(m => m.status === 'idea' || m.status === 'prototyping')
+      return [
+        check(groups.length > 0 && untested.length === 0, untested.length ? `Not yet simulated: ${untested.join(', ')}` : 'Every encounter group and boss simulated'),
+        check(open.length === 0, open.length ? `Mechanics still to keep or cut by their playtest question: ${open.map(m => m.name).join(', ')}` : 'Every mechanic card kept or cut'),
+      ]
     },
   },
   build: {

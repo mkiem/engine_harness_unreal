@@ -15,6 +15,24 @@ const Character = z.object({
   look: z.string().default(''), abilities: z.string().default(''), playable: z.boolean().default(true),
 }).passthrough()
 
+/**
+ * A mechanic card: one loop of player action, constraints and feedback, written before it is built, then prototyped
+ * as small as possible and kept or cut by what its playtest question shows. Cards can start from the Gameplay Atlas
+ * (atlasId) and are then made the game's own.
+ */
+export const MechanicCard = z.object({
+  name: z.string(),
+  atlasId: z.string().optional(),
+  summary: z.string().default(''),
+  loop: z.array(z.string()).default([]),
+  decisions: z.array(z.string()).default([]),
+  parameters: z.array(z.object({ name: z.string(), value: z.string().default(''), effect: z.string().default('') }).passthrough()).default([]),
+  prototype: z.object({ firstStep: z.string().default(''), pitfall: z.string().default(''), test: z.string().default(''), result: z.string().default('') }).passthrough().default({}),
+  status: z.enum(['idea', 'prototyping', 'kept', 'cut']).default('idea'),
+  notes: z.string().default(''),
+}).passthrough()
+export type MechanicCard = z.infer<typeof MechanicCard>
+
 const Region = z.object({ id: z.string(), name: z.string(), description: z.string().default(''), map: z.string().optional(), mood: z.string().default('') }).passthrough()
 
 export const GameDesign = z.object({
@@ -41,8 +59,19 @@ export const GameDesign = z.object({
     palette: z.array(z.string()).default([]),
     style: z.string().default(''),
     references: z.array(z.string()).default([]),
+    /** The Game Art Style entry the look starts from, when one was chosen. */
+    styleId: z.string().default(''),
+    /** Three or so visual cues every picture in the game should show. */
+    lookFor: z.array(z.string()).default([]),
+    /** The art bible's rules by subject: outline, shading, proportions, lighting, ui, motion, effects... */
+    rules: z.record(z.string(), z.string()).default({}),
+    /** Visual mistakes to avoid. */
+    avoid: z.array(z.string()).default([]),
+    /** When true, studio_paint and studio_check hold every picture to the palette. */
+    paletteLocked: z.boolean().default(false),
   }).passthrough().default({}),
   characters: z.array(Character).default([]),
+  mechanics: z.array(MechanicCard).default([]),
   world: z.object({ regions: z.array(Region).default([]) }).passthrough().default({}),
   systems: z.object({
     battle: z.string().default('Turn-based: the fastest acts first; Attack, Skill, Item, Defend, Run.'),
@@ -120,10 +149,27 @@ export function renderDesign(d: GameDesign): string {
     '## Art direction', '',
     `**Resolution:** ${d.art.resolution[0]}x${d.art.resolution[1]}, ${d.art.tileSize}x${d.art.tileSize} tiles`, '',
     `**Style:** ${or(d.art.style)}`, '',
-    d.art.palette.length ? `**Palette:** ${d.art.palette.map(color => `\`${color}\``).join(' ')}\n` : '',
+    d.art.palette.length ? `**Palette${d.art.paletteLocked ? ' (locked)' : ''}:** ${d.art.palette.map(color => `\`${color}\``).join(' ')}\n` : '',
+    d.art.lookFor.length ? `**In every picture:**\n\n${list(d.art.lookFor)}\n` : '',
+    Object.keys(d.art.rules).length ? `**Rules:**\n\n${Object.entries(d.art.rules).map(([k, v]) => `- ${k}: ${v}`).join('\n')}\n` : '',
+    d.art.avoid.length ? `**Avoid:**\n\n${list(d.art.avoid)}\n` : '',
+    d.art.styleId ? `_The full art direction is in design/ART_DIRECTION.md._\n` : '',
     d.art.references.length ? `**References:**\n\n${list(d.art.references)}\n` : '',
     '## Characters', '',
     d.characters.length ? d.characters.map(c => `### ${c.name}${c.playable ? '' : ' (NPC)'}\n\n${[c.role && `**Role:** ${c.role}`, c.personality && `**Personality:** ${c.personality}`, c.look && `**Look:** ${c.look}`, c.abilities && `**Abilities:** ${c.abilities}`].filter(Boolean).join('  \n')}\n`).join('\n') : '_Not decided yet._\n',
+    '## Mechanics', '',
+    d.mechanics.length ? d.mechanics.map(m => [
+      `### ${m.name} (${m.status})`, '',
+      m.summary,
+      m.loop.length ? `**Loop:** ${m.loop.join(' → ')}` : '',
+      m.decisions.length ? `**The player weighs up:**\n\n${list(m.decisions)}` : '',
+      m.parameters.length ? `**Levers:**\n\n${m.parameters.map(p => `- ${p.name}${p.value ? ` = ${p.value}` : ''}${p.effect ? `: ${p.effect}` : ''}`).join('\n')}` : '',
+      m.prototype.firstStep ? `**Prototype:** ${m.prototype.firstStep}${m.prototype.pitfall ? ` Watch out: ${m.prototype.pitfall}` : ''}` : '',
+      m.prototype.test ? `**Playtest question:** ${m.prototype.test}${m.prototype.result ? ` **Answer:** ${m.prototype.result}` : ''}` : '',
+      m.atlasId ? `_Based on Gameplay Atlas: ${m.atlasId} (loopyhop)._` : '',
+      m.notes,
+    ].filter(Boolean).join('\n\n')).join('\n\n') : '_None yet: the template\'s own systems (exploring, battles, levelling, shops) are the core._',
+    '',
     '## World', '',
     d.world.regions.length ? d.world.regions.map(r => `- **${r.name}**${r.map ? ` (map \`${r.map}\`)` : ''}: ${r.description}${r.mood ? ` Mood: ${r.mood}.` : ''}`).join('\n') : '_Not decided yet._',
     '',

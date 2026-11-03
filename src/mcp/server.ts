@@ -26,7 +26,8 @@ import { AssetLibrary, importLocal, installGodotAddon, libraryDirFor, SOURCES, t
 import { readDesign, renderDesign, updateDesign } from '../studio/design.ts'
 import { battleGroups, describeNext, phaseReports, balanceResults } from '../studio/phases.ts'
 import { checkProjectData, createProject, defaultTemplatesDir, findStudioProject, slugOf } from '../studio/project.ts'
-import { compose, paint, preview, sound, SOUND_PRESETS, writeAudio } from '../studio/make.ts'
+import { compose, imageOffPalette, nearestColor, offPalette, paint, preview, sound, SOUND_PRESETS, writeAudio } from '../studio/make.ts'
+import { ATLAS_CREDIT, defaultCatalogDir, findMechanics, findStyles, loadCatalog, mechanicCard, mechanicLine, STYLE_CREDIT, styleCard, writeArtDirection } from '../studio/catalog.ts'
 import { GODOT_VERSION, hasWindowsTemplates, installGodot, installWindowsTemplates, managedGodot } from '../godot/install.ts'
 
 export interface HarnessServerOptions {
@@ -48,6 +49,8 @@ export interface HarnessServerOptions {
   assets?: AssetLibrary
   /** Where the game templates are (templates/ in this repository, or the app's payload). */
   templatesDir?: string
+  /** Where the bundled design references live (catalog/loopyhop). */
+  catalogDir?: string
 }
 
 export function enginesFromEnv(value = process.env.HARNESS_ENGINES): ('unreal' | 'godot')[] {
@@ -80,6 +83,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   const engines = options.engines ?? enginesFromEnv()
   const library = options.assets ?? new AssetLibrary()
   const templatesDir = options.templatesDir ?? defaultTemplatesDir(dirname(fileURLToPath(import.meta.url)))
+  const catalogDir = options.catalogDir ?? defaultCatalogDir(dirname(fileURLToPath(import.meta.url)))
   let godotPath: string | undefined | null = null
   const godotBinary = () => {
     if (godotPath === null) godotPath = findGodot(sys)[0]?.path
@@ -683,6 +687,11 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
     try {
       const dir = studioProject(project)
       const design = updateDesign(dir, patch, decision ? { decision, why } : undefined)
+      // The art direction document follows the design's art section.
+      if ('art' in patch && design.art.styleId) {
+        const style = loadCatalog(catalogDir).styles.find(s => s.id === design.art.styleId)
+        if (style) writeArtDirection(dir, design, style)
+      }
       const reports = phaseReports(dir, design)
       const current = reports.find(r => r.status !== 'done')
       return text(`Design updated (${Object.keys(patch).join(', ')}).${current ? ` Current phase: ${current.title}, ${current.checks.filter(c => c.done).length}/${current.checks.length} checks done.` : ' Every phase is done.'}`)
@@ -702,6 +711,12 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       const lines: string[] = []
       const problems = checkProjectData(dir)
       lines.push(problems.length ? `✗ Data: ${problems.length} problem(s)\n${problems.map(p => `  - ${p}`).join('\n')}` : '✓ Data: every reference between the data files resolves')
+      const art = readDesign(dir).art
+      if (art.paletteLocked && art.palette.length) {
+        const offenders = ['art/tiles.png', 'art/hero.png', 'art/npcs.png', 'art/enemies.png'].filter(f => existsSync(join(dir, f)))
+          .map(f => ({ f, ...imageOffPalette(dir, f, art.palette) })).filter(r => r.off.length)
+        lines.push(offenders.length ? `· Palette: pictures with colours outside the locked palette (${art.palette.length} colours):\n${offenders.map(r => `  - ${r.f}: ${r.off.length} of ${r.colors} colours (${r.off.slice(0, 6).join(' ')}${r.off.length > 6 ? ' ...' : ''})`).join('\n')}` : `✓ Palette: every picture uses only the locked palette`)
+      }
       if (!quick) {
         if (!godotBinary()) lines.push('· Godot is not installed, so scripts and the game were not run (studio_install_godot installs it)')
         else {
@@ -766,6 +781,96 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
     }
   })
 
+  // ---- Design references: loopyhop's Gameplay Atlas and Game Art Style, bundled with permission -------------------
+
+  server.registerTool('studio_find_mechanic', {
+    title: 'Find game mechanics',
+    description: 'Searches the Gameplay Atlas: 280 game mechanics from real games in 28 groups (combat, command, progression, inventory, exploration, relationships, narrative, fishing, farming, cooking, puzzles, stealth...), each a loop of player action with its trade-offs, design levers and a small prototype plan. Search by what the developer wants ("enemy telegraphs", "something cosy between battles", "fishing"), or list a group. Read one with studio_mechanic.',
+    inputSchema: {
+      query: z.string().optional(), group: z.string().optional().describe('a group id such as combat, command, progression, fishing'),
+      tag: z.string().optional().describe('planning, risk, spatial, optimization, information, timing, economy, progression, time, precision, discovery, dexterity, narrative, creativity, cooperation, randomness'),
+      scope: z.enum(['small', 'medium', 'large']).optional().describe('prototype size'), limit: z.number().int().min(1).max(40).default(8),
+    },
+    annotations: { readOnlyHint: true },
+  }, async ({ query, group, tag, scope, limit }) => {
+    try {
+      const catalog = loadCatalog(catalogDir)
+      if (!query && !group && !tag && !scope) {
+        const lines = catalog.families.map(f => `${f.name}: ${f.groups.map(g => `${g} (${catalog.groups[g]}, ${catalog.mechanics.filter(m => m.group === g).length})`).join(', ')}`)
+        return text(`The Gameplay Atlas has ${catalog.mechanics.length} mechanics. Groups by family:\n${lines.join('\n')}\n\nSearch with query, or list a group.\n${ATLAS_CREDIT}`)
+      }
+      const found = findMechanics(catalog, { query, group, tag, scope, limit })
+      if (!found.length) return text(`No mechanic matches. Groups: ${Object.entries(catalog.groups).map(([id, name]) => `${id} (${name})`).join(', ')}`)
+      return text(`${found.map(m => mechanicLine(catalog, m)).join('\n')}\n\nRead one with studio_mechanic.\n${ATLAS_CREDIT}`, { ids: found.map(m => m.id) })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_mechanic', {
+    title: 'Read a mechanic card',
+    description: 'One Gameplay Atlas mechanic in full: how it plays, the core loop, what the player weighs up, design levers, how real games do it (with sources), a walkthrough, prototype guidance (first step, pitfall, playtest question) and combinations. With add: true it is also added to the game\'s design as a mechanic card (status "idea") to make the game\'s own.',
+    inputSchema: { id: z.string(), add: z.boolean().default(false), project: z.string().optional() },
+  }, async ({ id, add, project }) => {
+    try {
+      const catalog = loadCatalog(catalogDir)
+      const m = catalog.mechanics.find(x => x.id === id) ?? findMechanics(catalog, { query: id, limit: 1 })[0]
+      if (!m) return failure(`no mechanic ${id}; search with studio_find_mechanic`)
+      let added = ''
+      if (add) {
+        const dir = studioProject(project)
+        const design = readDesign(dir)
+        if (design.mechanics.some(card => card.atlasId === m.id)) added = '\n\nIt is already in the design.'
+        else {
+          updateDesign(dir, { mechanics: [...design.mechanics, {
+            name: m.name, atlasId: m.id, summary: m.summary, loop: m.loop, decisions: m.decisions,
+            parameters: m.parameters.map(p => ({ name: p.name, value: '', effect: p.effect })),
+            prototype: { firstStep: m.prototype.firstStep, pitfall: m.prototype.pitfall, test: m.prototype.test, result: '' }, status: 'idea', notes: '',
+          }] }, { decision: `Considering the mechanic "${m.name}"`, why: m.summary })
+          added = '\n\nAdded to the design as a mechanic card (status "idea"). Now make it this game\'s own: rewrite the loop in the game\'s words, set the levers, then build only the prototype\'s first step.'
+        }
+      }
+      return text(mechanicCard(catalog, m) + added, { id: m.id })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_art_styles', {
+    title: 'Browse art styles',
+    description: 'Lists the 37 visual styles of Game Art Style (pixel & retro, 3D & rendering, paint & line, shape & material), each with what defines it and reference games. Search by words ("16-bit", "watercolor", "dark ink") or family. Read one in full, and apply it to the game, with studio_art_style.',
+    inputSchema: { query: z.string().optional(), family: z.string().optional() },
+    annotations: { readOnlyHint: true },
+  }, async ({ query, family }) => {
+    try {
+      const found = findStyles(loadCatalog(catalogDir), { query, family })
+      if (!found.length) return text('No style matches; try fewer words, or no query to list them all.')
+      return text(`${found.map(s => `- ${s.id}: ${s.name} (${s.family}). ${s.definition} Like ${s.references.map(r => r.game).join(', ')}.`).join('\n')}\n\n${STYLE_CREDIT}`, { ids: found.map(s => s.id) })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_art_style', {
+    title: 'Read or apply an art style',
+    description: 'One Game Art Style entry in full: definition, what to look for, reference games (official pages) and its global art-direction prompt. With apply: true it becomes the game\'s art direction: the design records the style and what to look for, and design/ART_DIRECTION.md is written (the prompt plus this game\'s resolution, tiles, palette and rules), which every later art request follows.',
+    inputSchema: { id: z.string(), apply: z.boolean().default(false), project: z.string().optional() },
+  }, async ({ id, apply, project }) => {
+    try {
+      const catalog = loadCatalog(catalogDir)
+      const style = catalog.styles.find(s => s.id === id) ?? findStyles(catalog, { query: id })[0]
+      if (!style) return failure(`no style ${id}; list them with studio_art_styles`)
+      if (!apply) return text(styleCard(style), { id: style.id })
+      const dir = studioProject(project)
+      const design = updateDesign(dir, { art: { styleId: style.id, style: readDesign(dir).art.style || style.name, lookFor: style.lookFor,
+        references: style.references.map(r => `${r.game}: ${r.officialPage}`) } }, { decision: `Art direction: ${style.name}`, why: style.definition })
+      const path = writeArtDirection(dir, design, style)
+      return text(`${styleCard(style, false)}\n\nApplied: the design records the style and what to look for, and ${path} holds the full art direction for every later picture. Next: agree a palette (art.palette) and lock it (art.paletteLocked: true), then write the art bible's rules (art.rules) and mistakes to avoid (art.avoid) with the developer.`, { id: style.id, file: path })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
   server.registerTool('studio_test_event', {
     title: 'Test a story event',
     description: 'Plays a story event from data/events.json without the screen, as the game would, and reports every line said, each choice taken, what changed (flags, items, gold, quests, the party) and what stopped it (a battle, the ending). Set up the situation first with flags, items, quests and members. Use it after writing or changing an event, and try each branch.',
@@ -825,14 +930,27 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       palette: z.record(z.string(), z.string()).describe('character to "#rrggbb" (or "transparent")'),
       at: z.tuple([z.number().int().min(0), z.number().int().min(0)]).optional().describe('[column, row] of the frame in the sheet, default [0, 0]'),
       frame: z.tuple([z.number().int().min(1), z.number().int().min(1)]).optional().describe('frame size in pixels, default the grid size'),
+      snapToPalette: z.boolean().default(false).describe('with a locked palette in the design, replace every colour with the nearest palette colour'),
       project: z.string().optional(),
     },
-  }, async ({ file, rows, palette, at, frame, project }) => {
+  }, async ({ file, rows, palette, at, frame, snapToPalette, project }) => {
     try {
       const dir = studioProject(project)
-      const done = paint(dir, { file: insideProject(dir, file), rows, palette, at: at as [number, number] | undefined, frame: frame as [number, number] | undefined })
+      const art = readDesign(dir).art
+      let colors = palette
+      let note = ''
+      if (art.paletteLocked && art.palette.length) {
+        const off = offPalette(Object.values(palette), art.palette)
+        if (off.length && snapToPalette) {
+          colors = Object.fromEntries(Object.entries(palette).map(([k, c]) => [k, offPalette([c], art.palette).length ? nearestColor(c, art.palette) : c]))
+          note = ` Snapped ${off.length} colour(s) to the locked palette: ${off.map(c => `${c} -> ${nearestColor(c, art.palette)}`).join(', ')}.`
+        } else if (off.length) {
+          note = ` Warning: ${off.length} colour(s) are not in the locked palette (${off.map(c => `${c}, nearest ${nearestColor(c, art.palette)}`).join('; ')}). Repaint with palette colours, or call again with snapToPalette: true.`
+        }
+      }
+      const done = paint(dir, { file: insideProject(dir, file), rows, palette: colors, at: at as [number, number] | undefined, frame: frame as [number, number] | undefined })
       const shown = preview(dir, done.file, { frame: [done.frameWidth, done.frameHeight] })
-      return text(`Painted a ${done.frameWidth}x${done.frameHeight} frame at pixel ${done.x},${done.y} of ${done.file} (${done.colors} colours; the sheet is ${done.width}x${done.height}${done.grew ? ', grown to fit' : ''}). Enlarged preview: ${shown.path}`, { ...done, preview: shown.path })
+      return text(`Painted a ${done.frameWidth}x${done.frameHeight} frame at pixel ${done.x},${done.y} of ${done.file} (${done.colors} colours; the sheet is ${done.width}x${done.height}${done.grew ? ', grown to fit' : ''}). Enlarged preview: ${shown.path}${note}`, { ...done, preview: shown.path })
     } catch (error) {
       return studioFailure(error)
     }

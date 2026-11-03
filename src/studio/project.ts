@@ -120,6 +120,10 @@ Rules:
   for where everything lives.
 - After changing scripts or data, run studio_check. After changing battle numbers, run studio_simulate_battle.
 - To let the developer try something, run the game with godot_run (window: true) and say exactly what to try.
+- Before making any picture, read design/ART_DIRECTION.md when it exists and follow it; with a locked palette, use only
+  its colours (studio_paint warns otherwise).
+- New ideas for how the game plays become mechanic cards in the design first (studio_find_mechanic, studio_mechanic),
+  then a small prototype that answers the card's playtest question.
 - Never delete the developer's files or overwrite art and audio they made without asking.
 
 Phases: ${Object.values(PHASE_TITLES).join(' → ')}.
