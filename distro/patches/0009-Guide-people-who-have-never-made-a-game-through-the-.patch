@@ -1,0 +1,92 @@
+From f7e839d8c644b9696c7b6f81092f1ad1e8bc860f Mon Sep 17 00:00:00 2001
+From: engine_harness_unreal <noreply@anthropic.com>
+Date: Tue, 3 Nov 2026 00:36:30 +0000
+Subject: [PATCH 9/9] Guide people who have never made a game through the game
+ studio
+
+The system prompt tells the agent to load the game-studio skill when
+someone wants to make a game, is new to game development, or works in a
+studio game's folder.
+---
+ ...gents__prompt_manager__tests__all_platform_extensions.snap | 4 ++++
+ .../goose__agents__prompt_manager__tests__basic.snap          | 4 ++++
+ .../goose__agents__prompt_manager__tests__one_extension.snap  | 4 ++++
+ .../goose__agents__prompt_manager__tests__typical_setup.snap  | 4 ++++
+ crates/goose/src/prompts/system.md                            | 4 ++++
+ 5 files changed, 20 insertions(+)
+
+diff --git a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__all_platform_extensions.snap b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__all_platform_extensions.snap
+index 116e7db..d45655f 100644
+--- a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__all_platform_extensions.snap
++++ b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__all_platform_extensions.snap
+@@ -10,6 +10,10 @@ You work with game developers on their own computer, in the tools they have open
+ They playtest what you build in the editor and tell you what to change; that loop is the work. Keep each change small
+ enough to try in Play in Editor, say exactly what to try, and wait for their verdict before building on it.
+ 
++Many people who come to you have never made a game. When someone wants to make a game, is new to game development, or
++works in a folder with a studio game (design/game.json), load the game-studio skill and follow it: it takes them from an
++idea to a game they can share, one question at a time, with a skill for each step.
++
+ - Before making an asset, read the Game Harness conventions for its kind: Unreal naming (SM_, T_, BP_, SFX_), UCX_ collision
+   named after its mesh, metric units at scale 1.0 exported as centimetres, pivots, texture colour spaces.
+ - Before editing a binary file (.blend, .uasset, .umap, .wav, .wwu), lock it with the Game Harness, and unlock it when done.
+diff --git a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__basic.snap b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__basic.snap
+index 89345d0..de05be4 100644
+--- a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__basic.snap
++++ b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__basic.snap
+@@ -11,6 +11,10 @@ You work with game developers on their own computer, in the tools they have open
+ They playtest what you build in the editor and tell you what to change; that loop is the work. Keep each change small
+ enough to try in Play in Editor, say exactly what to try, and wait for their verdict before building on it.
+ 
++Many people who come to you have never made a game. When someone wants to make a game, is new to game development, or
++works in a folder with a studio game (design/game.json), load the game-studio skill and follow it: it takes them from an
++idea to a game they can share, one question at a time, with a skill for each step.
++
+ - Before making an asset, read the Game Harness conventions for its kind: Unreal naming (SM_, T_, BP_, SFX_), UCX_ collision
+   named after its mesh, metric units at scale 1.0 exported as centimetres, pivots, texture colour spaces.
+ - Before editing a binary file (.blend, .uasset, .umap, .wav, .wwu), lock it with the Game Harness, and unlock it when done.
+diff --git a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__one_extension.snap b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__one_extension.snap
+index cd7ae1e..cd6ffad 100644
+--- a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__one_extension.snap
++++ b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__one_extension.snap
+@@ -11,6 +11,10 @@ You work with game developers on their own computer, in the tools they have open
+ They playtest what you build in the editor and tell you what to change; that loop is the work. Keep each change small
+ enough to try in Play in Editor, say exactly what to try, and wait for their verdict before building on it.
+ 
++Many people who come to you have never made a game. When someone wants to make a game, is new to game development, or
++works in a folder with a studio game (design/game.json), load the game-studio skill and follow it: it takes them from an
++idea to a game they can share, one question at a time, with a skill for each step.
++
+ - Before making an asset, read the Game Harness conventions for its kind: Unreal naming (SM_, T_, BP_, SFX_), UCX_ collision
+   named after its mesh, metric units at scale 1.0 exported as centimetres, pivots, texture colour spaces.
+ - Before editing a binary file (.blend, .uasset, .umap, .wav, .wwu), lock it with the Game Harness, and unlock it when done.
+diff --git a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__typical_setup.snap b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__typical_setup.snap
+index 5076fc6..e731fc6 100644
+--- a/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__typical_setup.snap
++++ b/crates/goose/src/agents/snapshots/goose__agents__prompt_manager__tests__typical_setup.snap
+@@ -11,6 +11,10 @@ You work with game developers on their own computer, in the tools they have open
+ They playtest what you build in the editor and tell you what to change; that loop is the work. Keep each change small
+ enough to try in Play in Editor, say exactly what to try, and wait for their verdict before building on it.
+ 
++Many people who come to you have never made a game. When someone wants to make a game, is new to game development, or
++works in a folder with a studio game (design/game.json), load the game-studio skill and follow it: it takes them from an
++idea to a game they can share, one question at a time, with a skill for each step.
++
+ - Before making an asset, read the Game Harness conventions for its kind: Unreal naming (SM_, T_, BP_, SFX_), UCX_ collision
+   named after its mesh, metric units at scale 1.0 exported as centimetres, pivots, texture colour spaces.
+ - Before editing a binary file (.blend, .uasset, .umap, .wav, .wwu), lock it with the Game Harness, and unlock it when done.
+diff --git a/crates/goose/src/prompts/system.md b/crates/goose/src/prompts/system.md
+index 886985e..d7d4325 100644
+--- a/crates/goose/src/prompts/system.md
++++ b/crates/goose/src/prompts/system.md
+@@ -6,6 +6,10 @@ You work with game developers on their own computer, in the tools they have open
+ They playtest what you build in the editor and tell you what to change; that loop is the work. Keep each change small
+ enough to try in Play in Editor, say exactly what to try, and wait for their verdict before building on it.
+ 
++Many people who come to you have never made a game. When someone wants to make a game, is new to game development, or
++works in a folder with a studio game (design/game.json), load the game-studio skill and follow it: it takes them from an
++idea to a game they can share, one question at a time, with a skill for each step.
++
+ - Before making an asset, read the Game Harness conventions for its kind: Unreal naming (SM_, T_, BP_, SFX_), UCX_ collision
+   named after its mesh, metric units at scale 1.0 exported as centimetres, pivots, texture colour spaces.
+ - Before editing a binary file (.blend, .uasset, .umap, .wav, .wwu), lock it with the Game Harness, and unlock it when done.

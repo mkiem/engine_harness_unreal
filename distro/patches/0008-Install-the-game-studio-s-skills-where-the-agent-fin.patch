@@ -1,0 +1,261 @@
+From f40fd21c6d65e3e642350941ea4d601a1e2970ff Mon Sep 17 00:00:00 2001
+From: engine_harness_unreal <noreply@anthropic.com>
+Date: Tue, 3 Nov 2026 00:36:30 +0000
+Subject: [PATCH 8/9] Install the game studio's skills where the agent finds
+ them
+
+At startup the app copies the payload's skills (resources/harness/skills)
+into <GOOSE_PATH_ROOT>/config/skills, replacing older copies of its own
+skills and removing ones a newer version dropped, without touching skills
+the user added.
+---
+ ui/desktop/src/utils/harnessLauncher.test.ts | 64 ++++++++++++--
+ ui/desktop/src/utils/harnessLauncher.ts      | 90 ++++++++++++++++++--
+ 2 files changed, 141 insertions(+), 13 deletions(-)
+
+diff --git a/ui/desktop/src/utils/harnessLauncher.test.ts b/ui/desktop/src/utils/harnessLauncher.test.ts
+index 77954ae..79e2b2d 100644
+--- a/ui/desktop/src/utils/harnessLauncher.test.ts
++++ b/ui/desktop/src/utils/harnessLauncher.test.ts
+@@ -7,6 +7,8 @@ vi.mock('./logger', () => ({ default: { info: vi.fn(), error: vi.fn() } }));
+ 
+ import {
+   ensureHarnessLauncher,
++  harnessSkillsDir,
++  installHarnessSkills,
+   posixLauncher,
+   prependToPath,
+   windowsLauncher,
+@@ -16,11 +18,15 @@ import {
+ describe('harness launchers', () => {
+   it('runs the payload with the portable Node.js, a system Node.js 22+, or one npx.cmd downloads', () => {
+     const script = windowsLauncher('C:\\Program Files\\Engine Harness\\resources\\harness');
+-    expect(script).toContain('SET "HARNESS_DCC_DIR=C:\\Program Files\\Engine Harness\\resources\\harness\\dcc"');
++    expect(script).toContain(
++      'SET "HARNESS_DCC_DIR=C:\\Program Files\\Engine Harness\\resources\\harness\\dcc"'
++    );
+     expect(script).toContain('if exist "%GOOSE_NODE_DIR%\\node.exe" goto :portable');
+     expect(script).toContain('parseInt(process.versions.node) >= 22');
+     expect(script).toContain('call "%~dp0npx.cmd" --version');
+-    expect(script).toContain('"%NODE_EXE%" "C:\\Program Files\\Engine Harness\\resources\\harness\\harness-mcp.mjs" %*');
++    expect(script).toContain(
++      '"%NODE_EXE%" "C:\\Program Files\\Engine Harness\\resources\\harness\\harness-mcp.mjs" %*'
++    );
+     // The exit code is read outside any block, where %errorlevel% is current.
+     expect(script).toMatch(/harness-mcp\.mjs" %\*\r\nexit \/b %errorlevel%/);
+     expect(script.split('\r\n').length).toBeGreaterThan(10);
+@@ -34,7 +40,9 @@ describe('harness launchers', () => {
+ 
+   it('puts the launcher first on PATH once, and appends recipes once', () => {
+     expect(prependToPath('/usr/bin:/bin', '/eh/bin', ':')).toBe('/eh/bin:/usr/bin:/bin');
+-    expect(prependToPath('C:\\EH\\BIN;C:\\Windows', 'C:\\eh\\bin', ';')).toBe('C:\\EH\\BIN;C:\\Windows');
++    expect(prependToPath('C:\\EH\\BIN;C:\\Windows', 'C:\\eh\\bin', ';')).toBe(
++      'C:\\EH\\BIN;C:\\Windows'
++    );
+     expect(withRecipeDir(undefined, '/eh/recipes', ':')).toBe('/eh/recipes');
+     expect(withRecipeDir('/mine:/eh/recipes', '/eh/recipes', ':')).toBe('/mine:/eh/recipes');
+   });
+@@ -50,9 +58,23 @@ describe('ensureHarnessLauncher', () => {
+     const resources = fs.mkdtempSync(path.join(os.tmpdir(), 'eh-resources-'));
+     fs.mkdirSync(path.join(resources, 'harness'));
+     fs.writeFileSync(path.join(resources, 'harness', 'harness-mcp.mjs'), '');
++    fs.mkdirSync(path.join(resources, 'harness', 'skills', 'game-studio'), { recursive: true });
++    fs.writeFileSync(
++      path.join(resources, 'harness', 'skills', 'game-studio', 'SKILL.md'),
++      '---\nname: game-studio\n---\n'
++    );
+     const binDir = path.join(resources, 'bin-out');
++    const skillsDir = path.join(resources, 'skills-out');
+     process.env.PATH = '/usr/bin';
+-    expect(await ensureHarnessLauncher({ resourcesPath: resources, binDir, platform: 'linux' })).toBe(true);
++    expect(
++      await ensureHarnessLauncher({
++        resourcesPath: resources,
++        binDir,
++        platform: 'linux',
++        skillsDir,
++      })
++    ).toBe(true);
++    expect(fs.existsSync(path.join(skillsDir, 'game-studio', 'SKILL.md'))).toBe(true);
+     expect(fs.readFileSync(path.join(binDir, 'harness-mcp'), 'utf8')).toContain('harness-mcp.mjs');
+     expect(process.env.PATH).toBe(`${binDir}:/usr/bin`);
+     expect(process.env.GOOSE_RECIPE_PATH).toBe(path.join(resources, 'harness', 'recipes'));
+@@ -61,7 +83,39 @@ describe('ensureHarnessLauncher', () => {
+ 
+   it('does nothing without the payload', async () => {
+     const resources = fs.mkdtempSync(path.join(os.tmpdir(), 'eh-empty-'));
+-    expect(await ensureHarnessLauncher({ resourcesPath: resources, binDir: path.join(resources, 'bin') })).toBe(false);
++    expect(
++      await ensureHarnessLauncher({ resourcesPath: resources, binDir: path.join(resources, 'bin') })
++    ).toBe(false);
+     expect(fs.existsSync(path.join(resources, 'bin'))).toBe(false);
+   });
+ });
++
++describe('installHarnessSkills', () => {
++  const skill = (dir: string, name: string, body = `---\nname: ${name}\n---\n`) => {
++    fs.mkdirSync(path.join(dir, name), { recursive: true });
++    fs.writeFileSync(path.join(dir, name, 'SKILL.md'), body);
++  };
++
++  it("installs ours, updates them, removes dropped ones, and leaves the user's skills alone", async () => {
++    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eh-skills-'));
++    const payload = path.join(root, 'payload');
++    const target = path.join(root, 'config', 'skills');
++    skill(payload, 'game-studio', 'v1');
++    skill(payload, 'old-skill');
++    skill(target, 'my-own');
++    expect(await installHarnessSkills(payload, target)).toEqual(['game-studio', 'old-skill']);
++    fs.rmSync(path.join(payload, 'old-skill'), { recursive: true });
++    skill(payload, 'game-studio', 'v2');
++    expect(await installHarnessSkills(payload, target)).toEqual(['game-studio']);
++    expect(fs.readFileSync(path.join(target, 'game-studio', 'SKILL.md'), 'utf8')).toBe('v2');
++    expect(fs.existsSync(path.join(target, 'old-skill'))).toBe(false);
++    expect(fs.existsSync(path.join(target, 'my-own', 'SKILL.md'))).toBe(true);
++  });
++
++  it('goes where goose reads skills for this app', () => {
++    expect(harnessSkillsDir({ GOOSE_PATH_ROOT: '/data/eh/goose' })).toBe(
++      path.join('/data/eh/goose', 'config', 'skills')
++    );
++    expect(harnessSkillsDir({})).toBe(path.join(os.homedir(), '.agents', 'skills'));
++  });
++});
+diff --git a/ui/desktop/src/utils/harnessLauncher.ts b/ui/desktop/src/utils/harnessLauncher.ts
+index e4db5ba..b8f438f 100644
+--- a/ui/desktop/src/utils/harnessLauncher.ts
++++ b/ui/desktop/src/utils/harnessLauncher.ts
+@@ -1,5 +1,5 @@
+ // Engine Harness: runs the game-dev pipeline server (the harness payload in resources/harness) as the `harness-mcp`
+-// command that the bundled Game Harness extension starts. The payload is one JavaScript file plus the DCC scripts and
++// command that the bundled Game Harness extension starts, and installs the game studio's skills where goose finds them. The payload is one JavaScript file plus the DCC scripts and
+ // recipes; it needs Node.js 22 or later, which it finds the same way the bundled npx.cmd does, so nothing extra is
+ // installed: the portable Node.js goose keeps in %LOCALAPPDATA%\Goose\node, else a system Node.js 22+, else npx.cmd
+ // downloads the portable one first.
+@@ -22,7 +22,7 @@ export function windowsLauncher(payload: string): string {
+     'REM === Portable Node.js that the bundled npx.cmd installed ===',
+     'if exist "%GOOSE_NODE_DIR%\\node.exe" goto :portable',
+     'REM === A system Node.js 22 or later ===',
+-    "for /f \"delims=\" %%N in ('where $PATH:node.exe 2^>nul') do (",
++    'for /f "delims=" %%N in (\'where $PATH:node.exe 2^>nul\') do (',
+     '    "%%N" -e "process.exit(parseInt(process.versions.node) >= 22 ? 0 : 1)" <nul >nul 2>&1',
+     '    if "!errorlevel!"=="0" (',
+     '        SET "NODE_EXE=%%N"',
+@@ -67,9 +67,65 @@ export function prependToPath(current: string, dir: string, separator: string):
+ }
+ 
+ /** Adds the payload's recipes to GOOSE_RECIPE_PATH, keeping any the user set. */
+-export function withRecipeDir(current: string | undefined, recipes: string, separator: string): string {
++export function withRecipeDir(
++  current: string | undefined,
++  recipes: string,
++  separator: string
++): string {
+   const entries = (current ?? '').split(separator).filter(Boolean);
+-  return entries.includes(recipes) ? entries.join(separator) : [...entries, recipes].join(separator);
++  return entries.includes(recipes)
++    ? entries.join(separator)
++    : [...entries, recipes].join(separator);
++}
++
++const SKILLS_MANIFEST = '.engine-harness-skills.json';
++
++/**
++ * Installs the game studio's agent skills (resources/harness/skills/<name>/SKILL.md) into the skills folder goose reads
++ * (<GOOSE_PATH_ROOT>/config/skills), replacing older copies of ours and removing ones a newer version dropped. Skills the
++ * user added there are left alone. Answers the names installed.
++ */
++export async function installHarnessSkills(
++  payloadSkills: string,
++  target: string
++): Promise<string[]> {
++  if (!fs.existsSync(payloadSkills)) return [];
++  const names = (await fs.promises.readdir(payloadSkills, { withFileTypes: true }))
++    .filter(
++      (entry) =>
++        entry.isDirectory() && fs.existsSync(path.join(payloadSkills, entry.name, 'SKILL.md'))
++    )
++    .map((entry) => entry.name)
++    .sort();
++  await fs.promises.mkdir(target, { recursive: true });
++  const manifest = path.join(target, SKILLS_MANIFEST);
++  let previous: string[] = [];
++  try {
++    previous = JSON.parse(await fs.promises.readFile(manifest, 'utf8')).skills ?? [];
++  } catch {
++    // First install.
++  }
++  for (const name of previous.filter(
++    (old) => !names.includes(old) && !old.includes('..') && !path.isAbsolute(old)
++  )) {
++    await fs.promises.rm(path.join(target, name), { recursive: true, force: true });
++  }
++  for (const name of names) {
++    await fs.promises.rm(path.join(target, name), { recursive: true, force: true });
++    await fs.promises.cp(path.join(payloadSkills, name), path.join(target, name), {
++      recursive: true,
++    });
++  }
++  await fs.promises.writeFile(manifest, JSON.stringify({ skills: names }, null, 2));
++  return names;
++}
++
++/** The skills folder goose reads for this app: <GOOSE_PATH_ROOT>/config/skills, else ~/.agents/skills. */
++export function harnessSkillsDir(env: typeof process.env = process.env): string {
++  const root = env.GOOSE_PATH_ROOT;
++  return root && path.isAbsolute(root)
++    ? path.join(root, 'config', 'skills')
++    : path.join(os.homedir(), '.agents', 'skills');
+ }
+ 
+ /**
+@@ -80,18 +136,25 @@ export function withRecipeDir(current: string | undefined, recipes: string, sepa
+ export async function ensureHarnessLauncher(options: {
+   resourcesPath: string;
+   binDir: string;
+-  platform?: NodeJS.Platform;
++  platform?: typeof process.platform;
++  /** Where goose reads skills; default harnessSkillsDir(). */
++  skillsDir?: string;
+ }): Promise<boolean> {
+   const platform = options.platform ?? process.platform;
+   const payload = path.join(options.resourcesPath, 'harness');
+   if (!fs.existsSync(path.join(payload, 'harness-mcp.mjs'))) {
+-    log.info(`Engine Harness payload not found in ${payload}; the Game Harness extension is unavailable`);
++    log.info(
++      `Engine Harness payload not found in ${payload}; the Game Harness extension is unavailable`
++    );
+     return false;
+   }
+   try {
+     await fs.promises.mkdir(options.binDir, { recursive: true });
+     if (platform === 'win32') {
+-      await fs.promises.writeFile(path.join(options.binDir, 'harness-mcp.cmd'), windowsLauncher(payload));
++      await fs.promises.writeFile(
++        path.join(options.binDir, 'harness-mcp.cmd'),
++        windowsLauncher(payload)
++      );
+     } else {
+       const launcher = path.join(options.binDir, 'harness-mcp');
+       const nodeShim = path.join(options.resourcesPath, 'bin', 'node');
+@@ -101,8 +164,19 @@ export async function ensureHarnessLauncher(options: {
+     const pathKey = platform === 'win32' && process.env.Path !== undefined ? 'Path' : 'PATH';
+     process.env[pathKey] = prependToPath(process.env[pathKey] ?? '', options.binDir, separator);
+     process.env.HARNESS_DCC_DIR = path.join(payload, 'dcc');
+-    process.env.GOOSE_RECIPE_PATH = withRecipeDir(process.env.GOOSE_RECIPE_PATH, path.join(payload, 'recipes'), separator);
++    process.env.GOOSE_RECIPE_PATH = withRecipeDir(
++      process.env.GOOSE_RECIPE_PATH,
++      path.join(payload, 'recipes'),
++      separator
++    );
+     log.info(`Engine Harness launcher ready in ${options.binDir}`);
++    try {
++      const skillsDir = options.skillsDir ?? harnessSkillsDir();
++      const skills = await installHarnessSkills(path.join(payload, 'skills'), skillsDir);
++      log.info(`Engine Harness skills installed in ${skillsDir}: ${skills.join(', ')}`);
++    } catch (error) {
++      log.error('Failed to install the Engine Harness skills:', error);
++    }
+     return true;
+   } catch (error) {
+     log.error('Failed to prepare the Engine Harness launcher:', error);

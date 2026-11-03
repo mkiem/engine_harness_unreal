@@ -38,6 +38,10 @@ node src/cli.ts presets --profile profiles/workstation.example.json
 
 Engine Harness packages all of this as a desktop app for Windows: a fork of goose with the harness, the Unreal and Godot bridges, the Blender connection, recipes and the starter asset library built in. See [004 Studio app](docs/004-studio-app.md) to install it.
 
+## Make a game, even if you never have
+
+Open Engine Harness on an empty folder and choose **Start a new game**. The game studio interviews you about the game you want, one question at a time, creates a playable Godot RPG, and then works through it with you phase by phase: art, characters, maps, battles, items, story, menus, music, balance, and a Windows `.exe` to share. It paints pixel art, writes music, simulates every battle for difficulty and plays the game to check it, so nothing else needs installing. See [006 The game studio](docs/006-game-studio.md).
+
 ## In an agent IDE (goose, Claude Code)
 
 The harness also runs as an MCP server, so an agent working in your own Blender and Unreal can plan, check assets against their contracts and share file locks:
@@ -46,7 +50,7 @@ The harness also runs as an MCP server, so an agent working in your own Blender 
 node src/mcp/main.ts
 ```
 
-`distro/install/install.ps1` (Windows) or `distro/install/install.sh` puts it on your PATH as `harness-mcp` and adds the game-dev recipes to goose. `distro/` also holds the studio fork of goose as a patch queue; see [004 Studio app](docs/004-studio-app.md).
+`distro/install/install.ps1` (Windows) or `distro/install/install.sh` puts it on your PATH as `harness-mcp`, adds the game-dev recipes to goose, and installs the game studio's skills in `~/.agents/skills`. `distro/` also holds the studio fork of goose as a patch queue; see [004 Studio app](docs/004-studio-app.md).
 
 ## Running real workers
 
@@ -78,6 +82,7 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 - [003 Task plan](docs/003-task-plan.md): milestones M1–M6 and risks
 - [004 Studio app](docs/004-studio-app.md): Engine Harness, the goose fork for local game development: install, what is inside, the patch queue, the Windows CI build
 - [005 Godot and assets](docs/005-godot-and-assets.md): Godot 4 for 2D pixel-art games, measured tool cost, and the starter asset library
+- [006 The game studio](docs/006-game-studio.md): making a whole game with a beginner: the skills, studio tools, template and design document
 
 ## Layout
 
@@ -91,6 +96,9 @@ node src/cli.ts answer vintage-radio-audio "use the licensed library clip instea
 | `src/ingest` | Engine ingest stage (simulated, Unreal commandlet) |
 | `src/planner` | Prop template planner and LLM planner |
 | `src/mcp` | The harness as an MCP server for agent IDEs |
+| `src/studio` | The game studio: design document, phases, project creation, art and music making |
+| `skills/` | The game studio's agent skills, one per phase |
+| `templates/godot-rpg` | The Godot 4 RPG every studio game starts from |
 | `distro/` | The studio fork of goose (pinned release and patches), recipes, installers |
 | `presets/` | One least-privilege worker preset per domain |
 | `profiles/` | Example machine profiles |

@@ -1,7 +1,7 @@
 From ef9525c2c65b530767b325063fec14ca4103acc4 Mon Sep 17 00:00:00 2001
 From: engine_harness_unreal <noreply@anthropic.com>
 Date: Mon, 2 Nov 2026 06:18:36 +0000
-Subject: [PATCH 3/7] Ship the Engine Harness payload and its harness-mcp
+Subject: [PATCH 3/9] Ship the Engine Harness payload and its harness-mcp
  launcher
 
 The build copies the harness payload (one bundled JavaScript file, the DCC

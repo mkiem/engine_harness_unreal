@@ -1,7 +1,7 @@
 From 9c0adf4825df8ed8d0aaac05af0dfe72a820f990 Mon Sep 17 00:00:00 2001
 From: engine_harness_unreal <noreply@anthropic.com>
 Date: Mon, 2 Nov 2026 06:18:36 +0000
-Subject: [PATCH 4/7] Pin the Blender connection and turn its telemetry off;
+Subject: [PATCH 4/9] Pin the Blender connection and turn its telemetry off;
  relabel the Unreal plugin
 
 The Blender extension runs mcp-for-blender 2.2.6 (the package blender-mcp was
