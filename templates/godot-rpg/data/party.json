@@ -1,0 +1,8 @@
+{
+  "members": ["hero", "mage"],
+  "level": 1,
+  "gold": 30,
+  "items": { "potion": 3 },
+  "map": "town",
+  "position": [4, 6]
+}

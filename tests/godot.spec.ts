@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
@@ -86,18 +86,18 @@ describe('.tscn scenes', () => {
 })
 
 describe('Godot bridge', () => {
-  it('collects parse errors from --check-only, with file and line', async () => {
-    const calls: string[][] = []
-    const run: AsyncRunner = async (_command, args) => {
-      calls.push(args)
-      return args.at(-1) === 'res://bad.gd'
-        ? { code: 1, stdout: '', stderr: 'SCRIPT ERROR: Parse Error: Expected end of statement after expression.\n   at: GDScript::reload (res://bad.gd:3)\n', timedOut: false }
-        : { code: 0, stdout: '', stderr: '', timedOut: false }
+  it('checks scripts inside the project (with its autoloads), with file and line, and removes the checker', async () => {
+    const project = godotProject()
+    let args: string[] = []
+    const run: AsyncRunner = async (_command, given) => {
+      args = given
+      expect(existsSync(join(project, '.harness_check', 'check.tscn'))).toBe(true)
+      return { code: 0, stdout: 'CHECK_DONE\n', stderr: 'SCRIPT ERROR: Parse Error: Expected end of statement after expression.\n   at: GDScript::reload (res://bad.gd:3)\nERROR: Failed to load script "res://bad.gd" with error "Parse error".\n', timedOut: false }
     }
-    const bridge = new GodotBridge({ godot: () => '/bin/godot', run })
-    const result = await bridge.check('/p', ['res://good.gd', 'res://bad.gd'])
-    expect(result.errors).toEqual([{ message: 'Parse Error: Expected end of statement after expression.', file: 'res://bad.gd', line: 3 }])
-    expect(calls[0]).toEqual(['--headless', '--path', '/p', '--check-only', '--script', 'res://good.gd'])
+    const result = await new GodotBridge({ godot: () => '/bin/godot', run }).check(project, ['res://good.gd', join(project, 'bad.gd')])
+    expect(args).toEqual(['--headless', '--path', project, 'res://.harness_check/check.tscn', '--', 'res://good.gd', 'res://bad.gd'])
+    expect(result.errors[0]).toEqual({ message: 'Parse Error: Expected end of statement after expression.', file: 'res://bad.gd', line: 3 })
+    expect(existsSync(join(project, '.harness_check'))).toBe(false)
   })
 
   it('runs headless for a number of frames and reports runtime errors once', async () => {
@@ -181,7 +181,7 @@ describe('a Godot plan end to end (simulated workers)', () => {
 describe('Godot MCP tools', () => {
   it('reads scenes, checks scripts and runs the game through a small tool set', async () => {
     const project = godotProject()
-    const run: AsyncRunner = async () => ({ code: 0, stdout: '', stderr: '', timedOut: false })
+    const run: AsyncRunner = async () => ({ code: 0, stdout: 'CHECK_DONE\n', stderr: '', timedOut: false })
     const server = createHarnessServer({ projectDir: project, godot: new GodotBridge({ godot: () => '/bin/godot', run }) })
     const client = new Client({ name: 'test', version: '1' })
     const [a, b] = InMemoryTransport.createLinkedPair()

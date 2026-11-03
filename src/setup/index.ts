@@ -273,7 +273,7 @@ export async function checkSetup(sys: SetupEnv, options: {
   const godot = options.godot?.() ?? []
   const godotProject = options.projectDir ? options.godotProject?.(options.projectDir) : undefined
   if (godot.length) lines.push(`ok   Godot ${godot[0]!.version} (${godot[0]!.path})`)
-  else if (godotProject) todo('this is a Godot project but Godot 4 was not found; install it from https://godotengine.org/download or set GODOT_BIN')
+  else if (godotProject) todo('this is a Godot project but Godot 4 was not found; studio_install_godot installs it')
   else lines.push('note Godot 4 not found (only needed for Godot projects)')
   if (godotProject) lines.push(`ok   Godot project at ${godotProject}`)
 

@@ -1,0 +1,44 @@
+{
+  "slash": {
+    "name": "Slash",
+    "mp": 0,
+    "power": 1.15,
+    "type": "physical",
+    "about": "A strong sword strike."
+  },
+  "guard_break": {
+    "name": "Guard Break",
+    "mp": 3,
+    "power": 1.7,
+    "type": "physical",
+    "about": "Smashes through armour."
+  },
+  "fire": {
+    "name": "Fire",
+    "mp": 3,
+    "power": 1.3,
+    "type": "magic",
+    "about": "A burst of flame."
+  },
+  "frost": {
+    "name": "Frost",
+    "mp": 5,
+    "power": 1.8,
+    "type": "magic",
+    "about": "Freezing magic."
+  },
+  "heal": {
+    "name": "Heal",
+    "mp": 4,
+    "power": 1.0,
+    "type": "heal",
+    "about": "Restores an ally's HP."
+  },
+  "bite": {
+    "name": "Bite",
+    "mp": 0,
+    "power": 1.3,
+    "type": "physical",
+    "about": "A vicious bite."
+  }
+}

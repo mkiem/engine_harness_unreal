@@ -1,0 +1,7 @@
+{
+  "physical": "max(1, (atk * power - def * 0.5) * variance)",
+  "magic": "max(1, (mag * power * 1.2 - def * 0.25) * variance)",
+  "heal": "mag * 2.5 * power + level * 2",
+  "xp_to_next": "12 + level * level * 8",
+  "run_chance": "min(0.9, 0.45 + spd * 0.03)"
+}

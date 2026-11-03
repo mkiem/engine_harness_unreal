@@ -1,0 +1,49 @@
+{
+  "_about": "One character per tile. tile = column in art/tiles.png; solid = blocks walking; encounters = random battles here.",
+  ".": {
+    "tile": 0,
+    "name": "grass"
+  },
+  "#": {
+    "tile": 1,
+    "name": "wall",
+    "solid": true
+  },
+  "~": {
+    "tile": 2,
+    "name": "water",
+    "solid": true
+  },
+  "T": {
+    "tile": 3,
+    "name": "tree",
+    "solid": true
+  },
+  "\"": {
+    "tile": 4,
+    "name": "tall grass",
+    "encounters": true
+  },
+  "=": {
+    "tile": 5,
+    "name": "path"
+  },
+  "_": {
+    "tile": 6,
+    "name": "floor"
+  },
+  "D": {
+    "tile": 7,
+    "name": "door",
+    "solid": true
+  },
+  "^": {
+    "tile": 8,
+    "name": "roof",
+    "solid": true
+  },
+  "*": {
+    "tile": 9,
+    "name": "flowers"
+  }
+}

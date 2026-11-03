@@ -23,6 +23,10 @@ import { formatResult, NOT_FOUND, playInEditorScript, readEditorLog, runScriptFi
 import { configurePixelArt, findGodot, findGodotProject, formatErrors, GodotBridge, listScripts, readProjectName, resToPath } from '../godot/bridge.ts'
 import { findNode, parseTscn, sceneTree } from '../godot/tscn.ts'
 import { AssetLibrary, importLocal, installGodotAddon, libraryDirFor, SOURCES, type SourceId } from '../assets/library.ts'
+import { readDesign, renderDesign, updateDesign } from '../studio/design.ts'
+import { describeNext, phaseReports, balanceResults } from '../studio/phases.ts'
+import { checkProjectData, createProject, defaultTemplatesDir, findStudioProject, slugOf } from '../studio/project.ts'
+import { GODOT_VERSION, hasWindowsTemplates, installGodot, installWindowsTemplates, managedGodot } from '../godot/install.ts'
 
 export interface HarnessServerOptions {
   /** The game project the agent works in; plans, ticket directories and the lock file live under <project>/.harness. */
@@ -41,6 +45,8 @@ export interface HarnessServerOptions {
   engines?: ('unreal' | 'godot')[]
   /** Finds and downloads openly licensed assets; tests pass one with a fake fetch. */
   assets?: AssetLibrary
+  /** Where the game templates are (templates/ in this repository, or the app's payload). */
+  templatesDir?: string
 }
 
 export function enginesFromEnv(value = process.env.HARNESS_ENGINES): ('unreal' | 'godot')[] {
@@ -72,6 +78,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
   const dccDir = options.dccDir ?? defaultDccDir()
   const engines = options.engines ?? enginesFromEnv()
   const library = options.assets ?? new AssetLibrary()
+  const templatesDir = options.templatesDir ?? defaultTemplatesDir(dirname(fileURLToPath(import.meta.url)))
   let godotPath: string | undefined | null = null
   const godotBinary = () => {
     if (godotPath === null) godotPath = findGodot(sys)[0]?.path
@@ -109,6 +116,7 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       'For a multi-part request (a prop with a mesh, textures, a sound and a Blueprint), plan it with harness_plan_prop, then do the tickets wave by wave; tickets in one wave can run in parallel subagents.',
       'The unreal_* tools drive the open Unreal Editor through Python: inspect and change the level, Blueprints and assets with unreal_python, run checked-in scripts with unreal_run_script, start Play in Editor with unreal_play_in_editor so the developer can playtest, and read unreal_log after changes.',
       'For Godot projects, read and edit .tscn and .gd files directly (they are text); use godot_scene to see a scene, godot_check after editing scripts, and godot_run to catch runtime errors or open the game for the developer to play.',
+      'To make a game with someone, especially someone new to it, use the studio: studio_new_project starts one, and every session in a game folder begins with studio_next, which says where the game stands and which skill to load (game-studio explains the whole process).',
       'If Blender or Unreal does not answer, run harness_setup_check, explain what is missing, and with the developer\'s agreement fix it with harness_setup_blender or harness_setup_unreal_project.',
     ].join(' '),
   })
@@ -595,6 +603,199 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       return text(`Imported ${id} into ${done.dir} (${done.files.length} file(s)), licence ${license}.`, { ...done })
     } catch (error) {
       return failure((error as Error).message)
+    }
+  })
+
+  // ---- Game studio ------------------------------------------------------------------------------------------------
+
+  const studioProject = (path?: string) => {
+    const project = path ? within(path) : findStudioProject(root)
+    if (!project || !existsSync(join(project, 'design', 'game.json'))) throw new Error(`no game found in ${path ? within(path) : root}; start one with studio_new_project, or say which folder the game is in`)
+    return project
+  }
+  const studioFailure = (error: unknown) => failure((error as Error).message)
+  const verdict = (r: { win_rate: number; avg_hp_left: number }) =>
+    r.win_rate < 0.4 ? 'deadly' : r.win_rate < 0.75 ? 'hard' : r.win_rate >= 0.98 && r.avg_hp_left >= 0.75 ? 'easy' : 'fair'
+
+  server.registerTool('studio_new_project', {
+    title: 'Start a new game',
+    description: 'Creates a playable Godot 4 RPG project (title screen, map, NPCs, battles, saving, placeholder art and sound) with its design document, after the concept interview. Then imports it with Godot when Godot is installed.',
+    inputSchema: {
+      title: z.string(), pitch: z.string().default(''),
+      folder: z.string().optional().describe('where to create it; default: a new folder named after the game in the current folder'),
+      resolution: z.tuple([z.number().int(), z.number().int()]).optional().describe('pixel resolution, default 320x180'),
+      design: z.record(z.string(), z.unknown()).optional().describe('decisions from the interview, in the design document\'s shape'),
+    },
+  }, async ({ title, pitch, folder, resolution, design }) => {
+    try {
+      const target = folder ? within(folder) : join(root, slugOf(title))
+      const made = createProject(templatesDir, { title, pitch, folder: target, resolution: resolution as [number, number] | undefined, design })
+      let imported = 'Godot is not installed yet: run studio_install_godot, then the game can be played.'
+      if (godotBinary()) {
+        const result = await godot.importProject(made.project)
+        imported = result.errors.length ? `Godot imported it with errors:\n${formatErrors(result.errors)}` : 'Godot imported the art and sound.'
+      }
+      const reports = phaseReports(made.project, readDesign(made.project))
+      return text([`Created "${title}" in ${made.project} (${made.files} files). ${imported}`,
+        'Tell the developer to open this folder in Engine Harness for future sessions, so it remembers the game.', '', describeNext(readDesign(made.project), reports)].join('\n'), { project: made.project })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_next', {
+    title: 'What is next',
+    description: 'Where the game stands: every phase from concept to build, the current one with its checklist, the skill to load, and the next concrete step. Run it at the start of every session.',
+    inputSchema: { project: z.string().optional() },
+    annotations: { readOnlyHint: true },
+  }, async ({ project }) => {
+    try {
+      const dir = studioProject(project)
+      const design = readDesign(dir)
+      return text(describeNext(design, phaseReports(dir, design)), { project: dir })
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_design_read', {
+    title: 'Read the game design',
+    description: 'The design document as text, or one section of it as JSON (such as "characters", "world", "concept", "art", "phases").',
+    inputSchema: { section: z.string().optional(), project: z.string().optional() },
+    annotations: { readOnlyHint: true },
+  }, async ({ section, project }) => {
+    try {
+      const design = readDesign(studioProject(project)) as Record<string, unknown>
+      if (!section) return text(renderDesign(design as ReturnType<typeof readDesign>))
+      if (!(section in design)) return failure(`no section ${section}; sections: ${Object.keys(design).join(', ')}`)
+      return text(JSON.stringify(design[section], null, 2))
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_design_update', {
+    title: 'Record design decisions',
+    description: 'Merges changes into the design document (objects merge, lists and values replace, null removes) and rewrites GAME_DESIGN.md. Pass the decision in words, with why, so the decisions log stays readable. Mark a phase done with {"phases": {"<id>": {"status": "done"}}} only when the developer agrees.',
+    inputSchema: { patch: z.record(z.string(), z.unknown()), decision: z.string().optional(), why: z.string().optional(), project: z.string().optional() },
+  }, async ({ patch, decision, why, project }) => {
+    try {
+      const dir = studioProject(project)
+      const design = updateDesign(dir, patch, decision ? { decision, why } : undefined)
+      const reports = phaseReports(dir, design)
+      const current = reports.find(r => r.status !== 'done')
+      return text(`Design updated (${Object.keys(patch).join(', ')}).${current ? ` Current phase: ${current.title}, ${current.checks.filter(c => c.done).length}/${current.checks.length} checks done.` : ' Every phase is done.'}`)
+    } catch (error) {
+      return failure(`the change does not fit the design document: ${(error as Error).message}`)
+    }
+  })
+
+  server.registerTool('studio_check', {
+    title: 'Check the whole game',
+    description: 'Checks the game: every reference between its data files, every script (with Godot), the game\'s self-test (formulas, levelling, saving), and a real run of the title screen and a walk on the map into a battle. Run after any change.',
+    inputSchema: { project: z.string().optional(), quick: z.boolean().default(false).describe('data checks only, without starting Godot') },
+    annotations: { readOnlyHint: true },
+  }, async ({ project, quick }) => {
+    try {
+      const dir = studioProject(project)
+      const lines: string[] = []
+      const problems = checkProjectData(dir)
+      lines.push(problems.length ? `✗ Data: ${problems.length} problem(s)\n${problems.map(p => `  - ${p}`).join('\n')}` : '✓ Data: every reference between the data files resolves')
+      if (!quick) {
+        if (!godotBinary()) lines.push('· Godot is not installed, so scripts and the game were not run (studio_install_godot installs it)')
+        else {
+          await godot.importProject(dir)
+          const scripts = await godot.check(dir, listScripts(dir))
+          lines.push(scripts.errors.length ? `✗ Scripts: ${scripts.errors.length} error(s)\n${formatErrors(scripts.errors)}` : `✓ Scripts: ${scripts.checked} parse cleanly`)
+          const self = await godot.exec(dir, ['res://tools/self_test.tscn'])
+          const fails = `${self.stdout}\n${self.stderr}`.split(/\r?\n/).filter(line => line.startsWith('SELFTEST FAIL')).map(line => line.slice(14))
+          lines.push(fails.length || self.errors.length ? `✗ Self-test:\n${[...fails, ...self.errors.map(e => e.message)].map(f => `  - ${f}`).join('\n')}` : '✓ Self-test: formulas, levelling and saving work')
+          for (const [scene, label] of [['res://scenes/main_menu.tscn', 'Title screen'], ['res://scenes/overworld.tscn', 'Map walk into a battle']] as const) {
+            const run = await godot.exec(dir, [scene, '--', '--autotest'], 120_000)
+            const out = `${run.stdout}\n${run.stderr}`
+            const reached = out.match(/AUTOTEST [^\n]+/g) ?? []
+            lines.push(run.errors.length ? `✗ ${label}:\n${formatErrors(run.errors)}` : `✓ ${label}: ${reached.map(r => r.replace('AUTOTEST ', '')).join('; ') || 'ran'}`)
+          }
+        }
+      }
+      const ok = !lines.some(line => line.startsWith('✗'))
+      return { ...text(`${ok ? 'The game checks out.' : 'Something needs fixing.'}\n${lines.join('\n')}`, { ok }), ...(ok ? {} : { isError: true }) }
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_simulate_battle', {
+    title: 'Simulate battles for balance',
+    description: 'Fights battles many times with the game\'s real rules and reports win rate, length and HP left, with a verdict (easy, fair, hard, deadly). Without enemies, simulates every encounter group. Results are kept for the balance phase.',
+    inputSchema: {
+      enemies: z.array(z.string()).optional().describe('one group, such as ["wolf", "slime"]'),
+      level: z.number().int().min(1).max(99).default(1).describe('the party level to test at'),
+      runs: z.number().int().min(10).max(2000).default(300),
+      project: z.string().optional(),
+    },
+  }, async ({ enemies, level, runs, project }) => {
+    try {
+      const dir = studioProject(project)
+      if (!godotBinary()) return failure('Godot is needed to simulate battles: run studio_install_godot first')
+      const groups: string[][] = enemies?.length ? [enemies] : [...new Map(Object.values((JSON.parse(readFileSync(join(dir, 'data', 'encounters.json'), 'utf8')) as Record<string, { groups?: string[][] }>))
+        .flatMap(zone => zone.groups ?? []).map(group => [group.join('+'), group] as const)).values()]
+      await godot.importProject(dir)
+      const store = join(dir, '.studio', 'balance.json')
+      const saved = { results: balanceResults(dir) as Record<string, unknown> }
+      const lines: string[] = []
+      for (const group of groups) {
+        const run = await godot.exec(dir, ['res://tools/sim_battle.tscn', '--', '--enemies', group.join(','), '--runs', String(runs), '--level', String(level)])
+        const line = `${run.stdout}`.split(/\r?\n/).find(l => l.startsWith('SIM_RESULT '))
+        if (!line) { lines.push(`${group.join(' + ')}: the simulation did not finish${run.errors.length ? `\n${formatErrors(run.errors)}` : ''}`); continue }
+        const r = JSON.parse(line.slice(11)) as { win_rate: number; avg_turns: number; avg_hp_left: number; level: number; enemies: string[] }
+        saved.results[`${group.join('+')}@${level}`] = { ...r, at: new Date().toISOString() }
+        lines.push(`${group.join(' + ')} at level ${level}: ${verdict(r)}. Wins ${Math.round(r.win_rate * 100)}%, ${r.avg_turns.toFixed(1)} turns, ${Math.round(r.avg_hp_left * 100)}% HP left`)
+      }
+      mkdirSync(dirname(store), { recursive: true })
+      writeFileSync(store, `${JSON.stringify(saved, null, 2)}\n`)
+      return text(`${lines.join('\n')}\n\nAs a guide: ordinary battles "easy" to "fair", a region's toughest groups "fair" to "hard", bosses "hard". Change numbers in data/enemies.json, data/skills.json or data/formulas.json and simulate again.`)
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_install_godot', {
+    title: 'Install Godot',
+    description: `Downloads the official Godot ${GODOT_VERSION} for this computer into Engine Harness's own folder (about 60 MB), so games can be checked, played and built. Nothing is installed system-wide.`,
+  }, async () => {
+    try {
+      const existing = godotBinary()
+      if (existing) return text(`Godot is already available at ${existing}.`)
+      const paths = await installGodot()
+      godotPath = null
+      return text(`Installed Godot ${GODOT_VERSION} at ${paths.gui}. The developer can open their game with it too (it is a normal Godot).`)
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_export', {
+    title: 'Build the game for Windows',
+    description: 'Builds a Windows .exe of the game into builds/windows. The first time, Godot\'s export templates are needed (about a 1 GB download, about 200 MB kept): ask the developer, then call again with installTemplates: true.',
+    inputSchema: { installTemplates: z.boolean().default(false), project: z.string().optional() },
+  }, async ({ installTemplates, project }) => {
+    try {
+      const dir = studioProject(project)
+      if (!godotBinary()) return failure('Godot is needed to build the game: run studio_install_godot first')
+      if (!hasWindowsTemplates()) {
+        if (!installTemplates) return failure('Building needs Godot\'s export templates, a one-time download of about 1 GB (about 200 MB kept). Ask the developer, then call studio_export with installTemplates: true.')
+        await installWindowsTemplates()
+      }
+      const design = readDesign(dir)
+      const out = join(dir, 'builds', 'windows', `${slugOf(design.title)}.exe`)
+      mkdirSync(dirname(out), { recursive: true })
+      await godot.importProject(dir)
+      const result = await godot.exec(dir, ['--export-release', 'Windows Desktop', out], 600_000)
+      if (!existsSync(out)) return failure(`the build did not produce ${out}${result.errors.length ? `:\n${formatErrors(result.errors)}` : `\n${(result.stdout + result.stderr).split(/\r?\n/).slice(-15).join('\n')}`}`)
+      return text(`Built ${out}. The developer can double-click it, or zip the builds/windows folder to share the game.`, { exe: out })
+    } catch (error) {
+      return studioFailure(error)
     }
   })
 
