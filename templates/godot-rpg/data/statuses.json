@@ -118,5 +118,24 @@
     "turns": 4,
     "text": "%s speeds up!",
     "color": "#e0e05c"
+  },
+  "taunt": {
+    "name": "Taunt",
+    "about": "Enemies aim their single-target attacks at this fighter.",
+    "draw_attacks": true,
+    "turns": 3,
+    "text": "%s draws the enemies' attention!",
+    "color": "#e06c4c"
+  },
+  "broken": {
+    "name": "Broken",
+    "about": "Its guard is broken: it loses its next turn and takes 50% more damage, then its shield returns.",
+    "skip_turn": true,
+    "damage_taken": 1.5,
+    "restores_shield": true,
+    "turns": 2,
+    "text": "%s is broken!",
+    "skip_text": "%s is broken and can't act!",
+    "color": "#e05ce0"
   }
 }

@@ -65,6 +65,10 @@ The developer can jump around ("let's do the music now"); go where they want, th
   writing or changing a story event: `studio_test_event` on each branch.
 - Content is data (`data/*.json`, `maps/`); prefer changing data over code. Read **godot-rpg-template** before changing
   code, and keep the game running after every change.
+- Two bundled references by loopyhop (used with permission) turn vague wishes into concrete choices: the **Gameplay
+  Atlas** (280 mechanics from real games: `studio_find_mechanic`, `studio_mechanic`; see **mechanic-design**) and
+  **Game Art Style** (37 visual styles: `studio_art_styles`, `studio_art_style`; see **art-direction**).
+- A new feature idea always starts as a mechanic card and a tiny prototype (**mechanic-design**).
 - The developer needs no other software: `studio_paint` draws pixel art from text grids (check it with
   `studio_preview`), `studio_music` writes music from notes, `studio_sound` makes sound effects.
 - Ready-made, openly licensed assets save a lot of time: `assets_sources`, `assets_search`, `assets_download`,

@@ -27,8 +27,11 @@ choose". Keep a running summary and show it back every three or four answers.
 7. **What does the player do over and over?** Propose a core loop in one sentence for them to adjust, such as "explore
    a region, fight in its wild areas, level up, buy gear in town, beat the region's boss".
 8. **What makes it special?** One twist (battles are short puzzles; the town grows as you help people; the hero is a
-   retired villain). Turn it and their favourite things into **two or three pillars**: short rules every later
-   decision is checked against ("Battles are over in under a minute").
+   retired villain). Look for it in the **Gameplay Atlas**: `studio_find_mechanic` with their words, read the best two
+   or three with `studio_mechanic`, and describe each in a sentence ("in Stardew Valley you ..."). When they pick one,
+   add it with `add: true`: it becomes the game's first mechanic card (see **mechanic-design**). Then turn the twist and
+   their favourite things into **two or three pillars**: short rules every later decision is checked against
+   ("Battles are over in under a minute").
 9. **The first playable:** propose something finishable in a few sessions: "a village, one wild area, a dungeon and a
    boss; about 20 minutes of play". Put everything bigger in `scope.later`.
 10. **The name.** Offer three title ideas; they pick or invent one.

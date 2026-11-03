@@ -4,8 +4,10 @@ extends RefCounted
 ## of times to balance it. Every number comes from data/: stats and equipment, skills, items, statuses, elements, enemy
 ## AI, and the formulas in formulas.json and constants in rules.json.
 ##
-## A round: everyone standing acts in order of speed. Each turn: begin_turn() (poison, regen; sleeping or stunned
-## fighters lose the turn), an action with act(), then end_turn() (statuses count down).
+## A round: start_round() decides what every enemy will do (its intent, which the screen can show), then everyone
+## standing acts in order of speed. Each turn: begin_turn() (poison, regen; sleeping, stunned or broken fighters lose
+## the turn), an action (a fighter gathering power releases it), then end_turn() (statuses count down).
+## From the Gameplay Atlas (loopyhop): enemy intent, charged attacks and interrupts, taunts, and break shields.
 
 signal message(text: String)
 ## Something for the screen to show: {kind: "damage"|"heal"|"mp"|"miss"|"status"|"cure"|"revive"|"ko"|"phase",
@@ -17,6 +19,7 @@ var enemies: Array = []
 var rng := RandomNumberGenerator.new()
 var turn := 0
 var outcome := ""        # "", "won", "lost", "fled"
+var _releasing := false
 
 const SCOPES := ["enemy", "all_enemies", "ally", "all_allies", "self", "ko_ally"]
 
@@ -48,7 +51,8 @@ func setup(members: Array, enemy_ids: Array, seed := -1) -> void:
 			"element": str(info.get("element", "")), "weak": info.get("weak", []), "resist": info.get("resist", []),
 			"absorb": info.get("absorb", []), "immune": info.get("immune", []), "crit": float(stats.get("crit", 0.0)),
 			"evade": float(stats.get("evade", 0.0)), "on_hit": info.get("on_hit", {}), "ai": info.get("ai", []),
-			"phases": info.get("phases", []), "phase": 0, "used": {},
+			"phases": info.get("phases", []), "phase": 0, "used": {}, "intent": {}, "charging": {}, "acted": -1,
+			"shield": int(info.get("shield", 0)), "max_shield": int(info.get("shield", 0)), "uninterruptible": bool(info.get("uninterruptible", false)),
 		}
 		enemies.append(enemy)
 		for status_id in info.get("statuses", []):
@@ -66,6 +70,7 @@ func _from_member(member: Dictionary) -> Dictionary:
 		"skills": Game.skills_for(member), "level": int(member["level"]), "defending": false, "statuses": {},
 		"element": traits["element"], "weak": Data.characters.get(member["id"], {}).get("weak", []), "resist": traits["resist"],
 		"absorb": [], "immune": traits["immune"], "crit": float(traits["crit"]), "evade": 0.0, "on_hit": weapon.get("status", {}),
+		"intent": {}, "charging": {}, "acted": -1, "shield": 0, "max_shield": 0, "uninterruptible": false,
 	}
 	for status_id in member.get("status", []):
 		c["statuses"][status_id] = -1 if int(Data.statuses.get(status_id, {}).get("turns", 0)) <= 0 else int(Data.statuses[status_id]["turns"])
@@ -148,8 +153,11 @@ func end_turn(c: Dictionary) -> void:
 			c["statuses"].erase(status_id)
 			if int(c["hp"]) > 0:
 				_say("%s's %s wore off." % [c["name"], Data.statuses.get(status_id, {}).get("name", status_id)])
+				if bool(Data.statuses.get(status_id, {}).get("restores_shield", false)) and int(c.get("max_shield", 0)) > 0:
+					c["shield"] = int(c["max_shield"])
 		else:
 			c["statuses"][status_id] = left
+	c["acted"] = turn
 	_check_end()
 
 # ---- actions --------------------------------------------------------------------------------------------------------
@@ -202,8 +210,16 @@ func act(actor: Dictionary, kind: String, target: Dictionary = {}, id := "") -> 
 			var cost := int(skill.get("mp", 0))
 			if int(actor["mp"]) < cost:
 				return act(actor, "attack", target)
-			actor["mp"] = int(actor["mp"]) - cost
-			text = "%s uses %s%s" % [actor["name"], skill.get("name", id), _use(actor, skill, target, false)]
+			if int(skill.get("charge", 0)) > 0 and actor["charging"].is_empty() and not _releasing:
+				# A charged skill: gathering power now, released on a later turn unless interrupted.
+				actor["mp"] = int(actor["mp"]) - cost
+				actor["charging"] = {"skill": id, "target": target, "left": int(skill["charge"])}
+				shown.emit({"kind": "charge", "target": actor})
+				text = "%s is gathering power for %s!" % [actor["name"], skill.get("name", id)]
+			else:
+				if not _releasing:
+					actor["mp"] = int(actor["mp"]) - cost
+				text = "%s uses %s%s" % [actor["name"], skill.get("name", id), _use(actor, skill, target, false)]
 		"item":
 			var item: Dictionary = Data.items.get(id, {})
 			if actor["side"] == "party":
@@ -257,7 +273,10 @@ func _apply(actor: Dictionary, t: Dictionary, entry: Dictionary, is_item: bool, 
 			if kind == "damage":
 				out.append(_fixed_damage(t, int(entry.get("amount", 10)), element))
 			else:
-				out.append(t["name"] + _strike(actor, t, kind, power, element, entry.get("status", {})).trim_suffix("."))
+				var struck := _strike(actor, t, kind, power, element, entry.get("status", {}), int(entry.get("breaks", 0)))
+				out.append(t["name"] + struck.trim_suffix("."))
+				if bool(entry.get("interrupts", false)) and not struck.contains("misses") and int(t["hp"]) > 0 and not t["charging"].is_empty():
+					out.append(interrupt(t))
 		"heal":
 			var amount := int(entry.get("amount", 0)) if is_item else _heal_amount(actor, power)
 			var healed := _restore_hp(t, maxi(1, amount))
@@ -294,7 +313,7 @@ func _restore_hp(t: Dictionary, amount: int) -> int:
 
 ## An attack or damaging skill: hit or miss, critical hits (physical only), elements, defending, and a status it may
 ## cause. Answers the rest of the sentence (" for 12 (critical!)").
-func _strike(actor: Dictionary, t: Dictionary, kind: String, power: float, element: String, status: Dictionary) -> String:
+func _strike(actor: Dictionary, t: Dictionary, kind: String, power: float, element: String, status: Dictionary, breaks := 0) -> String:
 	var physical := kind != "magic"
 	if physical and _status_flag(t, "skip_turn") == "":
 		var hit := float(Game.rule("hit_chance", 0.97)) * (1.0 - float(t.get("evade", 0.0)))
@@ -317,6 +336,7 @@ func _strike(actor: Dictionary, t: Dictionary, kind: String, power: float, eleme
 		damage *= float(Game.rule("resist_multiplier", 0.5))
 	if bool(t.get("defending", false)):
 		damage /= 2.0
+	damage *= _damage_taken(t)
 	var amount := maxi(1, int(round(damage)))
 	var labels := {"weak": "weak spot!", "resist": "resisted", "absorb": "absorbed!", "": ""}
 	var notes: String = ("critical! " if crit else "") + str(labels[effect])
@@ -326,6 +346,9 @@ func _strike(actor: Dictionary, t: Dictionary, kind: String, power: float, eleme
 		return " and %s absorbs it (+%d HP)." % [t["name"], healed]
 	_hurt(t, amount, {"kind": "damage", "crit": crit, "effect": effect})
 	var text := " for %d%s" % [amount, " (" + notes.strip_edges() + ")" if notes.strip_edges() != "" else ""]
+	var cracked := _wear_shield(t, (1 if effect == "weak" else 0) + (1 if crit else 0) + breaks)
+	if cracked != "":
+		text += "; " + cracked
 	if not status.is_empty() and int(t["hp"]) > 0:
 		var landed := inflict(t, str(status.get("id", "")), float(status.get("chance", 1.0)))
 		if landed != "":
@@ -335,8 +358,44 @@ func _strike(actor: Dictionary, t: Dictionary, kind: String, power: float, eleme
 func _fixed_damage(t: Dictionary, amount: int, element: String) -> String:
 	var effect := _element_effect(t, element)
 	var value := float(amount) * (float(Game.rule("weak_multiplier", 1.5)) if effect == "weak" else float(Game.rule("resist_multiplier", 0.5)) if effect == "resist" else 1.0)
+	value *= _damage_taken(t)
 	_hurt(t, maxi(1, int(value)), {"kind": "damage", "effect": effect})
-	return "%s takes %d" % [t["name"], maxi(1, int(value))]
+	var cracked := _wear_shield(t, 1 if effect == "weak" else 0)
+	return "%s takes %d%s" % [t["name"], maxi(1, int(value)), "; " + cracked if cracked != "" else ""]
+
+## Damage multipliers from statuses on the one hit ("damage_taken", such as Broken's 1.5).
+func _damage_taken(t: Dictionary) -> float:
+	var factor := 1.0
+	for status_id in t["statuses"].keys():
+		factor *= float(Data.statuses.get(status_id, {}).get("damage_taken", 1.0))
+	return factor
+
+## Break: an enemy with a "shield" loses a point for each weakness hit, critical hit or breaking skill; at zero it is
+## broken: it loses its next turn (and the rest of this round if it has not acted yet), its charge is cancelled, and it
+## takes extra damage until it recovers its full shield.
+func _wear_shield(t: Dictionary, points: int) -> String:
+	if points <= 0 or int(t.get("max_shield", 0)) <= 0 or int(t["hp"]) <= 0 or t["statuses"].has("broken"):
+		return ""
+	t["shield"] = maxi(0, int(t["shield"]) - points)
+	shown.emit({"kind": "shield", "target": t, "amount": int(t["shield"])})
+	if int(t["shield"]) > 0:
+		return "shield %d left" % int(t["shield"])
+	t["statuses"]["broken"] = 1 if int(t.get("acted", -1)) == turn else 2
+	t["charging"] = {}
+	t["intent"] = {}
+	shown.emit({"kind": "break", "target": t})
+	return str(Data.statuses.get("broken", {}).get("text", "%s is broken!")) % t["name"]
+
+## A hit that interrupts stops a gathering attack, unless the fighter can't be interrupted (said differently).
+func interrupt(t: Dictionary) -> String:
+	if bool(t.get("uninterruptible", false)):
+		shown.emit({"kind": "miss", "target": t})
+		return "%s can't be interrupted" % t["name"]
+	var skill_name := str(Data.skills.get(t["charging"].get("skill", ""), {}).get("name", "attack"))
+	t["charging"] = {}
+	t["intent"] = {}
+	shown.emit({"kind": "interrupt", "target": t})
+	return "%s's %s is interrupted!" % [t["name"], skill_name]
 
 func _element_effect(t: Dictionary, element: String) -> String:
 	if element == "":
@@ -357,6 +416,8 @@ func _hurt(t: Dictionary, amount: int, info: Dictionary) -> void:
 	if int(t["hp"]) <= 0:
 		t["statuses"] = {}
 		t["defending"] = false
+		t["charging"] = {}
+		t["intent"] = {}
 		shown.emit({"kind": "ko", "target": t})
 		_say("%s %s" % [t["name"], "falls!" if t["side"] == "party" else "is defeated!"])
 		return
@@ -384,11 +445,87 @@ func inflict(t: Dictionary, status_id: String, chance: float, quiet := false) ->
 	t["statuses"][status_id] = turns if turns > 0 else -1
 	if not quiet:
 		shown.emit({"kind": "status", "target": t, "status": status_id})
+	if bool(info.get("draw_attacks", false)):
+		_redirect_to(t)
+	if bool(info.get("skip_turn", false)) and not t["charging"].is_empty() and not bool(t.get("uninterruptible", false)):
+		t["charging"] = {}
+		shown.emit({"kind": "interrupt", "target": t})
 	var text := str(info.get("text", "%s is affected by " + str(info.get("name", status_id))))
 	return text % t["name"] if "%s" in text else text
 
 func _say(text: String) -> void:
 	message.emit(text)
+
+## A taunt: enemies aiming a single-target action at one of the taunter's allies turn toward the taunter.
+func _redirect_to(taunter: Dictionary) -> void:
+	for e in alive(foes_of(taunter)):
+		for plan in [e["intent"], e["charging"]]:
+			var aimed: Dictionary = plan.get("target", {})
+			if not aimed.is_empty() and aimed["side"] == taunter["side"] and not is_same(aimed, taunter) and _single_target(plan):
+				plan["target"] = taunter
+				shown.emit({"kind": "redirect", "target": e})
+
+func _single_target(plan: Dictionary) -> bool:
+	if plan.get("kind", "skill") == "attack":
+		return true
+	return scope_of(Data.skills.get(str(plan.get("skill", "")), {})) == "enemy"
+
+## Fighters on a side drawing attacks (taunting), if any are standing.
+func _taunting(list: Array) -> Array:
+	return alive(list).filter(func(c): return _status_flag(c, "draw_attacks") != "")
+
+# ---- rounds, intent and charging ----------------------------------------------------------------------------------
+
+## The start of a round: each enemy decides its action now (its intent), so the screen can show it and the party can
+## answer it. The enemy then does exactly that on its turn, unless it was interrupted, broken or its target fell.
+func start_round() -> void:
+	turn += 1
+	for e in alive(enemies):
+		e["intent"] = {} if not e["charging"].is_empty() else choose_action(e)
+
+## What an enemy is about to do, in a few words ("Bite -> Aria", "Maul (gathering) -> Pip").
+func intent_text(e: Dictionary) -> String:
+	if int(e["hp"]) <= 0:
+		return ""
+	var plan: Dictionary = e["charging"] if not e["charging"].is_empty() else e["intent"]
+	if plan.is_empty():
+		return ""
+	if plan.get("kind", "skill") == "defend":
+		return "Defend"
+	var label := "Attack" if plan.get("kind", "skill") == "attack" else str(Data.skills.get(str(plan.get("skill", "")), {}).get("name", "?"))
+	if not e["charging"].is_empty():
+		label += " (gathering)"
+	var scope := "enemy" if plan.get("kind", "skill") == "attack" else scope_of(Data.skills.get(str(plan.get("skill", "")), {}))
+	var target: Dictionary = plan.get("target", {})
+	match scope:
+		"all_enemies":
+			return label + " -> everyone"
+		"self", "all_allies", "ally", "ko_ally":
+			return label
+	return label + (" -> " + str(target["name"]) if not target.is_empty() else "")
+
+## A fighter gathering power continues; when ready, the charged skill is released at its target (or another, if that
+## target fell).
+func release_charge(actor: Dictionary) -> String:
+	var plan: Dictionary = actor["charging"]
+	plan["left"] = int(plan.get("left", 1)) - 1
+	if int(plan["left"]) > 0:
+		var still := "%s keeps gathering power." % actor["name"]
+		_say(still)
+		return still
+	actor["charging"] = {}
+	_releasing = true
+	var text := act(actor, "skill", _valid_target(actor, plan), str(plan["skill"]))
+	_releasing = false
+	return text
+
+func _valid_target(actor: Dictionary, plan: Dictionary) -> Dictionary:
+	var target: Dictionary = plan.get("target", {})
+	if _single_target(plan) and (target.is_empty() or int(target["hp"]) <= 0 or not foes_of(actor).has(target)):
+		var taunting := _taunting(foes_of(actor))
+		var foes := alive(foes_of(actor))
+		return taunting[0] if not taunting.is_empty() else (foes[rng.randi() % foes.size()] if not foes.is_empty() else {})
+	return target
 
 # ---- enemies --------------------------------------------------------------------------------------------------------
 
@@ -414,39 +551,52 @@ func _check_phase(enemy: Dictionary) -> void:
 			_restore_hp(enemy, int(phase["heal"]))
 		shown.emit({"kind": "phase", "target": enemy})
 
-## The enemy's turn. With "ai" rules, the first rule whose conditions hold (and whose chance roll passes) decides;
-## otherwise it uses a skill it can afford some of the time and attacks the rest.
+## The enemy's turn: it releases a gathered attack, or does what it planned at the start of the round (its intent).
 func enemy_turn(enemy: Dictionary) -> String:
+	if alive(party).is_empty():
+		return ""
+	if not enemy["charging"].is_empty():
+		return release_charge(enemy)
+	var plan: Dictionary = enemy["intent"] if not enemy["intent"].is_empty() else choose_action(enemy)
+	enemy["intent"] = {}
+	match str(plan.get("kind", "attack")):
+		"defend":
+			return act(enemy, "defend")
+		"skill":
+			return act(enemy, "skill", _valid_target(enemy, plan), str(plan["skill"]))
+	return act(enemy, "attack", _valid_target(enemy, plan))
+
+## What an enemy will do: with "ai" rules, the first rule whose conditions hold (and whose chance roll passes);
+## otherwise a skill it can afford some of the time and an attack the rest. Answers {kind, skill, target}.
+func choose_action(enemy: Dictionary) -> Dictionary:
 	var foes := alive(party)
 	if foes.is_empty():
-		return ""
+		return {}
 	for rule in enemy.get("ai", []):
 		var skill_id := str(rule.get("skill", "attack"))
 		if not _rule_holds(enemy, rule):
 			continue
 		if skill_id == "defend":
-			return act(enemy, "defend")
+			return {"kind": "defend"}
 		if skill_id != "attack":
 			var skill: Dictionary = Data.skills.get(skill_id, {})
 			if skill.is_empty() or int(enemy["mp"]) < int(skill.get("mp", 0)) or not can_use_skills(enemy):
 				continue
 		if rng.randf() > float(rule.get("chance", 1.0)):
 			continue
-		var target := _pick_target(enemy, rule, skill_id)
 		if bool(rule.get("once", false)):
 			enemy["used"][str(rule)] = true
-		if skill_id == "attack":
-			return act(enemy, "attack", target)
-		return act(enemy, "skill", target, skill_id)
-	if not enemy.get("ai", []).is_empty():
-		return act(enemy, "attack", foes[rng.randi() % foes.size()])
-	var target: Dictionary = foes[rng.randi() % foes.size()]
-	var usable: Array = enemy["skills"].filter(func(s): return int(Data.skills.get(s, {}).get("mp", 0)) <= int(enemy["mp"]))
-	if not usable.is_empty() and can_use_skills(enemy) and rng.randf() < 0.35:
-		var skill_id: String = usable[rng.randi() % usable.size()]
-		var scope := scope_of(Data.skills.get(skill_id, {}))
-		return act(enemy, "skill", enemy if scope in ["ally", "self"] else target, skill_id)
-	return act(enemy, "attack", target)
+		var target := _pick_target(enemy, rule, skill_id)
+		return {"kind": "attack", "target": target} if skill_id == "attack" else {"kind": "skill", "skill": skill_id, "target": target}
+	var taunting := _taunting(party)
+	var target: Dictionary = taunting[0] if not taunting.is_empty() else foes[rng.randi() % foes.size()]
+	if enemy.get("ai", []).is_empty():
+		var usable: Array = enemy["skills"].filter(func(s): return int(Data.skills.get(s, {}).get("mp", 0)) <= int(enemy["mp"]))
+		if not usable.is_empty() and can_use_skills(enemy) and rng.randf() < 0.35:
+			var skill_id: String = usable[rng.randi() % usable.size()]
+			var scope := scope_of(Data.skills.get(skill_id, {}))
+			return {"kind": "skill", "skill": skill_id, "target": enemy if scope in ["ally", "self", "all_allies"] else target}
+	return {"kind": "attack", "target": target}
 
 func _rule_holds(enemy: Dictionary, rule: Dictionary) -> bool:
 	if bool(rule.get("once", false)) and enemy["used"].has(str(rule)):
@@ -487,6 +637,9 @@ func _pick_target(enemy: Dictionary, rule: Dictionary, skill_id: String) -> Dict
 		hurt.sort_custom(func(a, b): return float(a["hp"]) / maxi(1, int(a["max_hp"])) < float(b["hp"]) / maxi(1, int(b["max_hp"])))
 		return hurt[0]
 	var foes := alive(party)
+	var taunting := _taunting(party)
+	if not taunting.is_empty():
+		return taunting[0]
 	var when: Dictionary = rule.get("if", {})
 	if when.has("target_without"):
 		foes = foes.filter(func(c): return not c["statuses"].has(str(when["target_without"])))
@@ -511,6 +664,14 @@ func auto_turn(member: Dictionary) -> String:
 	if foes.is_empty():
 		return ""
 	var skills: Array = member["skills"].filter(func(s): return can_use_skills(member) and int(Data.skills.get(s, {}).get("mp", 0)) <= int(member["mp"]))
+	for e in foes:
+		if not e["charging"].is_empty() and not bool(e.get("uninterruptible", false)):
+			for skill_id in skills:
+				if bool(Data.skills[skill_id].get("interrupts", false)):
+					return act(member, "skill", e, skill_id)
+	for e in foes:
+		if not e["charging"].is_empty() and is_same(e["charging"].get("target", {}), member) and int(member["hp"]) * 2 < int(member["max_hp"]):
+			return act(member, "defend")
 	var down := fallen(party)
 	if not down.is_empty():
 		for skill_id in skills:
@@ -605,12 +766,14 @@ func finish() -> Dictionary:
 
 ## One whole round with the autopilot for the party; answers false once the battle is over.
 func auto_round() -> bool:
-	turn += 1
+	start_round()
 	for actor in turn_order():
 		if outcome != "":
 			break
 		if begin_turn(actor):
-			if actor["side"] == "party":
+			if not actor["charging"].is_empty() and actor["side"] == "party":
+				release_charge(actor)
+			elif actor["side"] == "party":
 				auto_turn(actor)
 			else:
 				enemy_turn(actor)

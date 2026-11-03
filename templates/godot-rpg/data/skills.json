@@ -15,7 +15,8 @@
       "id": "def_down",
       "chance": 0.8
     },
-    "about": "Lowers the target's defence."
+    "about": "Lowers the target's defence and wears down its shield.",
+    "breaks": 1
   },
   "cleave": {
     "name": "Cleave",
@@ -174,13 +175,14 @@
   "maul": {
     "name": "Maul",
     "mp": 0,
-    "power": 1.8,
+    "power": 2.2,
     "type": "physical",
     "status": {
       "id": "stun",
       "chance": 0.3
     },
-    "about": "A crushing blow that may stun."
+    "about": "Gathers power for a turn, then a crushing blow that may stun. Interrupt it, or defend.",
+    "charge": 1
   },
   "ember": {
     "name": "Ember",
@@ -189,5 +191,33 @@
     "type": "magic",
     "element": "fire",
     "about": "A small flame."
+  },
+  "provoke": {
+    "name": "Provoke",
+    "mp": 2,
+    "type": "support",
+    "target": "self",
+    "status": {
+      "id": "taunt",
+      "chance": 1.0
+    },
+    "about": "Draws enemies' single attacks to Aria for 3 turns."
+  },
+  "shield_bash": {
+    "name": "Shield Bash",
+    "mp": 3,
+    "power": 0.8,
+    "type": "physical",
+    "interrupts": true,
+    "breaks": 1,
+    "about": "Interrupts an enemy gathering power, and wears down its shield."
+  },
+  "pinning_shot": {
+    "name": "Pinning Shot",
+    "mp": 3,
+    "power": 0.9,
+    "type": "physical",
+    "interrupts": true,
+    "about": "Interrupts an enemy gathering power."
   }
 }

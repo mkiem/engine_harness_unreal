@@ -30,7 +30,8 @@ Next time, open the game's folder and pick **Continue my game**: the agent reads
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| Skills | `skills/<name>/SKILL.md` | How to run each phase with a beginner (14 skills, below) |
+| Skills | `skills/<name>/SKILL.md` | How to run each phase with a beginner (15 skills, below), plus **mechanic-design** for any new feature |
+| Design references | `catalog/loopyhop` | Gameplay Atlas (280 mechanics) and Game Art Style (37 styles), with permission; see [007](007-design-references.md) |
 | Studio tools | `src/mcp/server.ts` (`studio_*`) | Create, check, simulate, paint, compose, export |
 | Template | `templates/godot-rpg/` | A complete, data-driven Godot 4 RPG every game starts from |
 | Design document | `<game>/design/game.json`, `GAME_DESIGN.md` | The project's memory: every decision, and each phase's status |

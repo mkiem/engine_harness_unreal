@@ -4,8 +4,8 @@ extends Node2D
 ##
 ## People and places start story events (data/events.json, run by EventRunner): an NPC's "event", a map's "on_enter"
 ## and its "triggers" (a tile that starts an event when stepped on). NPCs without an event use their "dialogue" and
-## "role": inn (rest for a price), shop (buy and sell "stock"), chest (gives "item"/"gold" once) and battle (a fixed
-## fight). "only_if"/"hide_if" a flag shows or hides an NPC; a warp with "requires" a flag stays shut until it is set.
+## "role": inn (rest for a price), shop (buy and sell "stock"), chest (gives "item"/"gold" once), battle (a fixed
+## fight) and waystone (fast travel between attuned waystones, from the Gameplay Atlas by loopyhop). "only_if"/"hide_if" a flag shows or hides an NPC; a warp with "requires" a flag stays shut until it is set.
 ## This node is also the host EventRunner asks to talk, offer choices, move people, start battles and warp.
 
 const STEP_TIME := 0.14
@@ -266,6 +266,8 @@ func interact() -> void:
 		await run_event(str(npc["event"]))
 	elif npc.get("role", "") == "chest":
 		await _chest(npc)
+	elif npc.get("role", "") == "waystone":
+		await waystone(npc)
 	else:
 		await say(Data.dialogue.get(dialogue_key(npc), ["..."]), "")
 		Game.set_flag(str(npc.get("sets", "")))
@@ -274,6 +276,8 @@ func interact() -> void:
 				await inn(int(npc.get("price", 0)))
 			"shop":
 				await shop(npc.get("stock", []))
+			"waystone":
+				await waystone(npc)
 			"battle":
 				battle({"battle": npc.get("enemies", []), "flag": battle_flag(npc), "after": npc.get("after", ""),
 					"ending": bool(npc.get("ending", false)), "no_run": bool(npc.get("no_run", true))})
@@ -377,6 +381,34 @@ func inn(price: int) -> void:
 	Game.heal_all()
 	Sound.play("heal")
 	await say(["You rest well. Everyone is back to full strength."], "")
+
+## A waystone: touching one attunes it (it must be reached on foot first); then travel to any other attuned waystone.
+func waystone(npc: Dictionary) -> void:
+	var flag := waystone_flag(Game.map_id, npc)
+	var name := str(npc.get("name", Data.maps.get(Game.map_id, {}).get("name", Game.map_id)))
+	if not Game.has(flag):
+		Game.set_flag(flag)
+		Sound.play("magic")
+		await say(["The waystone hums. Attuned: %s." % name], "")
+	var destinations: Array = []
+	for map_id in Data.maps.keys():
+		for other in Data.maps[map_id].get("npcs", []):
+			if other.get("role", "") == "waystone" and Game.has(waystone_flag(map_id, other)) and not (map_id == Game.map_id and other.get("id") == npc.get("id")):
+				destinations.append({"map": map_id, "npc": other})
+	if destinations.is_empty():
+		await say(["Attune other waystones on your travels to journey between them."], "")
+		return
+	var labels: Array = destinations.map(func(d): return str(d["npc"].get("name", Data.maps.get(d["map"], {}).get("name", d["map"]))))
+	var index := await choose("Travel to which waystone?", labels + ["Stay"])
+	if index < 0 or index >= destinations.size():
+		return
+	var target: Dictionary = destinations[index]
+	var arrive: Array = target["npc"].get("arrive", [int(target["npc"]["x"]), int(target["npc"]["y"]) + 1])
+	Game.facing = Vector2i.DOWN
+	await warp_to(str(target["map"]), int(arrive[0]), int(arrive[1]))
+
+static func waystone_flag(map_id: String, npc: Dictionary) -> String:
+	return "waystone_%s_%s" % [map_id, npc.get("id", "")]
 
 ## A shop: buy from its stock (equipment shows what it would change for each member) and sell what you carry.
 func shop(stock: Array) -> void:

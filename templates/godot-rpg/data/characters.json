@@ -22,7 +22,9 @@
       "slash"
     ],
     "learns": {
+      "2": "provoke",
       "3": "guard_break",
+      "4": "shield_bash",
       "5": "cleave",
       "7": "war_cry"
     },
@@ -90,7 +92,8 @@
       "poison_arrow"
     ],
     "learns": {
-      "5": "smoke_arrow"
+      "5": "smoke_arrow",
+      "6": "pinning_shot"
     },
     "equipment": {
       "weapon": "short_bow",

@@ -15,13 +15,14 @@ Space talks and confirms, Esc opens the menu and goes back.
 | To change | Edit | Example |
 | --- | --- | --- |
 | The heroes | `data/characters.json` | Stats and growth, skills they know and learn, starting equipment, weaknesses |
-| The monsters | `data/enemies.json` | Stats, weaknesses and resistances, immunities, AI rules, boss phases, XP, gold, drops, picture |
-| Skills and spells | `data/skills.json` | MP, power, type (physical, magic, heal, support), target, element, statuses caused or cured, revive |
+| The monsters | `data/enemies.json` | Stats, weaknesses and resistances, immunities, break shields, AI rules (shown as intents), boss phases, XP, gold, drops, picture |
+| Skills and spells | `data/skills.json` | MP, power, type (physical, magic, heal, support), target, element, statuses caused or cured, revive, charging and interrupting |
 | Items and equipment | `data/items.json` | Consumables (heal, MP, revive, cure, bombs, buffs), weapons, armour and accessories, key items |
 | Status effects | `data/statuses.json` | Poison, sleep, stun, silence, blind, regen, stat ups and downs: what each does and for how long |
 | Battle rules | `data/rules.json`, `data/formulas.json` | Party size, elements, criticals, weakness multipliers, sell price; damage, healing, XP as maths |
 | Which monsters appear where | `data/encounters.json` | How often, and which groups |
 | The starting party | `data/party.json` | Members, level, gold, items, starting map and spot |
+| Fast travel | `maps/maps.json` | Waystones (`"role": "waystone"`): attune by touching, then travel between them |
 | Story | `data/events.json`, `data/quests.json` | Conversations with choices, quests, recruits, cutscenes, boss fights, the ending |
 | Simple lines | `data/dialogue.json` | Shopkeepers, signs, the ending text |
 | Maps | `maps/*.txt` | One character per tile; `maps/legend.json` says what each character is |

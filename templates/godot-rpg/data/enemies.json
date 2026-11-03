@@ -22,7 +22,8 @@
         "item": "potion",
         "chance": 0.15
       }
-    ]
+    ],
+    "shield": 2
   },
   "bat": {
     "name": "Bat",
@@ -42,7 +43,8 @@
     ],
     "skills": [],
     "xp": 7,
-    "gold": 5
+    "gold": 5,
+    "shield": 2
   },
   "wolf": {
     "name": "Wolf",
@@ -73,7 +75,8 @@
       }
     ],
     "xp": 14,
-    "gold": 9
+    "gold": 9,
+    "shield": 3
   },
   "wisp": {
     "name": "Wisp",
@@ -113,7 +116,8 @@
         "item": "ether",
         "chance": 0.2
       }
-    ]
+    ],
+    "shield": 3
   },
   "sporecap": {
     "name": "Sporecap",
@@ -155,7 +159,8 @@
         "item": "remedy",
         "chance": 0.1
       }
-    ]
+    ],
+    "shield": 3
   },
   "toxic_slime": {
     "name": "Toxic Slime",
@@ -195,16 +200,17 @@
         "item": "antidote",
         "chance": 0.3
       }
-    ]
+    ],
+    "shield": 3
   },
   "alpha_wolf": {
     "name": "Great Wolf",
     "frame": 2,
     "level": 6,
     "stats": {
-      "hp": 340,
+      "hp": 390,
       "mp": 0,
-      "atk": 21,
+      "atk": 23,
       "def": 9,
       "mag": 4,
       "spd": 10
@@ -231,6 +237,13 @@
         }
       },
       {
+        "skill": "maul",
+        "if": {
+          "turn_every": 3
+        },
+        "target": "strongest"
+      },
+      {
         "skill": "bite",
         "chance": 0.4,
         "target": "weakest"
@@ -250,7 +263,7 @@
         "ai": [
           {
             "skill": "maul",
-            "chance": 0.35,
+            "chance": 0.45,
             "target": "strongest"
           },
           {
@@ -272,6 +285,7 @@
       }
     ],
     "xp": 120,
-    "gold": 150
+    "gold": 150,
+    "shield": 7
   }
 }

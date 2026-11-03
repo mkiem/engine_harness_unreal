@@ -29,6 +29,20 @@ describe('the studio skills', () => {
     for (const skill of phaseSkills) expect(read('game-studio')).toContain(skill)
   })
 
+  it('only name Gameplay Atlas cards and art styles that are in the bundled catalogue', () => {
+    const atlas = JSON.parse(readFileSync(resolve(import.meta.dirname, '..', 'catalog', 'loopyhop', 'mechanics.json'), 'utf8'))
+    const styles = JSON.parse(readFileSync(resolve(import.meta.dirname, '..', 'catalog', 'loopyhop', 'art-styles.json'), 'utf8'))
+    const ids = new Set<string>(atlas.mechanics.map((m: { id: string }) => m.id))
+    const styleIds = new Set<string>(styles.styles.map((s: { id: string }) => s.id))
+    const groups = Object.keys(atlas.groups)
+    for (const name of skills) {
+      for (const [, id] of read(name).matchAll(/`([a-z]+-[a-z0-9-]+)`/g)) {
+        if (groups.includes(id!.split('-')[0]!)) expect(ids, `${name} names the atlas card ${id}`).toContain(id)
+      }
+      for (const [, id] of read(name).matchAll(/studio_art_style[^`]*`([a-z0-9-]+)`/g)) expect(styleIds, `${name} names the style ${id}`).toContain(id)
+    }
+  })
+
   it('only mention tools the harness has', async () => {
     const server = createHarnessServer({ projectDir: tempDir('skills-mcp-') })
     const client = new Client({ name: 'test', version: '1' })

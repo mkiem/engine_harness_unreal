@@ -26,6 +26,19 @@ The depth comes from five systems, all data (details in **godot-rpg-template**):
   revives a fallen ally (`ko_ally`).
 - **Enemy AI and boss phases**: rules like "poison someone not yet poisoned 60% of the time", "howl every 4 turns",
   "maul the strongest"; a boss changes at half HP (says something, gets stronger, new tactics).
+- **Reading and answering threats** (from the Gameplay Atlas by loopyhop; read the cards with `studio_mechanic`):
+  - *Intent* (`combat-intent-preview`): each enemy decides at the start of the round and the screen shows it ("Maul ->
+    Aria"); `rules.json` `show_intent`. It then does exactly that, so players can plan.
+  - *Charged attacks and interrupts* (`command-interrupt-action`): a skill with `"charge": 1` gathers power for a turn
+    first ("Maul (gathering)"); a skill with `"interrupts": true` (Shield Bash, Pinning Shot) cancels it, as do stun
+    and sleep. An enemy with `"uninterruptible": true` says so instead.
+  - *Taunt* (`command-threat-redirection`): the Taunt status (`"draw_attacks": true`, Aria's Provoke) pulls every
+    single-target attack and turns planned ones toward the taunter.
+  - *Break* (`combat-posture-break`): an enemy with `"shield": 3` loses a point per weakness hit, critical hit or
+    `"breaks"` skill; at zero it is Broken: it loses its next turn (and this one if it has not acted), its charge is
+    cancelled, and it takes 50% more damage until its shield returns. The screen shows the shield as `[3]`.
+  Together they make a boss fight a puzzle: see the Maul coming, interrupt it or break the wolf first, taunt to protect
+  the mage.
 
 ## The conversation (one question at a time)
 
@@ -38,8 +51,11 @@ The depth comes from five systems, all data (details in **godot-rpg-template**):
    answer: puts you to sleep (bring Cure), poisons (antidotes), absorbs fire (use ice), dodges (magic never misses),
    hits hard but slow, heals its friends (kill it first).
 4. **The boss.** Who, where, why, and its two acts: what it does at first, and what changes at half HP (`phases`).
-   Make it immune to sleep and stun so it can't be cheesed, give it one weakness to discover, and one big telegraphed
-   move (a `once` or `turn_every` rule).
+   Make it immune to sleep and stun so it can't be cheesed, give it one weakness to discover and a break `shield`, and
+   one big telegraphed move: a `charge` skill on a `turn_every` rule, so the party sees it coming and can interrupt,
+   break, taunt or defend.
+5. **A new kind of battle mechanic** (a combo system, positions, summons)? Find it in the Gameplay Atlas
+   (`studio_find_mechanic` with `group: "combat"` or `"command"`) and follow **mechanic-design**.
 
 ## Into the data
 

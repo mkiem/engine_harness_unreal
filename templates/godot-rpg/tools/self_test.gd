@@ -64,7 +64,7 @@ func _check_data() -> void:
 		for npc in info.get("npcs", []):
 			if npc.has("event"):
 				expect(Data.events.has(npc["event"]), "NPC %s on %s runs event %s, which is not in events.json" % [npc.get("id", "?"), map_id, npc["event"]])
-			elif npc.get("role", "") != "chest":
+			elif not npc.get("role", "") in ["chest", "waystone"]:
 				expect(Data.dialogue.has(npc.get("dialogue", "")), "NPC %s on %s says %s, which is not in dialogue.json" % [npc.get("id", "?"), map_id, npc.get("dialogue", "")])
 			expect(not _solid(rows, int(npc["x"]), int(npc["y"])), "NPC %s on %s stands on a solid tile at %d,%d" % [npc.get("id", "?"), map_id, int(npc["x"]), int(npc["y"])])
 		for warp in info.get("warps", []):
@@ -187,7 +187,8 @@ func _check_rules() -> void:
 		return {"name": name, "side": "enemy", "id": "", "hp": 100, "max_hp": 100, "mp": 0, "max_mp": 0,
 			"base": {"atk": 10, "def": 0, "mag": 10, "spd": 5}, "skills": [], "level": 1, "defending": false, "statuses": {},
 			"element": "", "weak": [], "resist": [], "absorb": [], "immune": [], "crit": 0.0, "evade": 0.0, "on_hit": {},
-			"ai": [], "phases": [], "phase": 0, "used": {}}
+			"ai": [], "phases": [], "phase": 0, "used": {}, "intent": {}, "charging": {}, "acted": -1, "shield": 0, "max_shield": 0,
+			"uninterruptible": false}
 	var hero: Dictionary = dummy.call("Hero")
 	hero["side"] = "party"
 	var foe: Dictionary = dummy.call("Foe")
@@ -248,6 +249,68 @@ func _check_rules() -> void:
 	foe["phase"] = 0
 	logic._hurt(foe, 60, {"kind": "damage"})
 	expect(int(foe["phase"]) == 1 and logic.stat(foe, "atk") == 20, "a boss phase did not start below its threshold")
+	foe["phases"] = []
+	_check_atlas_rules(logic, dummy)
+
+## Intent, charged attacks and interrupts, taunts and break shields (from the Gameplay Atlas by loopyhop).
+func _check_atlas_rules(logic: BattleLogic, dummy: Callable) -> void:
+	var a: Dictionary = dummy.call("A")
+	var b: Dictionary = dummy.call("B")
+	for c in [a, b]:
+		c["side"] = "party"
+	var foe: Dictionary = dummy.call("Foe")
+	logic.party = [a, b]
+	logic.enemies = [foe]
+	logic.outcome = ""
+	# Intent: what an enemy plans at the start of the round is what it does.
+	foe["ai"] = [{"skill": "attack", "target": "weakest"}]
+	b["hp"] = 50
+	logic.start_round()
+	expect(is_same(foe["intent"].get("target", {}), b), "an enemy's planned target (intent) is not the one its rule picks")
+	expect(logic.intent_text(foe) == "Attack -> B", "the intent text does not say what the enemy will do")
+	logic.enemy_turn(foe)
+	expect(int(b["hp"]) < 50 and int(a["hp"]) == 100, "an enemy did not do what its intent showed")
+	# Taunt: a taunting fighter draws planned single-target attacks.
+	if Data.statuses.has("taunt"):
+		logic.start_round()
+		logic.inflict(a, "taunt", 1.0)
+		expect(is_same(foe["intent"].get("target", {}), a), "a taunt did not redirect a planned attack")
+		a["statuses"] = {}
+	# Charge and interrupt: a charged skill waits a turn and an interrupting hit cancels it.
+	var charged := ""
+	var breaker := ""
+	for id in Data.skills.keys():
+		if int(Data.skills[id].get("charge", 0)) > 0 and charged == "":
+			charged = id
+		if bool(Data.skills[id].get("interrupts", false)) and breaker == "":
+			breaker = id
+	if charged != "":
+		foe["mp"] = 99
+		var before := int(a["hp"])
+		logic.act(foe, "skill", a, charged)
+		expect(not foe["charging"].is_empty() and int(a["hp"]) == before, "a charged skill did not wait to gather power")
+		if breaker != "":
+			a["mp"] = 99
+			logic.act(a, "skill", foe, breaker)
+			expect(foe["charging"].is_empty(), "an interrupting skill did not stop a gathering attack")
+		foe["charging"] = {}
+	# Break: weakness hits wear a shield down; at zero the enemy is broken and takes more damage.
+	if Data.statuses.has("broken"):
+		var element := str(Data.rules.get("elements", ["fire"])[0]) if not Data.rules.get("elements", []).is_empty() else "fire"
+		foe["weak"] = [element]
+		foe["shield"] = 2
+		foe["max_shield"] = 2
+		foe["hp"] = 100
+		foe["statuses"] = {}
+		var spell := {"type": "magic", "power": 0.1, "element": element, "name": "Test"}
+		logic._apply(a, foe, spell, false, 1.0)
+		expect(int(foe["shield"]) == 1, "a weakness hit did not wear down a break shield")
+		logic._apply(a, foe, spell, false, 1.0)
+		expect(foe["statuses"].has("broken"), "an enemy whose shield reached zero was not broken")
+		expect(not logic.begin_turn(foe), "a broken enemy still acted")
+		for i in 3:
+			logic.end_turn(foe)
+		expect(not foe["statuses"].has("broken") and int(foe["shield"]) == 2, "a broken enemy did not recover its shield")
 
 ## Every event runs to the end without a host, taking each choice in turn, and only names things that exist.
 func _check_events() -> void:

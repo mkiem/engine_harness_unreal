@@ -14,5 +14,6 @@
   "resist_multiplier": 0.5,
   "spread_power": 0.75,
   "sell_rate": 0.5,
-  "about": "Constants the battle system and shops use. Elements are the damage types skills, weapons and enemies can have."
+  "about": "Constants the battle system and shops use. Elements are the damage types skills, weapons and enemies can have.",
+  "show_intent": true
 }

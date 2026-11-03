@@ -13,6 +13,7 @@ var _rows: VBoxContainer
 var _row_labels: Array = []
 var _menu: VBoxContainer
 var _enemy_sprites: Array = []
+var _intent_labels: Array = []
 var _screen: Vector2
 var _layer: CanvasLayer
 
@@ -64,6 +65,14 @@ func _build_ui() -> void:
 			sprite.scale = Vector2.ONE * float(Data.enemies[enemy["id"]]["scale"])
 		add_child(sprite)
 		_enemy_sprites.append(sprite)
+		# What the enemy plans to do this round, and its break shield (Gameplay Atlas: enemy intent, break).
+		var intent := Label.new()
+		intent.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		intent.size = Vector2(110, 10)
+		intent.position = sprite.position + Vector2(-55, 18)
+		intent.add_theme_font_size_override("font_size", maxi(6, ThemeDB.get_default_theme().default_font_size - 1))
+		add_child(intent)
+		_intent_labels.append(intent)
 	_layer = CanvasLayer.new()
 	add_child(_layer)
 	_log = Label.new()
@@ -102,6 +111,16 @@ func _refresh() -> void:
 		var label: Label = _row_labels[i]
 		label.text = "%s  %d/%d  MP %d%s" % [c["name"], int(c["hp"]), int(c["max_hp"]), int(c["mp"]), status_tags(c)]
 		label.modulate = Color(1, 0.4, 0.4) if int(c["hp"]) <= 0 else (Color(1, 0.85, 0.4) if int(c["hp"]) * 4 < int(c["max_hp"]) else Color.WHITE)
+	var show_intent := bool(Game.rule("show_intent", true))
+	for i in _intent_labels.size():
+		var e: Dictionary = logic.enemies[i]
+		var parts: Array = []
+		if int(e.get("max_shield", 0)) > 0 and int(e["hp"]) > 0:
+			parts.append("BREAK" if e["statuses"].has("broken") else "[%d]" % int(e["shield"]))
+		if show_intent:
+			parts.append(logic.intent_text(e))
+		_intent_labels[i].text = " ".join(parts.filter(func(p): return p != ""))
+		_intent_labels[i].modulate = Color(1, 0.75, 0.3) if not e["charging"].is_empty() else Color.WHITE
 	for i in _enemy_sprites.size():
 		var sprite: Sprite2D = _enemy_sprites[i]
 		if int(logic.enemies[i]["hp"]) <= 0 and sprite.visible and sprite.modulate.a > 0.99:
@@ -138,6 +157,19 @@ func _show(info: Dictionary) -> void:
 			color = Color(str(status.get("color", "#ffffff")))
 		"phase":
 			_flash(target, Color(1, 0.2, 0.2), 0.4)
+		"charge":
+			text = "Gathering!"
+			color = Color(1, 0.75, 0.3)
+		"interrupt":
+			text = "Interrupted!"
+			color = Color(0.5, 0.9, 1)
+		"break":
+			text = "BREAK!"
+			color = Color(1, 0.4, 1)
+			_flash(target, Color(1, 0.4, 1), 0.4)
+		"redirect":
+			text = "!"
+			color = Color(1, 0.6, 0.6)
 	if text == "":
 		return
 	var label := Label.new()
@@ -174,13 +206,16 @@ func _pause() -> void:
 
 func _run() -> void:
 	while logic.outcome == "":
-		logic.turn += 1
+		logic.start_round()
+		_refresh()
 		for actor in logic.turn_order():
 			if logic.outcome != "":
 				break
 			var acts := logic.begin_turn(actor)
 			if acts:
-				if actor["side"] == "enemy":
+				if not actor["charging"].is_empty() and actor["side"] == "party":
+					logic.release_charge(actor)
+				elif actor["side"] == "enemy":
 					logic.enemy_turn(actor)
 					Sound.play("hit")
 				elif autoplay:
