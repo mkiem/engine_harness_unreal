@@ -21,7 +21,7 @@ Twelve phases, in order. `studio_next` always says which one is current, what is
 | 5. World and maps | world-building | Regions, maps, NPCs, connections |
 | 6. Battle system | battle-design | Enemies, encounters, how fights feel |
 | 7. Items and economy | items-and-economy | Items, prices, shops, rewards |
-| 8. Story and dialogue | story-and-dialogue | Premise, beats, ending, every line people say |
+| 8. Story and dialogue | story-and-dialogue (+ events-and-cutscenes) | Premise, beats, quests, recruits, cutscenes, the ending |
 | 9. UI and menus | ui-and-menus | Title screen, menus, battle screen in the game's style |
 | 10. Music and sound | audio-and-music | A track per place, a sound per action |
 | 11. Playtest and balance | playtest-and-balance | Every fight as hard as intended; the first playable is fun |
@@ -61,7 +61,8 @@ The developer can jump around ("let's do the music now"); go where they want, th
 
 - Record every decision with `studio_design_update`, including a short `decision` and `why`. Mark a phase done only
   when the developer agrees (`{"phases": {"art": {"status": "done"}}}`).
-- After changing data or scripts: `studio_check`. After changing battle numbers: `studio_simulate_battle`.
+- After changing data or scripts: `studio_check`. After changing battle numbers: `studio_simulate_battle`. After
+  writing or changing a story event: `studio_test_event` on each branch.
 - Content is data (`data/*.json`, `maps/`); prefer changing data over code. Read **godot-rpg-template** before changing
   code, and keep the game running after every change.
 - The developer needs no other software: `studio_paint` draws pixel art from text grids (check it with

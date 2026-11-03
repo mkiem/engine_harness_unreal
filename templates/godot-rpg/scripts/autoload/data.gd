@@ -13,6 +13,10 @@ var party: Dictionary = {}
 var maps: Dictionary = {}
 var legend: Dictionary = {}
 var game: Dictionary = {}
+var rules: Dictionary = {}
+var statuses: Dictionary = {}
+var events: Dictionary = {}
+var quests: Dictionary = {}
 
 func _ready() -> void:
 	reload()
@@ -29,6 +33,10 @@ func reload() -> void:
 	game = read_json("res://data/game.json")
 	maps = read_json("res://maps/maps.json")
 	legend = read_json("res://maps/legend.json")
+	rules = read_json("res://data/rules.json", true)
+	statuses = read_json("res://data/statuses.json", true)
+	events = read_json("res://data/events.json", true)
+	quests = read_json("res://data/quests.json", true)
 	apply_ui()
 
 ## The look of every box, button and text, from "ui" in data/game.json: panel, border, text and accent colours, a
@@ -77,9 +85,10 @@ func apply_ui() -> void:
 		else:
 			push_error("Missing font: %s" % font_path)
 
-func read_json(path: String) -> Dictionary:
+func read_json(path: String, optional := false) -> Dictionary:
 	if not FileAccess.file_exists(path):
-		push_error("Missing data file: %s" % path)
+		if not optional:
+			push_error("Missing data file: %s" % path)
 		return {}
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if typeof(parsed) != TYPE_DICTIONARY:

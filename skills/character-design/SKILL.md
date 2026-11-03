@@ -32,7 +32,11 @@ NPCs go in the same list with `"playable": false`.
   low atk and def, high mag and mp; a healer moderate mag and the `heal` skill.
 - **Skills** in `data/skills.json` (`power` multiplies the formula; `mp` cost; `type` physical, magic or heal), then list
   them in `skills` (start) and `learns` (`{"3": "frost"}` = learned at level 3).
-- **Party** in `data/party.json`: `members` order is the battle order on screen.
+- **Equipment** each starts with: `equipment` `{"weapon": ..., "armor": ...}`; give each role its own weapon type
+  (`users` on the item) so shops offer each hero something.
+- **Party** in `data/party.json`: `members` order is the battle order on screen. Characters who **join later** are not
+  in `members`: an event `{"join": "ranger", "level": 4}` adds them (see **events-and-cutscenes**). Up to `max_party`
+  (4) fight; the rest wait in reserve (swapped in the pause menu's Party page) and earn half XP.
 - **Sprite:** the party leader walks on the map (`art/hero.png`, see **art-direction**). Paint each hero's look with
   `studio_paint`; NPC frames go in `art/npcs.png`. Battle shows heroes by name and HP, enemies by sprite.
 - **Ids** are lower-case words (`aria`), the same in design and data.

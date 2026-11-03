@@ -1,8 +1,17 @@
 {
-  "members": ["hero", "mage"],
+  "members": [
+    "hero",
+    "mage"
+  ],
   "level": 1,
-  "gold": 30,
-  "items": { "potion": 3 },
+  "gold": 40,
+  "items": {
+    "potion": 3,
+    "antidote": 1
+  },
   "map": "town",
-  "position": [4, 6]
+  "position": [
+    4,
+    6
+  ]
 }

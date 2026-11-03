@@ -1,31 +1,20 @@
 {
-  "elder": [
-    "Welcome to Fernvale, traveler.",
-    "A great wolf leads the monsters in the meadow south of town.",
-    "Rest at the inn, then drive it off!"
-  ],
   "innkeeper": [
-    "Welcome to the Sleepy Fern!",
-    "A night's rest is on the house."
+    "Welcome to the Sleepy Fern!"
   ],
   "merchant": [
-    "Potions and ethers! Fresh today!"
+    "Potions, ethers, feathers! Everything an adventurer needs."
   ],
-  "kid": [
-    "My dad says the forest past the meadow is dangerous.",
-    "I'm not scared though!"
+  "blacksmith": [
+    "Swords, bows, armour. Fresh from the forge."
   ],
-  "elder_after": [
-    "You drove off the great wolf!",
-    "Fernvale is safe, thanks to you."
-  ],
-  "alpha": [
-    "A huge wolf blocks the way, growling.",
-    "It will not let you pass!"
+  "forest_locked": [
+    "A wooden gate blocks the path east.",
+    "A sign reads: 'Whisperwood. Closed by order of the Elder.'"
   ],
   "ending": [
-    "The great wolf flees into the forest.",
-    "Back in Fernvale, the villagers cheer.",
+    "The Great Wolf limps away into the deep woods.",
+    "Back in Fernvale, the villagers cheer your names.",
     "Peace returns to the meadow... for now."
   ]
 }

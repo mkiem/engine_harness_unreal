@@ -10,8 +10,9 @@ never seen the game can finish it.
 
 ## 1. Simulate every fight
 
-`studio_simulate_battle` without `enemies` fights every encounter group and every boss many times with the game's real
-rules; with `enemies` and `level`, one group. It reports win rate, rounds and HP left, and a verdict:
+`studio_simulate_battle` without `enemies` fights every encounter group and every story battle many times with the
+game's real rules (equipment, elements, statuses, enemy AI, boss phases); with `enemies` and `level`, one group; with
+`party`, the party the player will have then (members who joined later included, in their starting equipment). It reports win rate, rounds and HP left, and a verdict:
 
 | Verdict | Meaning | Right for |
 | --- | --- | --- |
@@ -35,6 +36,9 @@ on encounter tiles). Simulate each area's groups at that level, and bosses at th
 | Levels come too slowly | Raise enemy `xp`, or lower `xp_to_next` |
 | Boss too hard at the expected level | Lower its `hp` first (keeps it exciting), then `atk` |
 | Players can't afford healing | Raise enemy `gold` or lower item `price` |
+| A status is too strong (whole party asleep) | Lower its `chance` or `turns`, or make the AI use it `once` |
+| A boss is a pushover once you know its weakness | Raise its `resist`, or weaken its weakness with a phase that changes `ai` |
+| The simulator wins but people struggle | The autopilot is a good player; leave a margin (fair, not easy, for regular fights) |
 
 After each change, simulate the affected groups again; results are kept in `.studio/balance.json`. Record the important
 decisions with `studio_design_update` ("Wolves hit 10% softer: deadly at level 1").
@@ -50,7 +54,8 @@ Ask afterwards, one at a time:
 4. What was the best moment? What would make it better?
 
 Write the answers in the design's `phases.balance.notes` and fix the top issues together. If the game crashes or
-behaves oddly, reproduce it with `studio_check` and `godot_run` output, and fix it before anything else.
+behaves oddly, reproduce it with `studio_check` and `godot_run` output, and fix it before anything else. For story
+bugs ("the gate never opened"), replay the event with `studio_test_event` in the same situation.
 
 ## Done when
 

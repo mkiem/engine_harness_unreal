@@ -1,0 +1,17 @@
+{
+  "wolf": {
+    "name": "The Great Wolf",
+    "stages": {
+      "start": "The elder asked you to drive off the Great Wolf in Whisperwood, east of the meadow.",
+      "done": "You drove off the Great Wolf. Fernvale is safe."
+    }
+  },
+  "charm": {
+    "name": "Tomo's Lost Charm",
+    "stages": {
+      "start": "Tomo lost his wooden charm somewhere in the South Meadow.",
+      "found": "You found Tomo's charm. Bring it back to him.",
+      "done": "Tomo got his charm back and gave you a Lucky Ring."
+    }
+  }
+}

@@ -1,4 +1,243 @@
 {
-  "potion": { "name": "Potion", "effect": "heal", "amount": 25, "price": 8, "about": "Restores 25 HP." },
-  "ether": { "name": "Ether", "effect": "mp", "amount": 10, "price": 15, "about": "Restores 10 MP." }
+  "potion": {
+    "name": "Potion",
+    "effect": "heal",
+    "amount": 30,
+    "price": 8,
+    "about": "Restores 30 HP."
+  },
+  "hi_potion": {
+    "name": "Hi-Potion",
+    "effect": "heal",
+    "amount": 90,
+    "price": 30,
+    "about": "Restores 90 HP."
+  },
+  "ether": {
+    "name": "Ether",
+    "effect": "mp",
+    "amount": 12,
+    "price": 15,
+    "about": "Restores 12 MP."
+  },
+  "antidote": {
+    "name": "Antidote",
+    "effect": "cure",
+    "cures": [
+      "poison"
+    ],
+    "price": 5,
+    "about": "Cures poison."
+  },
+  "remedy": {
+    "name": "Remedy",
+    "effect": "cure",
+    "cures": [
+      "poison",
+      "sleep",
+      "stun",
+      "silence",
+      "blind",
+      "atk_down",
+      "def_down"
+    ],
+    "price": 25,
+    "about": "Cures every ailment."
+  },
+  "phoenix_feather": {
+    "name": "Phoenix Feather",
+    "effect": "revive",
+    "revive_percent": 0.3,
+    "price": 40,
+    "about": "Revives a fallen ally with 30% HP."
+  },
+  "fire_bomb": {
+    "name": "Fire Bomb",
+    "effect": "damage",
+    "amount": 35,
+    "element": "fire",
+    "target": "all_enemies",
+    "price": 20,
+    "about": "Burns every enemy for 35 fire damage."
+  },
+  "bronze_sword": {
+    "name": "Bronze Sword",
+    "slot": "weapon",
+    "stats": {
+      "atk": 3
+    },
+    "users": [
+      "hero"
+    ],
+    "price": 30,
+    "about": "A plain blade. ATK +3."
+  },
+  "iron_sword": {
+    "name": "Iron Sword",
+    "slot": "weapon",
+    "stats": {
+      "atk": 7
+    },
+    "users": [
+      "hero"
+    ],
+    "price": 120,
+    "about": "Heavy and reliable. ATK +7."
+  },
+  "flame_sword": {
+    "name": "Flame Sword",
+    "slot": "weapon",
+    "stats": {
+      "atk": 9
+    },
+    "element": "fire",
+    "users": [
+      "hero"
+    ],
+    "price": 400,
+    "about": "Burns what it strikes: fire element. ATK +9."
+  },
+  "oak_staff": {
+    "name": "Oak Staff",
+    "slot": "weapon",
+    "stats": {
+      "atk": 1,
+      "mag": 3
+    },
+    "users": [
+      "mage"
+    ],
+    "price": 30,
+    "about": "MAG +3."
+  },
+  "crystal_rod": {
+    "name": "Crystal Rod",
+    "slot": "weapon",
+    "stats": {
+      "atk": 2,
+      "mag": 7,
+      "mp": 6
+    },
+    "users": [
+      "mage"
+    ],
+    "price": 140,
+    "about": "MAG +7, MP +6."
+  },
+  "short_bow": {
+    "name": "Short Bow",
+    "slot": "weapon",
+    "stats": {
+      "atk": 4
+    },
+    "users": [
+      "ranger"
+    ],
+    "price": 40,
+    "about": "ATK +4."
+  },
+  "hunting_bow": {
+    "name": "Hunting Bow",
+    "slot": "weapon",
+    "stats": {
+      "atk": 8,
+      "spd": 1
+    },
+    "users": [
+      "ranger"
+    ],
+    "crit": 0.05,
+    "price": 150,
+    "about": "ATK +8, better criticals."
+  },
+  "leather_armor": {
+    "name": "Leather Armor",
+    "slot": "armor",
+    "stats": {
+      "def": 3
+    },
+    "users": [
+      "hero",
+      "ranger"
+    ],
+    "price": 35,
+    "about": "DEF +3."
+  },
+  "chainmail": {
+    "name": "Chainmail",
+    "slot": "armor",
+    "stats": {
+      "def": 7,
+      "spd": -1
+    },
+    "users": [
+      "hero"
+    ],
+    "price": 150,
+    "about": "DEF +7, SPD -1."
+  },
+  "cloth_robe": {
+    "name": "Cloth Robe",
+    "slot": "armor",
+    "stats": {
+      "def": 2,
+      "mag": 1
+    },
+    "users": [
+      "mage"
+    ],
+    "price": 25,
+    "about": "DEF +2, MAG +1."
+  },
+  "silk_robe": {
+    "name": "Silk Robe",
+    "slot": "armor",
+    "stats": {
+      "def": 4,
+      "mag": 3,
+      "mp": 5
+    },
+    "users": [
+      "mage"
+    ],
+    "price": 130,
+    "about": "DEF +4, MAG +3, MP +5."
+  },
+  "lucky_ring": {
+    "name": "Lucky Ring",
+    "slot": "accessory",
+    "stats": {
+      "spd": 1
+    },
+    "crit": 0.1,
+    "price": 120,
+    "about": "Criticals land far more often."
+  },
+  "toxin_charm": {
+    "name": "Toxin Charm",
+    "slot": "accessory",
+    "stats": {},
+    "immune": [
+      "poison"
+    ],
+    "price": 80,
+    "about": "Protects from poison."
+  },
+  "ember_amulet": {
+    "name": "Ember Amulet",
+    "slot": "accessory",
+    "stats": {
+      "def": 1
+    },
+    "resist": [
+      "fire"
+    ],
+    "price": 90,
+    "about": "Halves fire damage."
+  },
+  "kid_charm": {
+    "name": "Tomo's Charm",
+    "kind": "key",
+    "about": "A carved wooden charm. Tomo in Fernvale lost it."
+  }
 }

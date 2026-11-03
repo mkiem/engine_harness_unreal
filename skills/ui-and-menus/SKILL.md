@@ -9,8 +9,10 @@ Goal: the game's screens feel like part of *this* game, and a new player underst
 
 ## What's there
 
-All screens are built in code: title (`scripts/ui/main_menu.gd`), text box and choices (`dialogue_box.gd`), pause menu
-with party, items and save (`pause_menu.gd`), battle screen (`scripts/battle/battle_scene.gd`), ending (`ending.gd`).
+All screens are built in code: title with three save slots (`scripts/ui/main_menu.gd`), text box with speaker names and
+choices that can show details (`dialogue_box.gd`), the pause menu: Items, Equip (with stat comparisons and Optimize),
+Skills (healing outside battle), Status, Party (reserve), Quests, Save (`pause_menu.gd`), the battle screen with damage
+numbers and status tags (`scripts/battle/battle_scene.gd`), and the ending (`ending.gd`).
 Their look comes from `data/game.json`:
 
 ```json

@@ -97,9 +97,10 @@ export function heroPng(cloth: RGB = P.blue, hair: RGB = P.orange): Buffer {
   return c.png()
 }
 
-/** Map figures, one per 16x16 frame: four townspeople facing down, a closed and an open chest, and the great wolf. */
+/** Map figures, one per 16x16 frame: four townspeople facing down, a closed and an open chest, the great wolf, the
+ * blacksmith and the ranger. */
 export function npcsPng(): Buffer {
-  const c = new Canvas(112, 16)
+  const c = new Canvas(144, 16)
   const looks: [RGB, RGB][] = [[P.plum, P.light], [P.moss, P.brown], [P.red, P.ink], [P.yellow, P.orange]]
   looks.forEach(([cloth, hair], i) => person(c, i * 16, 0, 'down', 0, cloth, hair))
   // chest, closed (frame 4) and open (frame 5)
@@ -116,12 +117,17 @@ export function npcsPng(): Buffer {
   c.set(wx + 12, 5, P.red); c.rect(wx + 14, 7, 2, 1, P.light)
   for (const x of [3, 6, 9, 11]) c.rect(wx + x, 13, 2, 3, P.ink)
   c.rect(wx, 6, 2, 2, P.stone)
+  // blacksmith (frame 7): leather apron, dark hair; ranger (frame 8): green hood
+  person(c, 112, 0, 'down', 0, P.brown, P.ink)
+  c.rect(112 + 5, 8, 6, 5, P.bark)
+  person(c, 128, 0, 'down', 0, P.leaf, P.moss)
+  c.rect(128 + 4, 1, 8, 2, P.moss)
   return c.png()
 }
 
-/** Four 32x32 enemies, one per frame: slime, bat, wolf, wisp. */
+/** Six 32x32 enemies, one per frame: slime, bat, wolf, wisp, sporecap, toxic slime. */
 export function enemiesPng(): Buffer {
-  const c = new Canvas(128, 32)
+  const c = new Canvas(192, 32)
   // slime
   c.disc(16, 22, 9, P.moss); c.rect(7, 22, 19, 8, P.moss); c.disc(13, 18, 2, P.white); c.disc(20, 18, 2, P.white); c.set(13, 18, P.ink); c.set(20, 18, P.ink); c.disc(11, 15, 1, P.grass)
   // bat
@@ -139,6 +145,16 @@ export function enemiesPng(): Buffer {
   const px = 96
   c.disc(px + 16, 15, 8, P.sky); c.disc(px + 16, 15, 5, P.white); c.rect(px + 12, 22, 2, 5, P.sky); c.rect(px + 18, 22, 2, 6, P.sky)
   c.set(px + 14, 14, P.ink); c.set(px + 18, 14, P.ink)
+  // sporecap: a mushroom with a spotted cap
+  const mx = 128
+  c.rect(mx + 12, 17, 8, 11, P.sand); c.rect(mx + 11, 27, 10, 2, P.brown)
+  c.disc(mx + 16, 14, 10, P.red); c.rect(mx + 6, 14, 21, 4, P.red); c.rect(mx + 6, 17, 21, 1, P.plum)
+  for (const [x, y] of [[10, 10], [18, 8], [22, 13], [13, 15]]) c.disc(mx + x!, y!, 1, P.white)
+  c.set(mx + 14, 21, P.ink); c.set(mx + 18, 21, P.ink)
+  // toxic slime: a purple slime with bubbles
+  const tx = 160
+  c.disc(tx + 16, 22, 9, P.plum); c.rect(tx + 7, 22, 19, 8, P.plum); c.disc(tx + 13, 18, 2, P.white); c.disc(tx + 20, 18, 2, P.white)
+  c.set(tx + 13, 18, P.ink); c.set(tx + 20, 18, P.ink); c.disc(tx + 22, 12, 1, P.pink); c.disc(tx + 25, 8, 1, P.pink); c.set(tx + 10, 15, P.pink)
   return c.png()
 }
 

@@ -733,14 +733,15 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
 
   server.registerTool('studio_simulate_battle', {
     title: 'Simulate battles for balance',
-    description: 'Fights battles many times with the game\'s real rules and reports win rate, length and HP left, with a verdict (easy, fair, hard, deadly). Without enemies, simulates every encounter group. Results are kept for the balance phase.',
+    description: 'Fights battles many times with the game\'s real rules (equipment, elements, statuses, enemy AI and boss phases included) and reports win rate, length and HP left, with a verdict (easy, fair, hard, deadly). Without enemies, simulates every encounter group and every story battle. Results are kept for the balance phase.',
     inputSchema: {
       enemies: z.array(z.string()).optional().describe('one group, such as ["wolf", "slime"]'),
       level: z.number().int().min(1).max(99).default(1).describe('the party level to test at'),
+      party: z.array(z.string()).optional().describe('character ids in the party, with their starting equipment; default the starting party (add members who join later, such as ["hero", "mage", "ranger"])'),
       runs: z.number().int().min(10).max(2000).default(300),
       project: z.string().optional(),
     },
-  }, async ({ enemies, level, runs, project }) => {
+  }, async ({ enemies, level, party, runs, project }) => {
     try {
       const dir = studioProject(project)
       if (!godotBinary()) return failure('Godot is needed to simulate battles: run studio_install_godot first')
@@ -750,16 +751,59 @@ export function createHarnessServer(options: HarnessServerOptions): McpServer {
       const saved = { results: balanceResults(dir) as Record<string, unknown> }
       const lines: string[] = []
       for (const group of groups) {
-        const run = await godot.exec(dir, ['res://tools/sim_battle.tscn', '--', '--enemies', group.join(','), '--runs', String(runs), '--level', String(level)])
+        const run = await godot.exec(dir, ['res://tools/sim_battle.tscn', '--', '--enemies', group.join(','), '--runs', String(runs), '--level', String(level), ...(party?.length ? ['--party', party.join(',')] : [])])
         const line = `${run.stdout}`.split(/\r?\n/).find(l => l.startsWith('SIM_RESULT '))
         if (!line) { lines.push(`${group.join(' + ')}: the simulation did not finish${run.errors.length ? `\n${formatErrors(run.errors)}` : ''}`); continue }
-        const r = JSON.parse(line.slice(11)) as { win_rate: number; avg_turns: number; avg_hp_left: number; level: number; enemies: string[] }
-        saved.results[`${group.join('+')}@${level}`] = { ...r, at: new Date().toISOString() }
-        lines.push(`${group.join(' + ')} at level ${level}: ${verdict(r)}. Wins ${Math.round(r.win_rate * 100)}%, ${r.avg_turns.toFixed(1)} turns, ${Math.round(r.avg_hp_left * 100)}% HP left`)
+        const r = JSON.parse(line.slice(11)) as { win_rate: number; avg_turns: number; avg_hp_left: number; level: number; enemies: string[]; party: string[] }
+        saved.results[`${group.join('+')}@${level}${party?.length ? `:${party.join('+')}` : ''}`] = { ...r, at: new Date().toISOString() }
+        lines.push(`${group.join(' + ')} at level ${level} (${r.party.join(', ')}): ${verdict(r)}. Wins ${Math.round(r.win_rate * 100)}%, ${r.avg_turns.toFixed(1)} turns, ${Math.round(r.avg_hp_left * 100)}% HP left`)
       }
       mkdirSync(dirname(store), { recursive: true })
       writeFileSync(store, `${JSON.stringify(saved, null, 2)}\n`)
       return text(`${lines.join('\n')}\n\nAs a guide: ordinary battles "easy" to "fair", a region's toughest groups "fair" to "hard", bosses "hard". Change numbers in data/enemies.json, data/skills.json or data/formulas.json and simulate again.`)
+    } catch (error) {
+      return studioFailure(error)
+    }
+  })
+
+  server.registerTool('studio_test_event', {
+    title: 'Test a story event',
+    description: 'Plays a story event from data/events.json without the screen, as the game would, and reports every line said, each choice taken, what changed (flags, items, gold, quests, the party) and what stopped it (a battle, the ending). Set up the situation first with flags, items, quests and members. Use it after writing or changing an event, and try each branch.',
+    inputSchema: {
+      event: z.string(),
+      choices: z.array(z.number().int().min(0)).optional().describe('the option to pick at each choice, in order (default: the first)'),
+      flags: z.array(z.string()).optional(), items: z.record(z.string(), z.number().int()).optional(),
+      quests: z.record(z.string(), z.string()).optional().describe('quest id to stage'), members: z.array(z.string()).optional().describe('characters who have joined'),
+      gold: z.number().int().optional(), map: z.string().optional().describe('the map the event happens on (for hide/show)'),
+      project: z.string().optional(),
+    },
+    annotations: { readOnlyHint: true },
+  }, async ({ event, choices, flags, items, quests, members, gold, map, project }) => {
+    try {
+      const dir = studioProject(project)
+      if (!godotBinary()) return failure('Godot is needed to play events: run studio_install_godot first')
+      await godot.importProject(dir)
+      const args = ['res://tools/event_test.tscn', '--', '--event', event]
+      if (choices?.length) args.push('--choices', choices.join(','))
+      if (flags?.length) args.push('--flags', flags.join(','))
+      if (items && Object.keys(items).length) args.push('--items', Object.entries(items).map(([id, n]) => `${id}:${n}`).join(','))
+      if (quests && Object.keys(quests).length) args.push('--quests', Object.entries(quests).map(([id, stage]) => `${id}=${stage}`).join(','))
+      if (members?.length) args.push('--members', members.join(','))
+      if (gold !== undefined) args.push('--gold', String(gold))
+      if (map) args.push('--map', map)
+      const run = await godot.exec(dir, args, 60_000)
+      const line = run.stdout.split(/\r?\n/).find(l => l.startsWith('EVENT_RESULT '))
+      if (!line) return failure(`the event did not finish${run.errors.length ? `:\n${formatErrors(run.errors)}` : ''}`)
+      const r = JSON.parse(line.slice(13))
+      if (r.error) return failure(r.error)
+      const out = [
+        ...r.said.map((l: string) => `  ${l}`),
+        ...r.choices.map((c: { question: string; options: string[]; picked: number }) => `Choice "${c.question}": picked "${c.options[c.picked] ?? c.picked}" of ${c.options.map((o: string) => `"${o}"`).join(', ')}`),
+        `Changes: ${Object.keys(r.changes).length ? JSON.stringify(r.changes) : 'none'}`,
+        r.stopped_by?.battle ? `Stopped by a battle against ${r.stopped_by.battle.join(', ')}${r.stopped_by.ending ? ' that ends the game' : ''}` : r.stopped_by?.ending ? 'Stopped by the ending' : 'Ran to the end',
+        ...(r.problems.length ? ['Problems:', ...r.problems.map((p: string) => `  - ${p}`)] : []),
+      ]
+      return text(`Event ${event}:\n${out.join('\n')}`, r)
     } catch (error) {
       return studioFailure(error)
     }

@@ -47,15 +47,101 @@ describe('a new game project', () => {
   it('reports broken references between data files in plain words', () => {
     const project = newGame()
     const maps = JSON.parse(readFileSync(join(project, 'maps', 'maps.json'), 'utf8'))
-    maps.town.npcs[0].dialogue = 'mayor'
+    maps.town.npcs[0].event = 'mayor'
     maps.town.warps[0].to = 'castle'
     writeFileSync(join(project, 'maps', 'maps.json'), JSON.stringify(maps))
     writeFileSync(join(project, 'maps', 'town.txt'), readFileSync(join(project, 'maps', 'town.txt'), 'utf8').replace('~', '%'))
     expect(checkProjectData(project)).toEqual([
       "map town uses '%', which is not in legend.json",
-      'NPC elder on town says mayor, which is not in dialogue.json',
+      'NPC elder on town runs event mayor, which is not in events.json',
       'a warp on town leads to map castle, which is not in maps.json',
     ])
+  })
+})
+
+describe('the deeper RPG data checks', () => {
+  const edit = (project: string, file: string, change: (data: any) => void) => {
+    const path = join(project, file)
+    const data = JSON.parse(readFileSync(path, 'utf8'))
+    change(data)
+    writeFileSync(path, JSON.stringify(data))
+  }
+
+  it('the sample game passes them', () => {
+    expect(checkProjectData(newGame())).toEqual([])
+  })
+
+  it('catch bad equipment, skills, statuses, elements and enemy AI', () => {
+    const project = newGame()
+    edit(project, 'data/items.json', items => {
+      items.bronze_sword.users = ['ghost']
+      items.iron_sword.slot = 'boots'
+      items.potion.effect = 'teleport'
+      items.flame_sword.element = 'wind'
+    })
+    edit(project, 'data/skills.json', skills => {
+      skills.fire.type = 'spell'
+      skills.lullaby.status.id = 'dizzy'
+      skills.thunder.target = 'everyone'
+    })
+    edit(project, 'data/enemies.json', enemies => {
+      enemies.wolf.ai = [{ skill: 'howl_loudly', if: { moon: true } }]
+      enemies.alpha_wolf.phases[0].below = 50
+    })
+    const problems = checkProjectData(project)
+    for (const expected of [
+      'item bronze_sword can be used by ghost, who is not in characters.json',
+      'item iron_sword has slot boots; slots are weapon, armor, accessory',
+      'item potion has effect teleport; effects are heal, mp, revive, cure, damage, buff (equipment has a "slot", key items "kind": "key")',
+      'item flame_sword uses element wind; the elements in rules.json are fire, ice, thunder, holy',
+      'skill fire has type spell; skill types are physical, magic, heal, support',
+      'skill lullaby names status dizzy, which is not in statuses.json',
+      'skill thunder targets everyone; targets are enemy, all_enemies, ally, all_allies, self, ko_ally',
+      "enemy wolf's AI uses howl_loudly, which is not in skills.json",
+      "enemy wolf's AI has condition moon; conditions are hp_below, hp_above, turn_every, turn_at_least, ally_hurt, ally_down, target_without, self_without",
+      `enemy wolf's AI has no rule that always applies; end it with {"skill": "attack"} so it never stands still`,
+      'enemy alpha_wolf has a phase with "below" 50; use a fraction of HP between 0 and 1, such as 0.5',
+    ]) expect(problems).toContain(expected)
+  })
+
+  it('accept new kinds of skills, items and event commands a game declares', () => {
+    const project = newGame()
+    edit(project, 'data/skills.json', skills => { skills.fire.type = 'summon' })
+    edit(project, 'data/events.json', events => { events.elder = [{ shake: 0.5 }] })
+    expect(checkProjectData(project).join('\n')).toMatch(/skill fire has type summon[\s\S]*command \(shake\) that is not known/)
+    edit(project, 'data/rules.json', rules => { rules.extra_skill_types = ['summon'] })
+    const runner = join(project, 'scripts', 'world', 'event_runner.gd')
+    writeFileSync(runner, readFileSync(runner, 'utf8').replace('const COMMANDS := ["say",', 'const COMMANDS := ["shake", "say",'))
+    const problems = checkProjectData(project).join('\n')
+    expect(problems).not.toContain('summon')
+    expect(problems).not.toContain('shake')
+  })
+
+  it('catch broken events, quests and flags nothing sets', () => {
+    const project = newGame()
+    edit(project, 'data/events.json', events => {
+      events.elder = [
+        { say: ['x'.repeat(100)] },
+        { dance: true },
+        { give: 'golden_goose' },
+        { quest: 'wolf', stage: 'halfway' },
+        { join: 'dragon' },
+        { if: { flag: 'never_set', weather: 'rain' }, then: [{ battle: ['kraken'] }] },
+      ]
+    })
+    const problems = checkProjectData(project)
+    for (const expected of [
+      `event elder has a line longer than 90 characters, which will not fit the text box: "${'x'.repeat(40)}..."`,
+      'event elder has a command (dance) that is not known; commands are say, choice, if, set, unset, give, take, gold, join, leave, heal, quest, move, face, hide, show, wait, music, sound, shop, inn, battle, warp, ending, event, end',
+      'event elder gives golden_goose, which is not in items.json',
+      'event elder sets quest wolf to stage halfway, which it does not have',
+      'event elder names dragon, who is not in characters.json',
+      'event elder checks weather; conditions are flag, not_flag, item, count, gold, member, quest, stage, not_stage',
+      'event elder fights kraken, which is not in enemies.json',
+      `event elder waits for the flag never_set, but nothing sets it (an event's "set", an NPC's "sets", a battle's "flag" or a chest's "flag")`,
+      // the elder no longer sets accepted_quest, so the gate to the forest can never open
+      `a warp on meadow waits for the flag accepted_quest, but nothing sets it (an event's "set", an NPC's "sets", a battle's "flag" or a chest's "flag")`,
+    ]) expect(problems).toContain(expected)
   })
 })
 
@@ -118,10 +204,10 @@ describe('studio tools', () => {
     expect(check.content[0]!.text).toContain('Godot is not installed')
     expect((await call('studio_simulate_battle')).content[0]!.text).toContain('studio_install_godot')
 
-    const painted = await call('studio_paint', { file: 'art/enemies.png', rows: ['.rr.', 'rkkr', 'rrrr'], palette: { r: '#d63c3c', k: '#181425' }, at: [4, 0], frame: [32, 32] })
+    const painted = await call('studio_paint', { file: 'art/enemies.png', rows: ['.rr.', 'rkkr', 'rrrr'], palette: { r: '#d63c3c', k: '#181425' }, at: [6, 0], frame: [32, 32] })
     expect(painted.isError).toBeFalsy()
-    expect(painted.content[0]!.text).toContain('the sheet is 160x32, grown to fit')
-    expect(readPng(readFileSync(join(root, 'star_field', 'art', 'enemies.png'))).width).toBe(160)
+    expect(painted.content[0]!.text).toContain('the sheet is 224x32, grown to fit')
+    expect(readPng(readFileSync(join(root, 'star_field', 'art', 'enemies.png'))).width).toBe(224)
     expect((await call('studio_paint', { file: '../outside.png', rows: ['a'], palette: { a: '#fff' } })).isError).toBe(true)
     expect((await call('studio_music', { file: 'boss', tempo: 150, voices: [{ notes: 'A3 C4 E4:2' }, { notes: 'A2:4', wave: 'triangle' }] })).content[0]!.text).toContain('audio/boss.wav')
     expect(readWav(readFileSync(join(root, 'star_field', 'audio', 'boss.wav'))).channels).toBe(1)

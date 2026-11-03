@@ -10,10 +10,7 @@
         "x": 9,
         "y": 8,
         "frame": 0,
-        "dialogue": "elder",
-        "dialogue_after": {
-          "beat_alpha": "elder_after"
-        }
+        "event": "elder"
       },
       {
         "id": "innkeeper",
@@ -21,7 +18,8 @@
         "y": 5,
         "frame": 1,
         "dialogue": "innkeeper",
-        "role": "inn"
+        "role": "inn",
+        "price": 10
       },
       {
         "id": "merchant",
@@ -32,7 +30,27 @@
         "role": "shop",
         "stock": [
           "potion",
-          "ether"
+          "ether",
+          "antidote",
+          "phoenix_feather",
+          "fire_bomb"
+        ]
+      },
+      {
+        "id": "blacksmith",
+        "x": 4,
+        "y": 12,
+        "frame": 7,
+        "dialogue": "blacksmith",
+        "role": "shop",
+        "stock": [
+          "iron_sword",
+          "crystal_rod",
+          "hunting_bow",
+          "chainmail",
+          "silk_robe",
+          "toxin_charm",
+          "ember_amulet"
         ]
       },
       {
@@ -40,7 +58,7 @@
         "x": 11,
         "y": 10,
         "frame": 3,
-        "dialogue": "kid"
+        "event": "kid"
       }
     ],
     "warps": [
@@ -71,17 +89,12 @@
         "gold": 20
       },
       {
-        "id": "alpha",
-        "x": 21,
-        "y": 7,
-        "frame": 6,
-        "dialogue": "alpha",
-        "role": "battle",
-        "enemies": [
-          "alpha_wolf"
-        ],
-        "flag": "beat_alpha",
-        "ending": true
+        "id": "charm_spot",
+        "x": 2,
+        "y": 8,
+        "frame": 4,
+        "event": "charm_spot",
+        "only_if": "charm_quest"
       }
     ],
     "warps": [
@@ -91,6 +104,71 @@
         "to": "town",
         "to_x": 8,
         "to_y": 12
+      },
+      {
+        "x": 23,
+        "y": 5,
+        "to": "forest",
+        "to_x": 1,
+        "to_y": 7,
+        "requires": "accepted_quest",
+        "locked": "forest_locked"
+      }
+    ]
+  },
+  "forest": {
+    "name": "Whisperwood",
+    "file": "forest.txt",
+    "music": "res://audio/field.wav",
+    "encounters": "forest",
+    "battle_background": "#1e3a28",
+    "on_enter": [
+      {
+        "event": "forest_enter",
+        "once": true
+      }
+    ],
+    "npcs": [
+      {
+        "id": "bram",
+        "x": 12,
+        "y": 6,
+        "frame": 8,
+        "event": "bram"
+      },
+      {
+        "id": "chest2",
+        "x": 20,
+        "y": 3,
+        "frame": 4,
+        "open_frame": 5,
+        "role": "chest",
+        "item": "flame_sword"
+      },
+      {
+        "id": "great_wolf",
+        "x": 29,
+        "y": 7,
+        "frame": 6,
+        "event": "great_wolf",
+        "hide_if": "beat_alpha"
+      }
+    ],
+    "triggers": [
+      {
+        "x": 24,
+        "y": 7,
+        "event": "wolf_warning",
+        "once": true
+      }
+    ],
+    "warps": [
+      {
+        "x": 0,
+        "y": 7,
+        "to": "meadow",
+        "to_x": 22,
+        "to_y": 5
       }
     ]
   }

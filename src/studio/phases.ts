@@ -5,6 +5,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PHASE_IDS, PHASE_TITLES, type GameDesign, type PhaseId } from './design.ts'
+import { eventBattles } from './checks.ts'
 import { checkProjectData, placeholdersLeft, readProjectData } from './project.ts'
 
 export interface Check { done: boolean; text: string }
@@ -28,6 +29,7 @@ export function battleGroups(project: string): string[][] {
     groups = [
       ...Object.values(data.encounters).flatMap((zone: any) => zone.groups ?? []),
       ...Object.values(data.maps).flatMap((m: any) => m.npcs ?? []).filter((n: any) => n.role === 'battle' && n.enemies?.length).map((n: any) => n.enemies),
+      ...eventBattles(data.events).map(b => b.enemies),
     ]
   } catch { /* reported by the data checks */ }
   return [...new Map(groups.map(group => [group.join('+'), group] as const)).values()]
@@ -123,6 +125,7 @@ const PHASES: Record<PhaseId, Phase> = {
         const data = readProjectData(p)
         items = Object.keys(data.items).length
         shops = Object.values(data.maps).flatMap((m: any) => m.npcs ?? []).filter((n: any) => n.role === 'shop').length
+          + JSON.stringify(data.events).split('"shop":').length - 1
       } catch { /* reported elsewhere */ }
       return [check(items >= 3, `At least three items (${items} now)`), check(shops >= 1, 'At least one shop')]
     },
@@ -133,12 +136,17 @@ const PHASES: Record<PhaseId, Phase> = {
     next: 'Write the premise and the story beats with the developer, then the dialogue for every NPC in data/dialogue.json, and play through to read it in the game.',
     checks: (p, d) => {
       let npcs: any[] = []
-      try { npcs = Object.values(readProjectData(p).maps).flatMap((m: any) => m.npcs ?? []) } catch { /* reported elsewhere */ }
+      let endings = 0
+      try {
+        const data = readProjectData(p)
+        npcs = Object.values(data.maps).flatMap((m: any) => m.npcs ?? [])
+        endings = eventBattles(data.events).filter(b => b.ending).length + npcs.filter(n => n.role === 'battle' && n.ending).length
+      } catch { /* reported elsewhere */ }
       return [
         check(!!d.concept.story.premise.trim(), 'A story premise'),
         check(d.concept.story.beats.length >= 3, 'At least three story beats'),
         check(!!d.concept.story.ending.trim(), 'An ending for the first playable'),
-        check(npcs.some(n => n.role === 'battle' && n.ending), 'The game can be finished (a battle NPC with "ending": true)'),
+        check(endings > 0, 'The game can be finished (a battle with "ending": true)'),
       ]
     },
   },

@@ -14,29 +14,32 @@ Space talks and confirms, Esc opens the menu and goes back.
 
 | To change | Edit | Example |
 | --- | --- | --- |
-| The heroes | `data/characters.json` | Starting stats, growth per level, skills they know and learn |
-| The monsters | `data/enemies.json` | Stats, XP and gold, items they drop, which picture (`frame`) |
-| Skills and spells | `data/skills.json` | MP cost, power, physical / magic / heal |
-| Items | `data/items.json` | What they restore, their price |
-| Battle maths | `data/formulas.json` | `physical`, `magic`, `heal`, `xp_to_next`, `run_chance`, written as maths |
+| The heroes | `data/characters.json` | Stats and growth, skills they know and learn, starting equipment, weaknesses |
+| The monsters | `data/enemies.json` | Stats, weaknesses and resistances, immunities, AI rules, boss phases, XP, gold, drops, picture |
+| Skills and spells | `data/skills.json` | MP, power, type (physical, magic, heal, support), target, element, statuses caused or cured, revive |
+| Items and equipment | `data/items.json` | Consumables (heal, MP, revive, cure, bombs, buffs), weapons, armour and accessories, key items |
+| Status effects | `data/statuses.json` | Poison, sleep, stun, silence, blind, regen, stat ups and downs: what each does and for how long |
+| Battle rules | `data/rules.json`, `data/formulas.json` | Party size, elements, criticals, weakness multipliers, sell price; damage, healing, XP as maths |
 | Which monsters appear where | `data/encounters.json` | How often, and which groups |
 | The starting party | `data/party.json` | Members, level, gold, items, starting map and spot |
-| What people say | `data/dialogue.json` | Lines for each NPC |
+| Story | `data/events.json`, `data/quests.json` | Conversations with choices, quests, recruits, cutscenes, boss fights, the ending |
+| Simple lines | `data/dialogue.json` | Shopkeepers, signs, the ending text |
 | Maps | `maps/*.txt` | One character per tile; `maps/legend.json` says what each character is |
-| NPCs, doors and exits | `maps/maps.json` | Who stands where, shops and inns, warps between maps, music |
-| Story events | `maps/maps.json` | Chests, boss battles, the ending, flags that change dialogue or open doors |
+| People, doors and places | `maps/maps.json` | NPCs (with their event, shop, inn, chest), warps, music, triggers, arrival events, battle backgrounds |
 | Menus and text boxes | `data/game.json` `ui` | Colours, corners, font and text size |
 | Pictures | `art/` | `tiles.png` (16x16 tiles in one row), `hero.png`, `npcs.png`, `enemies.png` |
-| Music and sounds | `audio/` | `title`, `town`, `field`, `battle` music; `select`, `hit`, `heal`, `victory` and other sounds |
+| Music and sounds | `audio/` | `title`, `town`, `field`, `battle` music; `select`, `hit`, `heal`, `magic`, `levelup`, `victory` and other sounds |
 | The game's design | `design/GAME_DESIGN.md` | What the game is, decided with Engine Harness |
 
-The code is in `scripts/`: `autoload/` for data, game state and saving, `world/overworld.gd` for the map,
-`battle/battle_logic.gd` for the battle rules and `battle/battle_scene.gd` for the battle screen.
+The code is in `scripts/`: `autoload/` for data, game state (party, equipment, quests, saving), `world/` for the map
+and story events, `battle/battle_logic.gd` for every battle rule and `battle/battle_scene.gd` for the battle screen,
+`ui/` for the title, text box, pause menu and ending.
 
 ## Checks
 
-- `tools/self_test.tscn`: checks every reference between data files, the formulas, levelling and saving.
+- `tools/self_test.tscn`: checks every reference between data files, the formulas, levelling, equipment, the party, saving, the battle rules and every story event.
 - `tools/sim_battle.tscn`: fights a battle many times and reports how hard it is.
+- `tools/event_test.tscn`: plays a story event without the screen and reports what it said and changed.
 - `scenes/ending.tscn`: the ending, shown after the battle marked `"ending": true` (the Great Wolf in the meadow).
 
 Engine Harness runs both for you ("check my game", "is the wolf too hard?").
