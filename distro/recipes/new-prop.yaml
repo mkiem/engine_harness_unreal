@@ -15,6 +15,8 @@ instructions: |
      (harness_ticket gives the full spec) and given only its domain's extensions.
   3. Lock files with harness_lock before editing them; validate each ticket with harness_validate and fix every
      violation before moving on; unlock when the ticket is done.
+     Every model gets colour: the Blender ticket colours its material per part, and the texture ticket bakes it into
+     T_<Name>_BC, _ORM and _N with dcc/blender/bake_textures.py (harness_scripts lists it).
   4. Build the Unreal side through the unreal_* tools: import with unreal_run_script and dcc/unreal/import_pipeline.py,
      make the Blueprint and place it with unreal_python, and check unreal_log for errors.
   5. When the Blueprint is placed, start Play in Editor (unreal_play_in_editor), tell the developer exactly what to try

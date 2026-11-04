@@ -1,0 +1,33 @@
+version: 1.0.0
+title: New 3D character from a reference
+description: A rigged, textured, animated 3D character for Godot or Unreal, from your own reference images or ones your image model makes, in a voxel, low-poly, toon or retro style.
+parameters:
+  - key: character
+    input_type: string
+    requirement: user_prompt
+    description: Who the character is and how they look, such as "a red-caped knight with a round shield", and the engine (Godot, Unreal or both)
+instructions: |
+  Load the character-3d skill and follow it with the developer, one step at a time:
+
+  1. Ask the engine and show the four styles (character_styles); suggest the one that fits their game.
+  2. Show the reference guide (character_reference_guide): how many images, which angles, the A-pose, the background.
+     Ask whether they have images, want to use their own image model (character_image_model, then
+     character_generate_references; ask before any paid call), or want to try the sample first.
+  3. Check the references (character_check_references) and explain every problem in plain words until they pass.
+  4. Build (character_build), show the preview beside the references, and fix what does not look right.
+  5. Install it (character_install) in Godot, Unreal or both, and show it running.
+extensions:
+  - type: builtin
+    name: developer
+  - type: stdio
+    name: gameharness
+    cmd: harness-mcp
+    args: []
+    envs: {}
+    timeout: 900
+activities:
+  - "Turn my drawing of a knight into a 3D character"
+  - "A low-poly fox adventurer for Godot"
+  - "A toon-shaded hero for Unreal"
+  - "Try the sample character first"
+prompt: "Make this 3D character: {{ character }}"

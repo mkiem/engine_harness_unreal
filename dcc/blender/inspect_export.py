@@ -41,6 +41,10 @@ def main() -> None:
     lod0 = [obj for obj in render if not LOD.search(name(obj)) or LOD.search(name(obj)).group(1) == "0"]
     lods = {int(LOD.search(name(obj)).group(1)) for obj in render if LOD.search(name(obj))}
 
+    # Skeletal meshes are measured in their rest pose, not mid-animation (an animation would move the bounds).
+    for armature in [obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"]:
+        armature.data.pose_position = "REST"
+    bpy.context.view_layer.update()
     depsgraph = bpy.context.evaluated_depsgraph_get()
     triangles = 0
     for obj in lod0:
@@ -76,6 +80,10 @@ def main() -> None:
         "uvChannels": min((len(obj.data.uv_layers) for obj in lod0), default=0),
         "transformsApplied": applied,
     }
+    bones = sum(len(obj.data.bones) for obj in bpy.context.scene.objects if obj.type == "ARMATURE")
+    if bones:
+        facts["bones"] = bones
+        facts["animations"] = sorted({action.name for action in bpy.data.actions})
     with open(args.facts, "w", encoding="utf8") as out:
         json.dump(facts, out, indent=2)
     print(json.dumps(facts))

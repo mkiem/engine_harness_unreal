@@ -11,5 +11,6 @@ Unreal interchange rules (the contract checks every one):
 - One material slot per entry in `materialSlots`, in that order, named as listed.
 - At least one UV channel without overlaps; the importer generates the lightmap UV.
 - Stay under the triangle budget for LOD0.
+- Colour it: never leave the default grey material. Give each part its colour, roughness and metallic (per-part colour attributes read by the one material, as `dcc/blender/recipes/vintage_radio.py` does, or node textures), so the texture ticket can bake real maps from it.
 
 After exporting, run `"$BLENDER_BIN" -b --python dcc/blender/inspect_export.py -- <export.fbx> <facts.json>` and copy its output into the asset's `facts`.
