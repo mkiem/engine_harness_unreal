@@ -11,6 +11,7 @@ import { WorkerResult, type Domain } from '../core/model.ts'
 import type { Executor, Job } from '../core/ports.ts'
 import { allowedTools, resolvePreset, type Preset, type Profile } from '../presets/index.ts'
 import { renderWorkerPrompt, RESULT_FILE } from './prompt.ts'
+import { checkCommandPolicy, writeSandboxHooks } from './sandbox.ts'
 
 export interface AgentCliOptions {
   presets: Map<Domain, Preset>
@@ -20,6 +21,8 @@ export interface AgentCliOptions {
   command?: string[]
   /** Writes extra launch files (a goose recipe) and returns placeholder values for the command. */
   prepare?: (job: Job, files: LaunchFiles) => Record<string, string>
+  /** Watchdog stall timeout in ms: aborts a silent/hung worker before the full timeoutMinutes expires. */
+  stallTimeoutMs?: number
 }
 
 export interface LaunchFiles {
@@ -56,19 +59,25 @@ export class AgentCliExecutor implements Executor {
     writeFileSync(resultPath, '')
 
     const files: LaunchFiles = { preset, prompt, promptFile, mcpConfig, mcpServers: resolved.mcpConfig.mcpServers, env: resolved.env }
+    const sandbox = writeSandboxHooks(job.dir, preset.blockedCommands)
     const values: Record<string, string> = {
       prompt, promptFile, mcpConfig, dir: job.dir, tools: allowedTools(preset, profile).join(','), model: profile.agent?.model ?? '',
+      policyFile: sandbox.policyFile, hookScript: sandbox.hookScript,
       ...this.options.prepare?.(job, files),
     }
     const argv = command.map(arg => arg.replace(/\{(\w+)\}/g, (whole, key: string) => values[key] ?? whole))
+    const policy = checkCommandPolicy(argv.join(' '), preset.blockedCommands)
+    if (!policy.allowed) return { status: 'failed', summary: policy.reason ?? 'command blocked by policy', assets: [] }
     const env = {
       ...process.env, ...resolved.env,
       HARNESS_PLAN: job.plan.id, HARNESS_TICKET: job.ticket.id, HARNESS_ASSIGNMENT: job.assignmentId,
       HARNESS_DIR: job.dir, HARNESS_RESULT: resultPath, HARNESS_BLOCKED_COMMANDS: preset.blockedCommands.join('\n'),
+      HARNESS_POLICY_FILE: sandbox.policyFile,
     }
     const timeoutMs = (profile.agent?.timeoutMinutes ?? 60) * 60_000
-    const outcome = await runProcess(argv, { cwd: job.dir, env, signal: job.signal, timeoutMs })
+    const outcome = await runProcess(argv, { cwd: job.dir, env, signal: job.signal, timeoutMs, stallTimeoutMs: this.options.stallTimeoutMs })
     writeFileSync(join(job.dir, `agent.${job.assignmentId}.log`), outcome.output)
+    if (outcome.stalled) return { status: 'failed', summary: `watchdog stopped silent worker after ${Math.round((this.options.stallTimeoutMs ?? 0) / 1000)}s: ${tail(outcome.output)}`, assets: [] }
 
     const text = readFileSync(resultPath, 'utf8').trim()
     if (!text) return { status: 'failed', summary: `the agent exited (${outcome.code}) without writing ${RESULT_FILE}: ${tail(outcome.output)}`, assets: [] }
@@ -87,25 +96,35 @@ export class AgentCliExecutor implements Executor {
 
 const tail = (text: string, length = 400) => text.length > length ? `…${text.slice(-length)}` : text || '(no output)'
 
-export function runProcess(argv: string[], options: { cwd: string; env: NodeJS.ProcessEnv; signal: AbortSignal; timeoutMs: number }): Promise<{ code: number | null; output: string }> {
+export function runProcess(argv: string[], options: { cwd: string; env: NodeJS.ProcessEnv; signal: AbortSignal; timeoutMs: number; stallTimeoutMs?: number }): Promise<{ code: number | null; output: string; stalled?: boolean }> {
   return new Promise((resolve, reject) => {
     const [command, ...args] = argv
     if (!command) return reject(new Error('empty command'))
     const child = spawn(command, args, { cwd: options.cwd, env: options.env, stdio: ['ignore', 'pipe', 'pipe'] })
     let output = ''
-    child.stdout.on('data', chunk => { output += chunk })
-    child.stderr.on('data', chunk => { output += chunk })
+    let stalled = false
+    let stallTimer: ReturnType<typeof setTimeout> | undefined
     const kill = () => child.kill('SIGTERM')
+    const resetStall = () => {
+      if (!options.stallTimeoutMs) return
+      if (stallTimer) clearTimeout(stallTimer)
+      stallTimer = setTimeout(() => { stalled = true; kill() }, options.stallTimeoutMs)
+    }
+    resetStall()
+    child.stdout.on('data', chunk => { output += chunk; resetStall() })
+    child.stderr.on('data', chunk => { output += chunk; resetStall() })
     const timer = setTimeout(kill, options.timeoutMs)
     options.signal.addEventListener('abort', kill, { once: true })
     child.on('error', error => {
       clearTimeout(timer)
+      if (stallTimer) clearTimeout(stallTimer)
       reject(error)
     })
     child.on('close', code => {
       clearTimeout(timer)
+      if (stallTimer) clearTimeout(stallTimer)
       options.signal.removeEventListener('abort', kill)
-      resolve({ code, output })
+      resolve({ code, output, ...(stalled ? { stalled: true } : {}) })
     })
   })
 }

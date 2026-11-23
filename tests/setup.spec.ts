@@ -3,21 +3,23 @@ import { checkSetup, configureUnrealProject, findBlenders, findProjects, findUnr
 
 /** A fake machine: a file map, and scripted command results. */
 function machine(platform: NodeJS.Platform, files: Record<string, string>, commands: Record<string, { status: number; stdout: string; stderr?: string }> = {}) {
-  const fs = { ...files }
+  const norm = (p: string) => p.replace(/\\/g, '/')
+  const fs: Record<string, string> = Object.fromEntries(Object.entries(files).map(([k, v]) => [norm(k), v]))
   const ran: string[] = []
   const sys: SetupEnv = {
     platform, home: platform === 'win32' ? 'C:\\Users\\dev' : '/home/dev',
     env: platform === 'win32' ? { ProgramFiles: 'C:\\Program Files', ProgramData: 'C:\\ProgramData', APPDATA: 'C:\\Users\\dev\\AppData\\Roaming' } : {},
     run: (command, args) => {
-      ran.push([command, ...args].join(' '))
-      const key = Object.keys(commands).find(prefix => [command, ...args].join(' ').startsWith(prefix))
+      const cmd = [command, ...args.map(a => platform === 'linux' ? norm(a) : a)].join(' ')
+      ran.push(cmd)
+      const key = Object.keys(commands).find(prefix => cmd.startsWith(prefix))
       return key ? { stderr: '', ...commands[key]! } : { status: 1, stdout: '', stderr: 'not found' }
     },
-    exists: path => path in fs || Object.keys(fs).some(file => file.startsWith(`${path}/`)),
-    readDir: path => [...new Set(Object.keys(fs).filter(file => file.startsWith(`${path}/`)).map(file => file.slice(path.length + 1).split('/')[0]!))],
-    readFile: path => { if (!(path in fs)) throw new Error(`ENOENT ${path}`); return fs[path]! },
-    writeFile: (path, text) => { fs[path] = text },
-    copyFile: (from, to) => { fs[to] = fs[from]! },
+    exists: path => { const p = norm(path); return p in fs || Object.keys(fs).some(file => file.startsWith(`${p}/`)) },
+    readDir: path => { const p = norm(path); return [...new Set(Object.keys(fs).filter(file => file.startsWith(`${p}/`)).map(file => file.slice(p.length + 1).split('/')[0]!))] },
+    readFile: path => { const p = norm(path); if (!(p in fs)) throw new Error(`ENOENT ${path}`); return fs[p]! },
+    writeFile: (path, text) => { fs[norm(path)] = text },
+    copyFile: (from, to) => { fs[norm(to)] = fs[norm(from)]! },
     reachable: async () => false,
   }
   return { sys, fs, ran }
@@ -45,7 +47,7 @@ describe('setup detection', () => {
 
   it('finds .uproject files without walking into build folders', () => {
     const { sys } = machine('linux', { '/work/Game/Game.uproject': '{}', '/work/Game/Intermediate/Stale/Stale.uproject': '{}', '/work/Other/Tools/Tools.uproject': '{}' })
-    expect(findProjects(sys, '/work').sort()).toEqual(['/work/Game/Game.uproject', '/work/Other/Tools/Tools.uproject'])
+    expect(findProjects(sys, '/work').map(p => p.replace(/\\/g, '/')).sort()).toEqual(['/work/Game/Game.uproject', '/work/Other/Tools/Tools.uproject'])
   })
 })
 

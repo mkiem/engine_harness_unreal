@@ -359,7 +359,13 @@ function checkAudio(spec: SpecOf<'audio_clip'>, wav: ReturnType<typeof readWav>,
   if (wav.seconds < req.minSeconds || wav.seconds > req.maxSeconds)
     fail('audio.length', `${spec.id} is ${wav.seconds.toFixed(2)} s, expected ${req.minSeconds}–${req.maxSeconds} s`)
   if (wav.peakDb > req.maxPeakDb) fail('audio.peak', `${spec.id} peaks at ${wav.peakDb.toFixed(1)} dBFS, above ${req.maxPeakDb} dBFS`)
+  if (req.maxTruePeakDb !== undefined && wav.truePeakDb > req.maxTruePeakDb)
+    fail('audio.true-peak', `${spec.id} true peak is ${wav.truePeakDb.toFixed(1)} dBTP, above ${req.maxTruePeakDb} dBTP`)
   const [low, high] = req.loudnessDb
   if (wav.rmsDb < low || wav.rmsDb > high) fail('audio.loudness', `${spec.id} RMS is ${wav.rmsDb.toFixed(1)} dBFS, expected ${low} to ${high}`)
+  if (req.lufsDb) {
+    const [lufsLow, lufsHigh] = req.lufsDb
+    if (wav.lufs < lufsLow || wav.lufs > lufsHigh) fail('audio.lufs', `${spec.id} integrated loudness is ${wav.lufs.toFixed(1)} LUFS, expected ${lufsLow} to ${lufsHigh} LUFS`)
+  }
   if (req.loop && wav.loopSeam > 0.05) fail('audio.loop-seam', `${spec.id} loops with a jump of ${wav.loopSeam.toFixed(3)} full scale at the seam (an audible click)`)
 }

@@ -20,7 +20,9 @@
     "check": "npm run typecheck && npm test && npm run test:py",
     "demo": "node src/cli.ts run examples/vintage-radio/plan.json --executor simulated --sim-faults --state .harness/demo",
     "mcp": "node src/mcp/main.ts",
-    "bundle": "node scripts/bundle.mjs"
+    "bundle": "node scripts/bundle.mjs",
+    "budget": "node scripts/tool-budget.ts",
+    "eval": "node scripts/eval-harness.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

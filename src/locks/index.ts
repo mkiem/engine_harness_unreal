@@ -9,6 +9,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import type { LockLease } from '../core/model.ts'
 
 export interface LockBackend {
@@ -228,5 +229,78 @@ export class FileLockBackend implements LockBackend {
     } finally {
       rmSync(mutex, { recursive: true, force: true })
     }
+  }
+}
+
+/**
+ * SQLite-backed lock store (Node 22+ built-in `node:sqlite`, WAL mode + 5s busy timeout).
+ * Eliminates stale-mutex races under Windows AV / high concurrency while supporting optional VCS mirroring.
+ */
+export class SqliteLockBackend implements LockBackend {
+  readonly name: string
+  private readonly db: DatabaseSync
+  private readonly mirror?: LockBackend
+
+  constructor(file: string, mirror?: LockBackend) {
+    mkdirSync(dirname(file), { recursive: true })
+    this.mirror = mirror
+    this.name = mirror ? `sqlite+${mirror.name}` : 'sqlite'
+    this.db = new DatabaseSync(file)
+    this.db.exec(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA busy_timeout = 5000;
+      CREATE TABLE IF NOT EXISTS locks (
+        path TEXT PRIMARY KEY,
+        owner TEXT NOT NULL,
+        at TEXT NOT NULL
+      );
+    `)
+  }
+
+  acquire(path: string, owner: string) {
+    this.db.exec('BEGIN IMMEDIATE')
+    try {
+      const row = this.db.prepare('SELECT owner FROM locks WHERE path = ?').get(path) as { owner: string } | undefined
+      if (row && row.owner !== owner) {
+        this.db.exec('ROLLBACK')
+        return { ok: false as const, holder: row.owner }
+      }
+      if (!row) {
+        const mirrored = this.mirror?.acquire(path, owner)
+        if (mirrored && !mirrored.ok) {
+          this.db.exec('ROLLBACK')
+          return mirrored
+        }
+        this.db.prepare('INSERT INTO locks (path, owner, at) VALUES (?, ?, ?)').run(path, owner, new Date().toISOString())
+      }
+      this.db.exec('COMMIT')
+      return { ok: true as const }
+    } catch (error) {
+      try { this.db.exec('ROLLBACK') } catch { /* ignore */ }
+      throw error
+    }
+  }
+
+  release(path: string, owner: string) {
+    this.db.exec('BEGIN IMMEDIATE')
+    try {
+      const row = this.db.prepare('SELECT owner FROM locks WHERE path = ?').get(path) as { owner: string } | undefined
+      if (row?.owner === owner) {
+        this.mirror?.release(path, owner)
+        this.db.prepare('DELETE FROM locks WHERE path = ?').run(path)
+      }
+      this.db.exec('COMMIT')
+    } catch (error) {
+      try { this.db.exec('ROLLBACK') } catch { /* ignore */ }
+      throw error
+    }
+  }
+
+  list(): { path: string; owner: string; at: string }[] {
+    return this.db.prepare('SELECT path, owner, at FROM locks ORDER BY path').all() as { path: string; owner: string; at: string }[]
+  }
+
+  close(): void {
+    this.db.close()
   }
 }

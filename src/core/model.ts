@@ -71,8 +71,12 @@ const AudioClipRequirements = z.object({
   maxSeconds: z.number().positive().default(30),
   /** Peak ceiling in dBFS; anything above clips after the engine's mix. */
   maxPeakDb: z.number().max(0).default(-1),
+  /** Optional 4x-oversampled true peak ceiling in dBTP. */
+  maxTruePeakDb: z.number().max(0).optional(),
   /** Integrated loudness window, approximated by RMS dBFS when no LUFS meter ran. */
   loudnessDb: z.tuple([z.number(), z.number()]).default([-30, -12]),
+  /** Optional ITU-R BS.1770-4 K-weighted integrated loudness window in LUFS. */
+  lufsDb: z.tuple([z.number(), z.number()]).optional(),
   loop: z.boolean().default(false),
 }).strict()
 
@@ -201,12 +205,21 @@ export type AssetRecord = z.infer<typeof AssetRecord>
 export const ReportStatus = z.enum(['progress', 'ready', 'blocked', 'failed', 'dropped'])
 export type ReportStatus = z.infer<typeof ReportStatus>
 
+export const WorkerUsage = z.object({
+  inputTokens: z.number().int().nonnegative().optional(),
+  outputTokens: z.number().int().nonnegative().optional(),
+  costUsd: z.number().nonnegative().optional(),
+}).strict()
+export type WorkerUsage = z.infer<typeof WorkerUsage>
+
 export const WorkerResult = z.object({
   status: ReportStatus,
   summary: z.string(),
   assets: z.array(AssetRecord).default([]),
   /** One concrete question for a person; makes the ticket wait for an answer (Attention). */
   question: z.string().optional(),
+  /** Optional token and cost accounting reported by the worker runtime. */
+  usage: WorkerUsage.optional(),
 }).strict()
 export type WorkerResult = z.infer<typeof WorkerResult>
 
@@ -232,12 +245,20 @@ export const TicketSpec = z.object({
 }).strict()
 export type TicketSpec = z.infer<typeof TicketSpec>
 
+export const PlanBudgetSpec = z.object({
+  maxTokens: z.number().int().positive().optional(),
+  maxCostUsd: z.number().positive().optional(),
+  maxWallMinutes: z.number().positive().optional(),
+}).strict()
+
 export const Plan = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,60}$/, 'plan id must be a kebab-case name of 2 to 61 characters'),
   brief: z.string().min(1),
   /** Where the plan's engine assets go: a /Game/ folder for Unreal (/Game/Props/VintageRadio), res:// for Godot. */
   contentRoot: z.string().regex(/^(\/Game\/|res:\/\/)/, 'contentRoot must start with /Game/ (Unreal) or res:// (Godot)').default('/Game/Generated'),
   tickets: z.array(TicketSpec).min(1),
+  /** Optional resource limits enforced by the orchestrator before scheduling further work. */
+  budget: PlanBudgetSpec.optional(),
 }).strict()
 export type Plan = z.infer<typeof Plan>
 

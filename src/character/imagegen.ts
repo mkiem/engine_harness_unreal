@@ -9,12 +9,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join } from 'node:path'
 import { harnessHome } from '../godot/install.ts'
 
-export const PROVIDERS = ['openai', 'gemini', 'a1111'] as const
+export const PROVIDERS = ['openai', 'gemini', 'comfyui', 'a1111'] as const
 export type Provider = typeof PROVIDERS[number]
 
 export interface ImageModelConfig {
   provider: Provider
-  /** The API's base URL: https://api.openai.com/v1, a compatible server, or http://127.0.0.1:7860 for a1111. */
+  /** The API's base URL: https://api.openai.com/v1, http://127.0.0.1:8188 for comfyui, or http://127.0.0.1:7860 for a1111. */
   baseUrl?: string
   model?: string
   /** The environment variable holding the API key (keys are not stored in the config file). */
@@ -26,6 +26,7 @@ export interface ImageModelConfig {
 const DEFAULTS: Record<Provider, { baseUrl: string; model: string; apiKeyEnv?: string }> = {
   openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-image-1', apiKeyEnv: 'OPENAI_API_KEY' },
   gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-2.5-flash-image', apiKeyEnv: 'GEMINI_API_KEY' },
+  comfyui: { baseUrl: 'http://127.0.0.1:8188', model: 'flux1-dev-fp8.safetensors' },
   a1111: { baseUrl: 'http://127.0.0.1:7860', model: '' },
 }
 
@@ -61,6 +62,7 @@ export function describeConfig(config: ImageModelConfig | undefined, env: NodeJS
       'No image model is configured. Developers can upload their own reference images instead, or set one up:',
       '- OpenAI or a compatible API: provider "openai", the key in OPENAI_API_KEY (or another variable via apiKeyEnv); baseUrl for a compatible server.',
       '- Google Gemini: provider "gemini", the key in GEMINI_API_KEY.',
+      '- Local ComfyUI (free, recommended for Flux/SDXL/ControlNet): run ComfyUI, provider "comfyui" (baseUrl http://127.0.0.1:8188 by default).',
       '- A local Stable Diffusion (free): run the AUTOMATIC1111 or Forge web UI with --api, provider "a1111" (baseUrl http://127.0.0.1:7860 by default).',
     ].join('\n')
   }
@@ -141,6 +143,45 @@ export async function generateImage(config: ImageModelConfig, prompt: string, op
       if (inline?.data) return Buffer.from(inline.data, 'base64')
     }
     throw new Error('Gemini answered without an image (the model may not generate images, or the prompt was refused)')
+  }
+
+  if (config.provider === 'comfyui') {
+    const ckpt = config.model || DEFAULTS.comfyui.model
+    const workflow = {
+      '1': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: ckpt } },
+      '2': { class_type: 'CLIPTextEncode', inputs: { text: prompt, clip: ['1', 1] } },
+      '3': { class_type: 'CLIPTextEncode', inputs: { text: 'perspective, shadows, text, watermark, cropped, extra limbs, props, busy background', clip: ['1', 1] } },
+      '4': { class_type: 'EmptyLatentImage', inputs: { width: 1536, height: 1024, batch_size: 1 } },
+      '5': { class_type: 'KSampler', inputs: { seed: Math.floor(Math.random() * 1e9), steps: 24, cfg: 6, sampler_name: 'euler', scheduler: 'normal', denoise: 1, model: ['1', 0], positive: ['2', 0], negative: ['3', 0], latent_image: ['4', 0] } },
+      '6': { class_type: 'VAEDecode', inputs: { samples: ['5', 0], vae: ['1', 2] } },
+      '7': { class_type: 'SaveImage', inputs: { filename_prefix: 'harness_turnaround', images: ['6', 0] } },
+    }
+    const queued = await http(`${base}/prompt`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: workflow }),
+    })
+    if (!queued.ok) throw await failed(queued)
+    const { prompt_id: promptId } = await queued.json() as { prompt_id?: string }
+    if (!promptId) throw new Error('ComfyUI did not return a prompt_id')
+    // Poll history until the SaveImage output appears (max ~120s).
+    for (let attempt = 0; attempt < 240; attempt++) {
+      const histRes = await http(`${base}/history/${encodeURIComponent(promptId)}`, { method: 'GET', headers: {}, body: '' as any })
+      if (histRes.ok) {
+        const hist = await histRes.json() as Record<string, any>
+        const outputs = hist?.[promptId]?.outputs ?? {}
+        for (const nodeOut of Object.values(outputs) as any[]) {
+          const img = nodeOut?.images?.[0]
+          if (img?.filename) {
+            const viewUrl = `${base}/view?filename=${encodeURIComponent(img.filename)}&subfolder=${encodeURIComponent(img.subfolder ?? '')}&type=${encodeURIComponent(img.type ?? 'output')}`
+            const imgRes = await http(viewUrl, { method: 'GET', headers: {}, body: '' as any })
+            if (!imgRes.ok) throw await failed(imgRes)
+            return Buffer.from(await imgRes.arrayBuffer())
+          }
+        }
+      }
+      await new Promise(r => setTimeout(r, 500))
+    }
+    throw new Error(`ComfyUI prompt ${promptId} did not produce an image before timeout`)
   }
 
   // a1111: Stable Diffusion WebUI / Forge, started with --api.

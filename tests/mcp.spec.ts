@@ -31,7 +31,7 @@ describe('harness MCP server', () => {
     expect(tools.map(tool => tool.name).sort()).toEqual(['assets_download', 'assets_import', 'assets_search', 'assets_sources', 'character_build', 'character_check_references', 'character_generate_references', 'character_image_model', 'character_install', 'character_reference_guide', 'character_sample_references', 'character_styles', 'harness_check_asset', 'harness_conventions', 'harness_lock', 'harness_locks', 'harness_measure_audio',
       'harness_plan_prop', 'harness_plan_save', 'harness_scripts', 'harness_setup_blender', 'harness_setup_check', 'harness_setup_unreal_project',
       'harness_setup_godot_project', 'harness_ticket', 'harness_unlock', 'harness_validate', 'godot_check', 'godot_run', 'godot_scene', 'godot_status',
-      'studio_art_style', 'studio_art_styles', 'studio_check', 'studio_design_read', 'studio_design_update', 'studio_export', 'studio_find_mechanic', 'studio_install_godot', 'studio_mechanic', 'studio_music', 'studio_new_project', 'studio_next', 'studio_paint', 'studio_preview', 'studio_simulate_battle', 'studio_sound', 'studio_test_event',
+      'studio_art_style', 'studio_art_styles', 'studio_check', 'studio_design_read', 'studio_design_update', 'studio_export', 'studio_find_mechanic', 'studio_install_godot', 'studio_mechanic', 'studio_music', 'studio_new_project', 'studio_next', 'studio_paint', 'studio_preview', 'studio_simulate_battle', 'studio_sound', 'studio_test_event', 'studio_visual_review',
       'unreal_log', 'unreal_play_in_editor', 'unreal_python', 'unreal_run_script', 'unreal_status'].sort())
     expect(client.getInstructions()).toContain('harness_validate')
   })
@@ -77,7 +77,7 @@ describe('harness MCP server', () => {
   it('lists the pipeline scripts with absolute paths', async () => {
     const { call } = await connect(tempDir())
     const scripts = await call('harness_scripts')
-    expect(scripts.text).toMatch(/## blender\/inspect_export\.py\n\/.*dcc\/blender\/inspect_export\.py\nMeasure a mesh export/)
+    expect(scripts.text).toMatch(/## blender\/inspect_export\.py\n(?:[A-Za-z]:)?\/.*dcc\/blender\/inspect_export\.py\nMeasure a mesh export/)
     expect(scripts.text).toContain('unreal/import_pipeline.py')
   })
 

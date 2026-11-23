@@ -40,34 +40,71 @@ def import_task(file: str, destination: str, options=None) -> unreal.AssetImport
     return task
 
 
+def import_via_interchange(file: str, destination: str, req: dict, is_skeletal: bool) -> list[str] | None:
+    """Preferred UE 5.5-5.8 Interchange import path (handles FBX, glTF and GLB natively). Returns None if unavailable."""
+    if not hasattr(unreal, "InterchangeManager"):
+        return None
+    manager = unreal.InterchangeManager.get_interchange_manager_scripted()
+    source_data = unreal.InterchangeManager.create_source_data(file)
+    params = unreal.ImportAssetParameters()
+    params.is_automated = True
+    params.replace_existing = True
+    if hasattr(unreal, "InterchangeGenericAssetsPipeline"):
+        pipeline = unreal.InterchangeGenericAssetsPipeline()
+        if hasattr(pipeline, "material_pipeline") and pipeline.material_pipeline:
+            pipeline.material_pipeline.import_materials = False
+        if hasattr(pipeline, "texture_pipeline") and pipeline.texture_pipeline:
+            pipeline.texture_pipeline.import_textures = False
+        if hasattr(pipeline, "mesh_pipeline") and pipeline.mesh_pipeline:
+            pipeline.mesh_pipeline.import_lods = req.get("lods", 1) > 1
+            pipeline.mesh_pipeline.import_collision = req.get("collision") in ("ucx", "engine")
+            pipeline.mesh_pipeline.combine_static_meshes = not is_skeletal
+        if hasattr(pipeline, "animation_pipeline") and pipeline.animation_pipeline:
+            pipeline.animation_pipeline.import_animations = bool(req.get("animations", False))
+        params.override_pipelines = [unreal.SoftObjectPath(pipeline.get_path_name())]
+    result = manager.import_asset(destination, source_data, params)
+    if not result:
+        return []
+    # Collect imported assets in destination matching the expected stem.
+    stem = os.path.splitext(os.path.basename(file))[0]
+    found = [str(p).split(".")[0] for p in unreal.EditorAssetLibrary.list_assets(destination, recursive=False) if str(p).split(".")[-1] == stem]
+    return found
+
+
 def ingest_static_mesh(job: dict) -> dict:
     spec, asset = job["spec"], job["asset"]
     req = spec["requires"]
-    options = unreal.FbxImportUI()
-    options.import_mesh = True
-    options.import_as_skeletal = spec["kind"] == "skeletal_mesh"
-    options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH if options.import_as_skeletal else unreal.FBXImportType.FBXIT_STATIC_MESH
-    options.import_materials = False
-    options.import_textures = False
-    options.import_animations = bool(req.get("animations", False))  # characters bring their idle, walk, run, attack
-    options.auto_compute_lod_distances = True
-    if options.import_as_skeletal:
-        # A new skeleton from the FBX (the harness's characters use Godot's humanoid bone names), its animations with it.
-        options.skeleton = None
-        data = options.skeletal_mesh_import_data
-        data.import_morph_targets = False
-        data.import_mesh_lo_ds = req.get("lods", 1) > 1
-        data.normal_import_method = unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS
-        options.create_physics_asset = req.get("collision") == "engine"
-    else:
-        data = options.static_mesh_import_data
-        data.combine_meshes = True
-        data.generate_lightmap_u_vs = bool(req.get("lightmapUv", True))
-        data.auto_generate_collision = req.get("collision") == "engine"
-        data.import_mesh_lo_ds = req.get("lods", 1) > 1
-        data.normal_import_method = unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS
-    task = import_task(job["file"], job["destination"], options)
-    objects = task.get_editor_property("imported_object_paths") or []
+    is_skeletal = spec["kind"] == "skeletal_mesh"
+    use_interchange = job.get("importer", "auto") != "legacy" and (
+        job["file"].lower().endswith((".glb", ".gltf")) or hasattr(unreal, "InterchangeManager")
+    )
+    objects = import_via_interchange(job["file"], job["destination"], req, is_skeletal) if use_interchange else None
+    if objects is None:
+        options = unreal.FbxImportUI()
+        options.import_mesh = True
+        options.import_as_skeletal = is_skeletal
+        options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH if options.import_as_skeletal else unreal.FBXImportType.FBXIT_STATIC_MESH
+        options.import_materials = False
+        options.import_textures = False
+        options.import_animations = bool(req.get("animations", False))  # characters bring their idle, walk, run, attack
+        options.auto_compute_lod_distances = True
+        if options.import_as_skeletal:
+            # A new skeleton from the FBX (the harness's characters use Godot's humanoid bone names), its animations with it.
+            options.skeleton = None
+            data = options.skeletal_mesh_import_data
+            data.import_morph_targets = False
+            data.import_mesh_lo_ds = req.get("lods", 1) > 1
+            data.normal_import_method = unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS
+            options.create_physics_asset = req.get("collision") == "engine"
+        else:
+            data = options.static_mesh_import_data
+            data.combine_meshes = True
+            data.generate_lightmap_u_vs = bool(req.get("lightmapUv", True))
+            data.auto_generate_collision = req.get("collision") == "engine"
+            data.import_mesh_lo_ds = req.get("lods", 1) > 1
+            data.normal_import_method = unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS
+        task = import_task(job["file"], job["destination"], options)
+        objects = task.get_editor_property("imported_object_paths") or []
     if not objects:
         return {"objectPath": f"{job['destination']}/{asset}", "facts": {}, "violations": [violation(asset, "ingest.import", "the importer produced no asset")]}
     path = str(objects[0]).split(".")[0]

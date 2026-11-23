@@ -69,7 +69,7 @@ describe('Orchestrator', () => {
     await orchestrator(radioPlan(), executor).runUntilIdle()
     const texture = executor.jobs.find(job => job.ticket.id === 'vintage-radio-texture')!
     expect(texture.inputs.map(input => input.id)).toEqual(['SM_VintageRadio'])
-    expect(texture.inputs[0]!.files[0]!.path).toMatch(/work\/vintage-radio-model\/export\/SM_VintageRadio\.fbx$/)
+    expect(texture.inputs[0]!.files[0]!.path).toMatch(/work[\\/]vintage-radio-model[\\/]export[\\/]SM_VintageRadio\.fbx$/)
   })
 
   it('asks a person after the revisions run out, and retries on their answer', async () => {

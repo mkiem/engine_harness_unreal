@@ -9,7 +9,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { starterArt } from './art.ts'
 import { GameDesign, PHASE_TITLES, writeDesign, type GameDesign as Design } from './design.ts'
 
-export const TEMPLATES = ['godot-rpg'] as const
+export const TEMPLATES = ['godot-rpg', 'godot-3d-starter'] as const
 
 /** templates/ in a checkout, or beside the bundle in the app's payload. */
 export function defaultTemplatesDir(here: string): string {
@@ -81,17 +81,19 @@ export function createProject(templatesDir: string, options: NewProjectOptions):
   }
   fill(project)
   const placeholders: Record<string, string> = {}
-  for (const [path, buffer] of Object.entries(starterArt())) {
-    mkdirSync(dirname(join(project, path)), { recursive: true })
-    writeFileSync(join(project, path), buffer)
-    placeholders[path] = sha(buffer)
-    files++
+  if (template === 'godot-rpg') {
+    for (const [path, buffer] of Object.entries(starterArt())) {
+      mkdirSync(dirname(join(project, path)), { recursive: true })
+      writeFileSync(join(project, path), buffer)
+      placeholders[path] = sha(buffer)
+      files++
+    }
   }
   mkdirSync(join(project, '.studio'), { recursive: true })
   writeFileSync(join(project, '.studio', 'placeholders.json'), `${JSON.stringify(placeholders, null, 2)}\n`)
   writeFileSync(join(project, '.gitignore'), '.godot/\nbuilds/\n.studio/cache/\n*.tmp\n')
   const design = GameDesign.parse({
-    title: options.title, pitch: options.pitch ?? '', template, engine: 'godot', genre: '2D RPG',
+    title: options.title, pitch: options.pitch ?? '', template, engine: 'godot', genre: template === 'godot-3d-starter' ? '3D Action' : '2D RPG',
     art: { resolution: [width, height], tileSize: 16 },
     ...(options.design ?? {}),
     phases: { ...(options.design?.phases as object ?? {}), project: { status: 'done', notes: `Created from the ${template} template` } },
@@ -186,6 +188,7 @@ export function mapRows(project: string, maps: Record<string, any>, id: string):
  * without Godot, so it works before Godot is installed.
  */
 export function checkProjectData(project: string): string[] {
+  if (!existsSync(join(project, 'data', 'game.json'))) return []
   let d: ProjectData
   try {
     d = readProjectData(project)

@@ -8,7 +8,8 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { Unzip, UnzipInflate, unzipSync } from 'fflate'
 
-export const GODOT_VERSION = '4.4.1'
+export const RECOMMENDED_GODOT_VERSIONS = ['4.6', '4.5.1', '4.4.1'] as const
+export const GODOT_VERSION = process.env.HARNESS_GODOT_VERSION || '4.4.1'
 const TAG = `${GODOT_VERSION}-stable`
 const RELEASES = `https://github.com/godotengine/godot/releases/download/${TAG}`
 

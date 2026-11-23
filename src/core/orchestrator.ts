@@ -7,6 +7,7 @@
  * whether a hand-off is accepted are decided here, in code. Every change is stored before the next step, so a restarted
  * host continues the same run (see `recover`).
  */
+import { createHash } from 'node:crypto'
 import { resolve } from 'node:path'
 import { checkDelivery } from '../contracts/index.ts'
 import type { LockManager } from '../locks/index.ts'
@@ -14,11 +15,12 @@ import { INGESTED, type AssetRecord, type AssignmentRecord, type Domain, type Pl
 import { dependencies, topologicalOrder } from './plan.ts'
 import type { Pools } from './pools.ts'
 import type { Executor, Ingestor } from './ports.ts'
-import type { RunStore } from './store.ts'
+import type { StoreLike } from './store.ts'
+import { BudgetTracker, type TraceCollector } from './telemetry.ts'
 
 export interface OrchestratorOptions {
   plan: Plan
-  store: RunStore
+  store: StoreLike
   executor: Executor
   ingestor?: Ingestor
   pools: Pools
@@ -29,6 +31,8 @@ export interface OrchestratorOptions {
   now?: () => Date
   /** The Godot project folder, where res:// paths resolve, for Godot plans. */
   projectDir?: string
+  /** Optional OpenTelemetry-compatible span collector for tracing tickets and contract gates. */
+  telemetry?: TraceCollector
 }
 
 /** States in which a ticket waits for a person; `answer` releases them. */
@@ -38,10 +42,11 @@ const MAX_EVENTS = 1000
 
 export class Orchestrator {
   readonly run: PlanRun
+  readonly budget: BudgetTracker
   private readonly options: OrchestratorOptions
-  private readonly specs: Map<string, TicketSpec>
-  private readonly deps: Map<string, Set<string>>
-  private readonly order: string[]
+  private specs: Map<string, TicketSpec>
+  private deps: Map<string, Set<string>>
+  private order: string[]
   private readonly working = new Map<string, Promise<void>>()
   private readonly controllers = new Map<string, AbortController>()
   /** The last reason a queued ticket could not start, so the same lock wait is logged once, not on every pass. */
@@ -56,8 +61,62 @@ export class Orchestrator {
     if (stored && JSON.stringify(stored.plan) !== JSON.stringify(options.plan))
       throw new Error(`${options.store.path} holds a run of a different plan (${stored.planId}); use a new state directory or --fresh`)
     this.run = stored ?? this.fresh()
+    this.budget = new BudgetTracker(options.plan.budget, Date.parse(this.run.startedAt) || Date.now())
     if (stored) this.recover()
     this.save()
+  }
+
+  /**
+   * Incremental re-planning: updates the plan in place, keeping delivered assets for every ticket whose
+   * spec and upstream dependencies did not change, and re-queuing only changed tickets and their consumers.
+   */
+  replan(nextPlan: Plan): { kept: string[]; invalidated: string[]; added: string[]; removed: string[] } {
+    if (this.working.size) throw new Error('cannot replan while workers are running; call stop() first')
+    const specHash = (spec: TicketSpec) => createHash('sha256').update(JSON.stringify(spec)).digest('hex')
+    const prevSpecs = this.specs
+    const nextSpecs = new Map(nextPlan.tickets.map(t => [t.id, t]))
+    const nextDeps = dependencies(nextPlan)
+    const nextOrder = topologicalOrder(nextPlan)
+    const invalidated = new Set<string>()
+    const added: string[] = []
+    const removed: string[] = []
+    const kept: string[] = []
+
+    for (const oldId of prevSpecs.keys()) {
+      if (!nextSpecs.has(oldId)) {
+        this.options.locks.releaseAll(oldId)
+        delete this.run.tickets[oldId]
+        removed.push(oldId)
+      }
+    }
+
+    for (const id of nextOrder) {
+      const nextSpec = nextSpecs.get(id)!
+      const prevSpec = prevSpecs.get(id)
+      const depInvalidated = [...nextDeps.get(id)!].some(dep => invalidated.has(dep) || added.includes(dep))
+      if (!prevSpec) {
+        this.run.tickets[id] = { id, state: 'waiting', assignments: [], delivered: {}, notes: [], updatedAt: this.now }
+        added.push(id)
+      } else if (specHash(prevSpec) !== specHash(nextSpec) || depInvalidated) {
+        const ticket = this.run.tickets[id]!
+        ticket.delivered = {}
+        ticket.attention = undefined
+        ticket.state = 'waiting'
+        ticket.updatedAt = this.now
+        ticket.notes.push(depInvalidated ? 'Replan: an upstream dependency changed; rebuild with updated inputs.' : 'Replan: ticket spec changed.')
+        invalidated.add(id)
+      } else {
+        kept.push(id)
+      }
+    }
+
+    this.options.plan = nextPlan
+    this.run.plan = nextPlan
+    this.specs = nextSpecs
+    this.deps = nextDeps
+    this.order = nextOrder
+    this.log(undefined, 'plan.replanned', `kept=${kept.length} invalidated=${invalidated.size} added=${added.length} removed=${removed.length}`)
+    return { kept, invalidated: [...invalidated], added, removed }
   }
 
   private get now(): string { return (this.options.now?.() ?? new Date()).toISOString() }
@@ -103,6 +162,17 @@ export class Orchestrator {
   // ---- scheduling ---------------------------------------------------------------------------------------------------
 
   private schedule(): void {
+    const budgetExceeded = this.budget.exceeded((this.options.now?.() ?? new Date()).getTime())
+    if (budgetExceeded) {
+      for (const id of this.order) {
+        const ticket = this.ticket(id)
+        if (ticket.state === 'queued' || (ticket.state === 'waiting' && [...this.deps.get(id)!].every(dep => this.ticket(dep).state === 'done'))) {
+          ticket.attention = budgetExceeded
+          this.setState(id, 'attention', budgetExceeded)
+        }
+      }
+      return
+    }
     for (const id of this.order) {
       const ticket = this.ticket(id)
       if (ticket.state === 'waiting' && [...this.deps.get(id)!].every(dep => this.ticket(dep).state === 'done'))
@@ -152,6 +222,7 @@ export class Orchestrator {
       const assignment: AssignmentRecord = { id: `${spec.id}-a${first + round + 1}`, revision: first + round, startedAt: this.now }
       ticket.assignments.push(assignment)
       this.setState(spec.id, round ? 'revising' : 'running', round ? `revision ${round} with ${feedback.length} contract violation(s)` : `assignment ${assignment.id}`)
+      const span = this.options.telemetry?.startSpan('harness.assignment', { planId: this.run.planId, ticketId: spec.id, domain: spec.domain, revision: assignment.revision })
       let result: WorkerResult
       try {
         result = await this.options.executor.run({
@@ -164,7 +235,14 @@ export class Orchestrator {
       } finally {
         this.options.pools.release(pool)
       }
-      if (controller.signal.aborted) return // stopped by the host; recover() requeues it on the next run
+      if (controller.signal.aborted) { span?.end('ERROR', { aborted: true }); return } // stopped by the host; recover() requeues it on the next run
+      this.budget.record(result.usage)
+      span?.end(result.status === 'ready' ? 'OK' : 'ERROR', {
+        status: result.status,
+        ...(result.usage?.inputTokens !== undefined ? { inputTokens: result.usage.inputTokens } : {}),
+        ...(result.usage?.outputTokens !== undefined ? { outputTokens: result.usage.outputTokens } : {}),
+        ...(result.usage?.costUsd !== undefined ? { costUsd: result.usage.costUsd } : {}),
+      })
       Object.assign(assignment, { endedAt: this.now, result })
       this.log(spec.id, `report.${result.status}`, result.summary)
 
@@ -295,6 +373,7 @@ export class Orchestrator {
     this.run.events.push(event)
     if (this.run.events.length > MAX_EVENTS) this.run.events.splice(0, this.run.events.length - MAX_EVENTS)
     this.run.updatedAt = event.at
+    this.options.store.appendEvent?.(event)
     this.save()
     this.options.onEvent?.(event)
   }

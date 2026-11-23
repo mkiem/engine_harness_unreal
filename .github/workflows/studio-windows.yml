@@ -39,6 +39,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - name: Check MCP tool budget and run harness evals
+        run: |
+          node scripts/tool-budget.ts --dynamic --max-tokens 3500
+          npm run eval
       - name: Build the payload
         run: npm run bundle
       - name: Smoke-test the bundled server
